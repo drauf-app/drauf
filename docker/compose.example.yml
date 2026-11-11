@@ -1,0 +1,13 @@
+# Example Compose setup. Run TLS termination with the reverse proxy of your choice.
+services:
+  drauf:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3000"
+      LOG_LEVEL: "info"
+    ports:
+      - "3000:3000"

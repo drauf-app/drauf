@@ -24,14 +24,26 @@ Add items in seconds, share lists in real time, keep your data on your own serve
 
 ## Apps
 
-| Client | Where |
-| --- | --- |
-| Web app (PWA) | Served by the server image |
-| iOS app | [drauf-app/drauf-ios](https://github.com/drauf-app/drauf-ios) |
+| Client        | Where                                                         |
+| ------------- | ------------------------------------------------------------- |
+| Web app (PWA) | Served by the server image                                    |
+| iOS app       | [drauf-app/drauf-ios](https://github.com/drauf-app/drauf-ios) |
 
 ## Language
 
 The first release ships in German. All user-facing text goes through i18n from day one, so translations are welcome later.
+
+## Development
+
+Requires Node 24+ and pnpm 12.
+
+```bash
+pnpm install
+pnpm build        # compile all packages
+pnpm dev          # start the server with live reload
+pnpm test         # build, then run all tests
+pnpm lint         # Biome lint + format check
+```
 
 ## Contributing
 
