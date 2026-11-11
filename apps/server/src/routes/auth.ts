@@ -90,6 +90,12 @@ export function authRoutes(
       },
     );
 
+    /** Which sign-in methods this instance offers; public, for login screens. */
+    app.get('/providers', async () => ({
+      localLogin: config.localLoginEnabled,
+      oidc: config.oidc !== undefined,
+    }));
+
     app.get('/me', { preHandler: [guards.authenticate] }, async (request, reply) => {
       // authenticate always sets authUser; fresh lookup so profile changes are visible.
       const userId = request.authUser?.id ?? '';

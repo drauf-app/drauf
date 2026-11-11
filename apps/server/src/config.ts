@@ -9,6 +9,17 @@ export type DatabaseConfig =
   | { dialect: 'postgres'; url: string }
   | { dialect: 'sqlite'; file: string };
 
+export interface OidcConfig {
+  issuer: string;
+  clientId: string;
+  clientSecret: string | undefined;
+  scopes: string;
+  groupsClaim: string;
+  adminGroup: string | undefined;
+  /** Allowed non-relative client redirects (e.g. an app scheme like drauf://auth). */
+  appRedirects: string[];
+}
+
 export interface Config {
   host: string;
   port: number;
@@ -18,6 +29,9 @@ export interface Config {
   authSecret: string;
   /** Local username/password login can be turned off for OIDC-only installs. */
   localLoginEnabled: boolean;
+  /** Public base URL of this instance; required for OIDC (callback URL). */
+  publicUrl: string | undefined;
+  oidc: OidcConfig | undefined;
 }
 
 interface Env {
@@ -28,6 +42,14 @@ interface Env {
   DATA_DIR: string;
   AUTH_SECRET: string;
   AUTH_LOCAL_ENABLED: boolean;
+  PUBLIC_URL?: string;
+  OIDC_ISSUER?: string;
+  OIDC_CLIENT_ID?: string;
+  OIDC_CLIENT_SECRET?: string;
+  OIDC_SCOPES: string;
+  OIDC_GROUPS_CLAIM: string;
+  OIDC_ADMIN_GROUP?: string;
+  OIDC_APP_REDIRECTS?: string;
 }
 
 const schema = {
@@ -41,8 +63,50 @@ const schema = {
     DATA_DIR: { type: 'string', default: './data' },
     AUTH_SECRET: { type: 'string', minLength: 32 },
     AUTH_LOCAL_ENABLED: { type: 'boolean', default: true },
+    PUBLIC_URL: { type: 'string' },
+    OIDC_ISSUER: { type: 'string' },
+    OIDC_CLIENT_ID: { type: 'string' },
+    OIDC_CLIENT_SECRET: { type: 'string' },
+    OIDC_SCOPES: { type: 'string', default: 'openid profile' },
+    OIDC_GROUPS_CLAIM: { type: 'string', default: 'groups' },
+    OIDC_ADMIN_GROUP: { type: 'string' },
+    OIDC_APP_REDIRECTS: { type: 'string' },
   },
 } as const;
+
+function requireUrl(value: string, name: string): void {
+  try {
+    new URL(value);
+  } catch {
+    throw new Error(`${name} must be a valid URL`);
+  }
+}
+
+function resolveOidc(env: Env): OidcConfig | undefined {
+  if (env.OIDC_ISSUER === undefined) {
+    return undefined;
+  }
+  requireUrl(env.OIDC_ISSUER, 'OIDC_ISSUER');
+  if (env.OIDC_CLIENT_ID === undefined) {
+    throw new Error('OIDC_CLIENT_ID is required when OIDC_ISSUER is set');
+  }
+  if (env.PUBLIC_URL === undefined) {
+    throw new Error('PUBLIC_URL is required when OIDC_ISSUER is set (for the callback URL)');
+  }
+  requireUrl(env.PUBLIC_URL, 'PUBLIC_URL');
+  return {
+    issuer: env.OIDC_ISSUER,
+    clientId: env.OIDC_CLIENT_ID,
+    clientSecret: env.OIDC_CLIENT_SECRET,
+    scopes: env.OIDC_SCOPES,
+    groupsClaim: env.OIDC_GROUPS_CLAIM,
+    adminGroup: env.OIDC_ADMIN_GROUP,
+    appRedirects: (env.OIDC_APP_REDIRECTS ?? '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry !== ''),
+  };
+}
 
 function resolveDatabase(url: string | undefined, dataDir: string): DatabaseConfig {
   if (url === undefined || url === '') {
@@ -67,5 +131,7 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
     database: resolveDatabase(env.DATABASE_URL, env.DATA_DIR),
     authSecret: env.AUTH_SECRET,
     localLoginEnabled: env.AUTH_LOCAL_ENABLED,
+    publicUrl: env.PUBLIC_URL?.replace(/\/$/, ''),
+    oidc: resolveOidc(env),
   };
 }

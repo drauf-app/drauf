@@ -61,3 +61,41 @@ export const householdMembers = pgTable(
   },
   (t) => [primaryKey({ columns: [t.householdId, t.userId] })],
 );
+
+/** Links an OIDC identity (issuer + subject) to a local user account. */
+export const userIdentities = pgTable(
+  'user_identities',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    issuer: text('issuer').notNull(),
+    subject: text('subject').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  },
+  (t) => [uniqueIndex('user_identities_issuer_subject_idx').on(t.issuer, t.subject)],
+);
+
+/** Pending OIDC authorization round-trips, keyed by the state parameter. */
+export const oidcTransactions = pgTable('oidc_transactions', {
+  state: text('state').primaryKey(),
+  codeVerifier: text('code_verifier').notNull(),
+  nonce: text('nonce').notNull(),
+  clientRedirect: text('client_redirect').notNull(),
+  deviceName: text('device_name'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+/** One-time codes handed to the client after the OIDC callback; stored hashed. */
+export const loginCodes = pgTable('login_codes', {
+  id: text('id').primaryKey(),
+  codeHash: text('code_hash').notNull().unique(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  deviceName: text('device_name'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+});

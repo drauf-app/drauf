@@ -1,9 +1,17 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, lt } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { newId } from './ids.js';
 import type { Database } from './index.js';
 import type * as pgSchema from './schema/pg.js';
-import type { Household, HouseholdMember, RefreshToken, User } from './schema/types.js';
+import type {
+  Household,
+  HouseholdMember,
+  LoginCode,
+  OidcTransaction,
+  RefreshToken,
+  User,
+  UserIdentity,
+} from './schema/types.js';
 
 /**
  * Types queries against the Postgres schema while executing them on the
@@ -157,4 +165,90 @@ export async function listHouseholdMembers(
     .from(t.householdMembers)
     .where(eq(t.householdMembers.householdId, householdId))
     .orderBy(asc(t.householdMembers.createdAt));
+}
+
+export async function createUserIdentity(
+  database: Database,
+  input: { userId: string; issuer: string; subject: string },
+): Promise<UserIdentity> {
+  const { db, t } = unwrap(database);
+  const identity: UserIdentity = { id: newId(), createdAt: new Date(), ...input };
+  await db.insert(t.userIdentities).values(identity);
+  return identity;
+}
+
+export async function getUserIdentity(
+  database: Database,
+  issuer: string,
+  subject: string,
+): Promise<UserIdentity | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.userIdentities)
+    .where(and(eq(t.userIdentities.issuer, issuer), eq(t.userIdentities.subject, subject)));
+  return rows[0];
+}
+
+export async function createOidcTransaction(
+  database: Database,
+  transaction: OidcTransaction,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  // Opportunistic cleanup keeps the table from accumulating abandoned rows.
+  await db.delete(t.oidcTransactions).where(lt(t.oidcTransactions.expiresAt, new Date()));
+  await db.insert(t.oidcTransactions).values(transaction);
+}
+
+/** Returns and deletes the transaction: every state value is usable once. */
+export async function consumeOidcTransaction(
+  database: Database,
+  state: string,
+): Promise<OidcTransaction | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.oidcTransactions)
+    .where(eq(t.oidcTransactions.state, state));
+  const transaction = rows[0];
+  if (transaction === undefined) {
+    return undefined;
+  }
+  await db.delete(t.oidcTransactions).where(eq(t.oidcTransactions.state, state));
+  return transaction.expiresAt > new Date() ? transaction : undefined;
+}
+
+export async function createLoginCode(
+  database: Database,
+  input: { codeHash: string; userId: string; deviceName: string | null; expiresAt: Date },
+): Promise<LoginCode> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.loginCodes).where(lt(t.loginCodes.expiresAt, new Date()));
+  const code: LoginCode = { id: newId(), createdAt: new Date(), ...input };
+  await db.insert(t.loginCodes).values(code);
+  return code;
+}
+
+/** Returns and deletes the login code: single use. */
+export async function consumeLoginCode(
+  database: Database,
+  codeHash: string,
+): Promise<LoginCode | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db.select().from(t.loginCodes).where(eq(t.loginCodes.codeHash, codeHash));
+  const code = rows[0];
+  if (code === undefined) {
+    return undefined;
+  }
+  await db.delete(t.loginCodes).where(eq(t.loginCodes.id, code.id));
+  return code.expiresAt > new Date() ? code : undefined;
+}
+
+export async function setUserAdmin(
+  database: Database,
+  userId: string,
+  isAdmin: boolean,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.users).set({ isAdmin }).where(eq(t.users.id, userId));
 }
