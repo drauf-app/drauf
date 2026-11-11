@@ -14,8 +14,14 @@ services:
       LOG_LEVEL: "info"
       # Required. Generate with: openssl rand -base64 32
       AUTH_SECRET: "change-me-change-me-change-me-change-me"
-      # Set to "false" for OIDC-only installs (OIDC support is upcoming).
+      # Set to "false" for OIDC-only installs.
       # AUTH_LOCAL_ENABLED: "true"
+      # Sign-in via any OIDC provider (authorization code + PKCE):
+      # PUBLIC_URL: "https://drauf.example"
+      # OIDC_ISSUER: "https://id.example"
+      # OIDC_CLIENT_ID: "drauf"
+      # OIDC_CLIENT_SECRET: "only-for-confidential-clients"
+      # OIDC_ADMIN_GROUP: "drauf-admin"   # members of this IdP group become admins
       # DATABASE_URL: "postgres://drauf:change-me@db:5432/drauf"
     ports:
       - "3000:3000"

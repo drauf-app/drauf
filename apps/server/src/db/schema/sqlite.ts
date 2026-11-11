@@ -52,3 +52,41 @@ export const householdMembers = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.householdId, t.userId] })],
 );
+
+/** Links an OIDC identity (issuer + subject) to a local user account. */
+export const userIdentities = sqliteTable(
+  'user_identities',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    issuer: text('issuer').notNull(),
+    subject: text('subject').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [uniqueIndex('user_identities_issuer_subject_idx').on(t.issuer, t.subject)],
+);
+
+/** Pending OIDC authorization round-trips, keyed by the state parameter. */
+export const oidcTransactions = sqliteTable('oidc_transactions', {
+  state: text('state').primaryKey(),
+  codeVerifier: text('code_verifier').notNull(),
+  nonce: text('nonce').notNull(),
+  clientRedirect: text('client_redirect').notNull(),
+  deviceName: text('device_name'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+/** One-time codes handed to the client after the OIDC callback; stored hashed. */
+export const loginCodes = sqliteTable('login_codes', {
+  id: text('id').primaryKey(),
+  codeHash: text('code_hash').notNull().unique(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  deviceName: text('device_name'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+});

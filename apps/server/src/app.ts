@@ -2,9 +2,11 @@ import type { HealthResponse } from '@drauf/shared';
 import rateLimit from '@fastify/rate-limit';
 import { type FastifyInstance, fastify } from 'fastify';
 import { createAuthGuards } from './auth/guard.js';
+import { createOidcService } from './auth/oidc.js';
 import type { Config } from './config.js';
 import type { Database } from './db/index.js';
 import { authRoutes } from './routes/auth.js';
+import { oidcRoutes } from './routes/oidc.js';
 import { userRoutes } from './routes/users.js';
 
 export async function buildApp(config: Config, database: Database): Promise<FastifyInstance> {
@@ -26,7 +28,13 @@ export async function buildApp(config: Config, database: Database): Promise<Fast
 
   app.get('/healthz', async (): Promise<HealthResponse> => ({ status: 'ok' }));
 
+  const oidcService =
+    config.oidc !== undefined && config.publicUrl !== undefined
+      ? createOidcService(config.oidc, config.publicUrl)
+      : undefined;
+
   await app.register(authRoutes(database, config, guards), { prefix: '/api/auth' });
+  await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
   await app.register(userRoutes(database, guards), { prefix: '/api/users' });
 
   return app;

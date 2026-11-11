@@ -56,6 +56,15 @@ node apps/server/dist/cli/create-user.js --admin alice   # prompts for a passwor
 
 Further accounts can then be created by the admin via `POST /api/users`.
 
+Sign-in via OIDC (authorization code + PKCE, any provider) is enabled by
+setting `OIDC_ISSUER`, `OIDC_CLIENT_ID` and `PUBLIC_URL` (plus
+`OIDC_CLIENT_SECRET` for confidential clients). Register the callback URL
+`<PUBLIC_URL>/api/auth/oidc/callback` with your provider. Accounts are matched
+by the `sub` claim and created on first login; with `OIDC_ADMIN_GROUP` set,
+membership in that IdP group grants (and its absence revokes) the admin role
+on each login. The server starts fine while the IdP is unreachable — local
+accounts keep working.
+
 The server stores its data in an SQLite file under `./data` by default; set
 `DATABASE_URL=postgres://…` to use PostgreSQL instead. Schema changes are made
 in `apps/server/src/db/schema/` (one file per dialect) and turned into

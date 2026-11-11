@@ -28,7 +28,7 @@ export type LoginResult =
   | ({ ok: true; user: User } & TokenPair)
   | { ok: false; reason: 'invalid_credentials' | 'account_locked' };
 
-async function issueTokens(
+export async function issueTokens(
   database: Database,
   secret: string,
   user: User,

@@ -63,4 +63,39 @@ describe('loadConfig', () => {
   it('rejects unknown database URL schemes', () => {
     expect(() => loadConfig({ ...BASE_ENV, DATABASE_URL: 'mysql://db/drauf' })).toThrow();
   });
+
+  it('leaves OIDC off without OIDC_ISSUER', () => {
+    expect(loadConfig({ ...BASE_ENV }).oidc).toBeUndefined();
+  });
+
+  it('parses the OIDC settings', () => {
+    const config = loadConfig({
+      ...BASE_ENV,
+      PUBLIC_URL: 'https://drauf.example/',
+      OIDC_ISSUER: 'https://id.example',
+      OIDC_CLIENT_ID: 'drauf',
+      OIDC_ADMIN_GROUP: 'drauf-admin',
+      OIDC_APP_REDIRECTS: 'drauf://auth, exp://dev',
+    });
+    expect(config.publicUrl).toBe('https://drauf.example');
+    expect(config.oidc).toEqual({
+      issuer: 'https://id.example',
+      clientId: 'drauf',
+      clientSecret: undefined,
+      scopes: 'openid profile',
+      groupsClaim: 'groups',
+      adminGroup: 'drauf-admin',
+      appRedirects: ['drauf://auth', 'exp://dev'],
+    });
+  });
+
+  it('requires OIDC_CLIENT_ID and PUBLIC_URL when OIDC_ISSUER is set', () => {
+    expect(() => loadConfig({ ...BASE_ENV, OIDC_ISSUER: 'https://id.example' })).toThrow();
+    expect(() =>
+      loadConfig({ ...BASE_ENV, OIDC_ISSUER: 'https://id.example', OIDC_CLIENT_ID: 'drauf' }),
+    ).toThrow();
+    expect(() =>
+      loadConfig({ ...BASE_ENV, OIDC_ISSUER: 'not a url', OIDC_CLIENT_ID: 'drauf' }),
+    ).toThrow();
+  });
 });

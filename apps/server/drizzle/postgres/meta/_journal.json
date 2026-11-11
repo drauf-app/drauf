@@ -15,6 +15,13 @@
       "when": 1794423627344,
       "tag": "0001_cloudy_mulholland_black",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794429700545,
+      "tag": "0002_lucky_namora",
+      "breakpoints": true
     }
   ]
 }
