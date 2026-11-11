@@ -65,6 +65,13 @@ membership in that IdP group grants (and its absence revokes) the admin role
 on each login. The server starts fine while the IdP is unreachable — local
 accounts keep working.
 
+Recipe providers live in `packages/providers` (one folder per provider;
+Cookidoo is the first). They run server-side only, fetch public addresses
+only, and store nothing beyond title, link, image URL and the imported
+ingredient lines. Individual providers can be disabled via
+`IMPORT_DISABLED_PROVIDERS`. Recipe images are proxied through the server so
+clients never contact third parties.
+
 The server stores its data in an SQLite file under `./data` by default; set
 `DATABASE_URL=postgres://…` to use PostgreSQL instead. Schema changes are made
 in `apps/server/src/db/schema/` (one file per dialect) and turned into

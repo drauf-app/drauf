@@ -47,6 +47,7 @@ const entryBody = {
     slotId: { type: 'string', maxLength: 64 },
     text: { type: 'string', maxLength: 500 },
     link: { type: 'string', maxLength: 1024 },
+    imageUrl: { type: 'string', maxLength: 1024 },
     cookId: { type: 'string', maxLength: 64 },
   },
   additionalProperties: false,
@@ -60,6 +61,7 @@ const entryPatchBody = {
     slotId: { type: 'string', maxLength: 64 },
     text: { type: 'string', maxLength: 500 },
     link: { type: 'string', maxLength: 1024 },
+    imageUrl: { type: 'string', maxLength: 1024 },
     cookId: { type: 'string', maxLength: 64 },
   },
   additionalProperties: false,
@@ -101,6 +103,7 @@ interface EntryInput {
   slotId: string;
   text?: string;
   link?: string;
+  imageUrl?: string;
   cookId?: string;
 }
 
@@ -251,6 +254,7 @@ export function planRoutes(
         date?: string | undefined;
         slotId?: string | undefined;
         link?: string | null | undefined;
+        imageUrl?: string | null | undefined;
         cookId?: string | null | undefined;
       },
     ): Promise<string | null> {
@@ -264,6 +268,9 @@ export function planRoutes(
         }
       }
       if (typeof input.link === 'string' && !isValidLink(input.link)) {
+        return 'invalid_link';
+      }
+      if (typeof input.imageUrl === 'string' && !isValidLink(input.imageUrl)) {
         return 'invalid_link';
       }
       if (
@@ -285,6 +292,7 @@ export function planRoutes(
 
         const text = normalized(request.body.text) ?? null;
         const link = normalized(request.body.link) ?? null;
+        const imageUrl = normalized(request.body.imageUrl) ?? null;
         const cookId = normalized(request.body.cookId) ?? null;
         if (text === null && link === null) {
           return reply.code(400).send({ error: 'text_or_link_required' });
@@ -293,6 +301,7 @@ export function planRoutes(
           date: request.body.date,
           slotId: request.body.slotId,
           link,
+          imageUrl,
           cookId,
         });
         if (error !== null) {
@@ -314,6 +323,7 @@ export function planRoutes(
             slotId: request.body.slotId,
             text,
             link,
+            imageUrl,
             cookId,
           });
           hub.publish(planTopic(home.id), { type: 'plan.entry.created', data: entry });
@@ -341,11 +351,13 @@ export function planRoutes(
 
         const text = normalized(request.body.text);
         const link = normalized(request.body.link);
+        const imageUrl = normalized(request.body.imageUrl);
         const cookId = normalized(request.body.cookId);
         const error = await validateEntryInput(home.id, {
           date: request.body.date,
           slotId: request.body.slotId,
           link,
+          imageUrl,
           cookId,
         });
         if (error !== null) {
@@ -357,6 +369,7 @@ export function planRoutes(
           ...(request.body.slotId === undefined ? {} : { slotId: request.body.slotId }),
           ...(text === undefined ? {} : { text }),
           ...(link === undefined ? {} : { link }),
+          ...(imageUrl === undefined ? {} : { imageUrl }),
           ...(cookId === undefined ? {} : { cookId }),
         };
         const next = { ...entry, ...patch };

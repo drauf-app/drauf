@@ -206,6 +206,8 @@ export const planEntries = sqliteTable(
       .references(() => mealSlots.id, { onDelete: 'cascade' }),
     text: text('text'),
     link: text('link'),
+    /** Preview image of the linked recipe (W4); always shown via the proxy. */
+    imageUrl: text('image_url'),
     cookId: text('cook_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },

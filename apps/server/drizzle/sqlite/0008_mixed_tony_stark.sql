@@ -1,0 +1,1 @@
+ALTER TABLE `plan_entries` ADD `image_url` text;
