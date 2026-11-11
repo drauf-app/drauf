@@ -46,7 +46,7 @@ The stack is settled in the first pull requests. Starting point:
 
 ## Conventions
 
-- Code, comments, commit messages and docs in English; UI strings only via i18n (German is the source language).
+- English for everything in the repo and in communication: code, comments, commit messages, pull requests, issues and docs. UI strings only via i18n, German first (source language).
 - Conventional Commits, every commit signed off (`git commit -s`, DCO).
 - Never commit to `main`. Work on a feature branch and open a pull request; the maintainer reviews before merging.
 - Pin dependency versions; add tests with every feature (unit for domain logic, integration for API).
