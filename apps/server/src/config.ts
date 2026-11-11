@@ -32,6 +32,8 @@ export interface Config {
   /** Public base URL of this instance; required for OIDC (callback URL). */
   publicUrl: string | undefined;
   oidc: OidcConfig | undefined;
+  /** Provider ids (e.g. "cookidoo") whose recipe import is turned off. */
+  disabledProviders: string[];
 }
 
 interface Env {
@@ -50,6 +52,7 @@ interface Env {
   OIDC_GROUPS_CLAIM: string;
   OIDC_ADMIN_GROUP?: string;
   OIDC_APP_REDIRECTS?: string;
+  IMPORT_DISABLED_PROVIDERS?: string;
 }
 
 const schema = {
@@ -71,6 +74,7 @@ const schema = {
     OIDC_GROUPS_CLAIM: { type: 'string', default: 'groups' },
     OIDC_ADMIN_GROUP: { type: 'string' },
     OIDC_APP_REDIRECTS: { type: 'string' },
+    IMPORT_DISABLED_PROVIDERS: { type: 'string' },
   },
 } as const;
 
@@ -133,5 +137,9 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
     localLoginEnabled: env.AUTH_LOCAL_ENABLED,
     publicUrl: env.PUBLIC_URL?.replace(/\/$/, ''),
     oidc: resolveOidc(env),
+    disabledProviders: (env.IMPORT_DISABLED_PROVIDERS ?? '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry !== ''),
   };
 }

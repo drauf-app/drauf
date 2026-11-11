@@ -13,6 +13,9 @@ describe('loadConfig', () => {
       database: { dialect: 'sqlite', file: 'data/drauf.db' },
       authSecret: TEST_AUTH_SECRET,
       localLoginEnabled: true,
+      publicUrl: undefined,
+      oidc: undefined,
+      disabledProviders: [],
     });
   });
 
@@ -62,6 +65,12 @@ describe('loadConfig', () => {
 
   it('rejects unknown database URL schemes', () => {
     expect(() => loadConfig({ ...BASE_ENV, DATABASE_URL: 'mysql://db/drauf' })).toThrow();
+  });
+
+  it('parses disabled providers', () => {
+    expect(
+      loadConfig({ ...BASE_ENV, IMPORT_DISABLED_PROVIDERS: 'cookidoo, other' }).disabledProviders,
+    ).toEqual(['cookidoo', 'other']);
   });
 
   it('leaves OIDC off without OIDC_ISSUER', () => {

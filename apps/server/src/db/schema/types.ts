@@ -105,6 +105,7 @@ export interface PlanEntry {
   slotId: string;
   text: string | null;
   link: string | null;
+  imageUrl: string | null;
   cookId: string | null;
   createdAt: Date;
 }

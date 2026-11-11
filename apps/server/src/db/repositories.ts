@@ -700,6 +700,7 @@ export async function createPlanEntry(
     slotId: string;
     text: string | null;
     link: string | null;
+    imageUrl: string | null;
     cookId: string | null;
   },
 ): Promise<PlanEntry> {
@@ -766,7 +767,7 @@ export async function listPlanEntries(
 export async function updatePlanEntry(
   database: Database,
   entryId: string,
-  patch: Partial<Pick<PlanEntry, 'date' | 'slotId' | 'text' | 'link' | 'cookId'>>,
+  patch: Partial<Pick<PlanEntry, 'date' | 'slotId' | 'text' | 'link' | 'imageUrl' | 'cookId'>>,
 ): Promise<void> {
   const { db, t } = unwrap(database);
   await db.update(t.planEntries).set(patch).where(eq(t.planEntries.id, entryId));

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { buildApp } from '../src/app.js';
+import { type BuildAppOptions, buildApp } from '../src/app.js';
 import type { Config } from '../src/config.js';
 import { connectDatabase, type Database, runMigrations } from '../src/db/index.js';
 import { seedDefaultHousehold } from '../src/db/seed.js';
@@ -14,6 +14,9 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     database: { dialect: 'sqlite', file: ':memory:' },
     authSecret: TEST_AUTH_SECRET,
     localLoginEnabled: true,
+    publicUrl: undefined,
+    oidc: undefined,
+    disabledProviders: [],
     ...overrides,
   };
 }
@@ -25,12 +28,15 @@ export interface TestApp {
   close(): Promise<void>;
 }
 
-export async function createTestApp(overrides: Partial<Config> = {}): Promise<TestApp> {
+export async function createTestApp(
+  overrides: Partial<Config> = {},
+  buildOptions: BuildAppOptions = {},
+): Promise<TestApp> {
   const config = testConfig(overrides);
   const database = connectDatabase(config.database);
   await runMigrations(database);
   await seedDefaultHousehold(database);
-  const app = await buildApp(config, database);
+  const app = await buildApp(config, database, buildOptions);
   return {
     app,
     database,

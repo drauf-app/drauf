@@ -22,6 +22,8 @@ services:
       # OIDC_CLIENT_ID: "drauf"
       # OIDC_CLIENT_SECRET: "only-for-confidential-clients"
       # OIDC_ADMIN_GROUP: "drauf-admin"   # members of this IdP group become admins
+      # Turn off individual recipe providers (comma-separated ids):
+      # IMPORT_DISABLED_PROVIDERS: "cookidoo"
       # DATABASE_URL: "postgres://drauf:change-me@db:5432/drauf"
     ports:
       - "3000:3000"

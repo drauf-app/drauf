@@ -1,3 +1,4 @@
+import { allProviders, type ProviderContext, type RecipeProvider } from '@drauf/providers';
 import type { HealthResponse } from '@drauf/shared';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
@@ -6,9 +7,11 @@ import { createAuthGuards } from './auth/guard.js';
 import { createOidcService } from './auth/oidc.js';
 import type { Config } from './config.js';
 import type { Database } from './db/index.js';
+import { fetchGuarded } from './import/fetch.js';
 import { authRoutes } from './routes/auth.js';
 import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
+import { importRoutes } from './routes/import.js';
 import { listRoutes } from './routes/lists.js';
 import { oidcRoutes } from './routes/oidc.js';
 import { planRoutes } from './routes/plan.js';
@@ -17,7 +20,18 @@ import { syncRoutes } from './routes/sync.js';
 import { userRoutes } from './routes/users.js';
 import { SyncHub } from './sync/hub.js';
 
-export async function buildApp(config: Config, database: Database): Promise<FastifyInstance> {
+export interface BuildAppOptions {
+  /** Test seam: replaces the built-in recipe providers. */
+  providers?: RecipeProvider[];
+  /** Test seam: replaces the SSRF-guarded page fetcher handed to providers. */
+  providerContext?: ProviderContext;
+}
+
+export async function buildApp(
+  config: Config,
+  database: Database,
+  options: BuildAppOptions = {},
+): Promise<FastifyInstance> {
   const app = fastify({
     logger: {
       level: config.logLevel,
@@ -52,6 +66,24 @@ export async function buildApp(config: Config, database: Database): Promise<Fast
   await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
   await app.register(planRoutes(database, guards, hub), { prefix: '/api/plan' });
   await app.register(syncRoutes(database, config, guards, hub), { prefix: '/api/sync' });
+
+  const providers = (options.providers ?? allProviders).filter(
+    (provider) => !config.disabledProviders.includes(provider.id),
+  );
+  const providerContext: ProviderContext = options.providerContext ?? {
+    fetchText: async (url) => {
+      const result = await fetchGuarded(url, {
+        timeoutMs: 10_000,
+        maxBytes: 2 * 1024 * 1024,
+        accept: 'text/html,application/xhtml+xml',
+        allowedContentTypes: ['text/html', 'application/xhtml+xml'],
+      });
+      return result.body.toString('utf8');
+    },
+  };
+  await app.register(importRoutes(database, guards, hub, providers, providerContext), {
+    prefix: '/api/import',
+  });
 
   return app;
 }

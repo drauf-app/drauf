@@ -57,6 +57,13 @@
       "when": 1794433206005,
       "tag": "0007_orange_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794433811382,
+      "tag": "0008_lying_silver_samurai",
+      "breakpoints": true
     }
   ]
 }
