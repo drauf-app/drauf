@@ -299,6 +299,8 @@ describe.skipIf(postgresUrl === undefined)('database (postgres)', () => {
     >;
     const t = database.schema as typeof import('../src/db/schema/pg.js');
     await db.delete(t.householdMembers);
+    // lists.ownerId is ON DELETE RESTRICT, so lists must go before users.
+    await db.delete(t.lists);
     await db.delete(t.users);
     await db.delete(t.households);
     await seedDefaultHousehold(database);
