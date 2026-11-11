@@ -97,6 +97,8 @@ export const lists = sqliteTable('lists', {
   ownerId: text('owner_id')
     .notNull()
     .references(() => users.id, { onDelete: 'restrict' }),
+  /** The store preselected while shopping (L7); switching re-sorts the list. */
+  defaultStoreId: text('default_store_id').references(() => stores.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
@@ -129,6 +131,55 @@ export const listMembers = sqliteTable(
   (t) => [primaryKey({ columns: [t.listId, t.userId] })],
 );
 
+/**
+ * Shopping categories per household. The seeded base set carries a stable
+ * `key` (referenced by the item catalogue later) and cannot be deleted;
+ * household-created categories have no key.
+ */
+export const categories = sqliteTable(
+  'categories',
+  {
+    id: text('id').primaryKey(),
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    key: text('key'),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('categories_household_key_idx')
+      .on(t.householdId, t.key)
+      .where(sql`${t.key} IS NOT NULL`),
+  ],
+);
+
+/** Stores are first-class household objects, each with its own category order. */
+export const stores = sqliteTable('stores', {
+  id: text('id').primaryKey(),
+  householdId: text('household_id')
+    .notNull()
+    .references(() => households.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+/** Per-store category order (drag & drop); categories not listed follow the default order. */
+export const storeCategories = sqliteTable(
+  'store_categories',
+  {
+    storeId: text('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.storeId, t.categoryId] })],
+);
+
 /** One row per distinct item on a list; quantities live in entryPortions. */
 export const listEntries = sqliteTable(
   'list_entries',
@@ -142,6 +193,7 @@ export const listEntries = sqliteTable(
     nameNormalized: text('name_normalized').notNull(),
     variant: text('variant'),
     note: text('note'),
+    categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
     checkedAt: integer('checked_at', { mode: 'timestamp_ms' }),
     checkedById: text('checked_by_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),

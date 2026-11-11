@@ -4,6 +4,7 @@ import type { Database } from '../db/index.js';
 import {
   deleteListEntry,
   getListEntry,
+  isCategoryLinkedToList,
   setEntryChecked,
   updateListEntry,
 } from '../db/repositories.js';
@@ -25,6 +26,7 @@ const addBody = {
     unit: { type: 'string', maxLength: 32 },
     variant: { type: 'string', maxLength: 64 },
     note: { type: 'string', maxLength: 500 },
+    categoryId: { type: 'string', maxLength: 64 },
   },
   additionalProperties: false,
 } as const;
@@ -38,6 +40,7 @@ const patchBody = {
     unit: { type: 'string', maxLength: 32 },
     variant: { type: 'string', maxLength: 64 },
     note: { type: 'string', maxLength: 500 },
+    categoryId: { type: 'string', maxLength: 64 },
   },
   additionalProperties: false,
 } as const;
@@ -63,6 +66,7 @@ interface AddInput {
   unit?: string;
   variant?: string;
   note?: string;
+  categoryId?: string;
 }
 
 interface PatchInput extends Partial<AddInput> {}
@@ -124,12 +128,17 @@ export function entryRoutes(database: Database, guards: AuthGuards): FastifyPlug
         const auth = requireAuthUser(reply, request.authUser);
         const resolved = await resolve(reply, auth.id, request.params.id);
         if (resolved === undefined) return reply;
-        const { entry, merged } = await addItemToList(
-          database,
-          request.params.id,
-          auth.id,
-          request.body,
-        );
+        const categoryId = request.body.categoryId?.trim() || undefined;
+        if (
+          categoryId !== undefined &&
+          !(await isCategoryLinkedToList(database, request.params.id, categoryId))
+        ) {
+          return reply.code(400).send({ error: 'invalid_category' });
+        }
+        const { entry, merged } = await addItemToList(database, request.params.id, auth.id, {
+          ...request.body,
+          categoryId: categoryId ?? null,
+        });
         return reply.code(merged ? 200 : 201).send(await getEntryView(database, entry));
       },
     );
@@ -143,8 +152,18 @@ export function entryRoutes(database: Database, guards: AuthGuards): FastifyPlug
         if (resolved?.entry === undefined) return reply;
         let entry = resolved.entry;
 
-        const { name, variant, note, quantity, unit } = request.body;
+        const { name, variant, note, quantity, unit, categoryId } = request.body;
         const patch: Parameters<typeof updateListEntry>[2] = {};
+        if (categoryId !== undefined) {
+          const trimmed = categoryId.trim();
+          if (trimmed === '') {
+            patch.categoryId = null;
+          } else if (await isCategoryLinkedToList(database, entry.listId, trimmed)) {
+            patch.categoryId = trimmed;
+          } else {
+            return reply.code(400).send({ error: 'invalid_category' });
+          }
+        }
         if (name !== undefined) {
           patch.name = name.trim().replace(/\s+/g, ' ');
           patch.nameNormalized = normalizeItemName(name);

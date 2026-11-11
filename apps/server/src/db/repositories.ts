@@ -4,6 +4,7 @@ import { newId } from './ids.js';
 import type { Database } from './index.js';
 import type * as pgSchema from './schema/pg.js';
 import type {
+  Category,
   EntryPortion,
   Household,
   HouseholdMember,
@@ -14,6 +15,7 @@ import type {
   OidcTransaction,
   PortionOrigin,
   RefreshToken,
+  Store,
   User,
   UserIdentity,
 } from './schema/types.js';
@@ -263,7 +265,13 @@ export async function createList(
   input: { name: string; icon: string | null; color: string | null; ownerId: string },
 ): Promise<List> {
   const { db, t } = unwrap(database);
-  const list: List = { id: newId(), archived: false, createdAt: new Date(), ...input };
+  const list: List = {
+    id: newId(),
+    archived: false,
+    defaultStoreId: null,
+    createdAt: new Date(),
+    ...input,
+  };
   await db.insert(t.lists).values(list);
   return list;
 }
@@ -289,7 +297,7 @@ export async function listListsForUser(database: Database, userId: string): Prom
 export async function updateList(
   database: Database,
   id: string,
-  patch: Partial<Pick<List, 'name' | 'icon' | 'color' | 'archived'>>,
+  patch: Partial<Pick<List, 'name' | 'icon' | 'color' | 'archived' | 'defaultStoreId'>>,
 ): Promise<void> {
   const { db, t } = unwrap(database);
   await db.update(t.lists).set(patch).where(eq(t.lists.id, id));
@@ -376,6 +384,7 @@ export async function createListEntry(
     nameNormalized: string;
     variant: string | null;
     note: string | null;
+    categoryId: string | null;
   },
 ): Promise<ListEntry> {
   const { db, t } = unwrap(database);
@@ -438,7 +447,7 @@ export async function listEntriesForList(database: Database, listId: string): Pr
 export async function updateListEntry(
   database: Database,
   entryId: string,
-  patch: Partial<Pick<ListEntry, 'name' | 'nameNormalized' | 'variant' | 'note'>>,
+  patch: Partial<Pick<ListEntry, 'name' | 'nameNormalized' | 'variant' | 'note' | 'categoryId'>>,
 ): Promise<void> {
   const { db, t } = unwrap(database);
   await db.update(t.listEntries).set(patch).where(eq(t.listEntries.id, entryId));
@@ -492,6 +501,185 @@ export async function listPortionsForEntries(
 export async function deletePortionsForEntry(database: Database, entryId: string): Promise<void> {
   const { db, t } = unwrap(database);
   await db.delete(t.entryPortions).where(eq(t.entryPortions.entryId, entryId));
+}
+
+export async function isHouseholdMember(
+  database: Database,
+  householdId: string,
+  userId: string,
+): Promise<boolean> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ userId: t.householdMembers.userId })
+    .from(t.householdMembers)
+    .where(
+      and(eq(t.householdMembers.householdId, householdId), eq(t.householdMembers.userId, userId)),
+    );
+  return rows.length > 0;
+}
+
+export async function createCategory(
+  database: Database,
+  input: { householdId: string; key: string | null; name: string; sortOrder: number },
+): Promise<Category> {
+  const { db, t } = unwrap(database);
+  const category: Category = { id: newId(), createdAt: new Date(), ...input };
+  await db.insert(t.categories).values(category);
+  return category;
+}
+
+export async function listCategories(database: Database, householdId: string): Promise<Category[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.categories)
+    .where(eq(t.categories.householdId, householdId))
+    .orderBy(asc(t.categories.sortOrder), asc(t.categories.createdAt));
+}
+
+/** Scoped by household so callers cannot reach foreign categories. */
+export async function getCategory(
+  database: Database,
+  householdId: string,
+  categoryId: string,
+): Promise<Category | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.categories)
+    .where(and(eq(t.categories.id, categoryId), eq(t.categories.householdId, householdId)));
+  return rows[0];
+}
+
+export async function updateCategory(
+  database: Database,
+  categoryId: string,
+  patch: Partial<Pick<Category, 'name' | 'sortOrder'>>,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.categories).set(patch).where(eq(t.categories.id, categoryId));
+}
+
+export async function deleteCategory(database: Database, categoryId: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.categories).where(eq(t.categories.id, categoryId));
+}
+
+export async function createStore(
+  database: Database,
+  input: { householdId: string; name: string },
+): Promise<Store> {
+  const { db, t } = unwrap(database);
+  const store: Store = { id: newId(), createdAt: new Date(), ...input };
+  await db.insert(t.stores).values(store);
+  return store;
+}
+
+export async function listStores(database: Database, householdId: string): Promise<Store[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.stores)
+    .where(eq(t.stores.householdId, householdId))
+    .orderBy(asc(t.stores.createdAt));
+}
+
+/** Scoped by household so callers cannot reach foreign stores. */
+export async function getStore(
+  database: Database,
+  householdId: string,
+  storeId: string,
+): Promise<Store | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.stores)
+    .where(and(eq(t.stores.id, storeId), eq(t.stores.householdId, householdId)));
+  return rows[0];
+}
+
+export async function updateStore(
+  database: Database,
+  storeId: string,
+  patch: Partial<Pick<Store, 'name'>>,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.stores).set(patch).where(eq(t.stores.id, storeId));
+}
+
+export async function deleteStore(database: Database, storeId: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.stores).where(eq(t.stores.id, storeId));
+}
+
+/** Replaces the store's category order with the given sequence. */
+export async function replaceStoreCategoryOrder(
+  database: Database,
+  storeId: string,
+  categoryIds: string[],
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.storeCategories).where(eq(t.storeCategories.storeId, storeId));
+  if (categoryIds.length > 0) {
+    await db
+      .insert(t.storeCategories)
+      .values(categoryIds.map((categoryId, position) => ({ storeId, categoryId, position })));
+  }
+}
+
+export async function getStoreCategoryOrder(
+  database: Database,
+  storeId: string,
+): Promise<string[]> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ categoryId: t.storeCategories.categoryId })
+    .from(t.storeCategories)
+    .where(eq(t.storeCategories.storeId, storeId))
+    .orderBy(asc(t.storeCategories.position));
+  return rows.map((row) => row.categoryId);
+}
+
+/** Whether the store belongs to a household the list is attached to. */
+export async function isStoreLinkedToList(
+  database: Database,
+  listId: string,
+  storeId: string,
+): Promise<boolean> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ id: t.stores.id })
+    .from(t.stores)
+    .innerJoin(
+      t.listHouseholds,
+      and(
+        eq(t.listHouseholds.householdId, t.stores.householdId),
+        eq(t.listHouseholds.listId, listId),
+      ),
+    )
+    .where(eq(t.stores.id, storeId));
+  return rows.length > 0;
+}
+
+/** Whether the category belongs to a household the list is attached to. */
+export async function isCategoryLinkedToList(
+  database: Database,
+  listId: string,
+  categoryId: string,
+): Promise<boolean> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ id: t.categories.id })
+    .from(t.categories)
+    .innerJoin(
+      t.listHouseholds,
+      and(
+        eq(t.listHouseholds.householdId, t.categories.householdId),
+        eq(t.listHouseholds.listId, listId),
+      ),
+    )
+    .where(eq(t.categories.id, categoryId));
+  return rows.length > 0;
 }
 
 /** Whether the user belongs to any household the list is attached to. */

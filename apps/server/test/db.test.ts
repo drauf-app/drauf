@@ -196,6 +196,7 @@ function suite(getDb: () => Database) {
       nameNormalized: 'zwiebeln',
       variant: null,
       note: null,
+      categoryId: null,
     });
     await createEntryPortion(database, {
       entryId: entry.id,

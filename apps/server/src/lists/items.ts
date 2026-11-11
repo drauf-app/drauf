@@ -52,6 +52,8 @@ export interface AddItemInput {
   unit?: string;
   variant?: string;
   note?: string;
+  /** Validated against the list's households by the caller. */
+  categoryId?: string | null;
 }
 
 export interface AddItemResult {
@@ -75,15 +77,21 @@ export async function addItemToList(
   const variant = normalizeOptional(input.variant);
   const note = normalizeOptional(input.note);
 
+  const categoryId = input.categoryId ?? null;
   const existing = await findMergeableEntry(database, listId, nameNormalized, variant);
   let entry: ListEntry;
   let merged: boolean;
   if (existing !== undefined) {
     merged = true;
     entry = existing;
-    if (note !== null && existing.note === null) {
-      await updateListEntry(database, existing.id, { note });
-      entry = { ...existing, note };
+    // Like the note, a category is adopted on merge only when none is set yet.
+    const patch = {
+      ...(note !== null && existing.note === null ? { note } : {}),
+      ...(categoryId !== null && existing.categoryId === null ? { categoryId } : {}),
+    };
+    if (Object.keys(patch).length > 0) {
+      await updateListEntry(database, existing.id, patch);
+      entry = { ...existing, ...patch };
     }
   } else {
     merged = false;
@@ -93,6 +101,7 @@ export async function addItemToList(
       nameNormalized,
       variant,
       note,
+      categoryId,
     });
   }
 
