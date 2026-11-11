@@ -50,6 +50,13 @@
       "when": 1794432436709,
       "tag": "0006_bright_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794433206005,
+      "tag": "0007_orange_stranger",
+      "breakpoints": true
     }
   ]
 }

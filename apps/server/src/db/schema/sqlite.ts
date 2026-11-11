@@ -226,6 +226,8 @@ export const listEntries = sqliteTable(
     variant: text('variant'),
     note: text('note'),
     categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    /** JSON object of per-field last-write times (epoch ms) for sync LWW. */
+    fieldTimes: text('field_times'),
     checkedAt: integer('checked_at', { mode: 'timestamp_ms' }),
     checkedById: text('checked_by_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
@@ -244,6 +246,15 @@ export const entryPortions = sqliteTable('entry_portions', {
   origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
   addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+/** Processed sync operation ids: replaying a queued operation is a no-op. */
+export const appliedOperations = sqliteTable('applied_operations', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  appliedAt: integer('applied_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
 /** One-time codes handed to the client after the OIDC callback; stored hashed. */

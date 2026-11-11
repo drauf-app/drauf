@@ -14,6 +14,7 @@ import {
   updateList,
 } from '../db/repositories.js';
 import { createListForUser, getListForMember } from '../lists/service.js';
+import { listTopic, type SyncHub } from '../sync/hub.js';
 
 const COLOR_PATTERN = '^#[0-9a-fA-F]{6}$';
 
@@ -88,7 +89,11 @@ function requireAuthUser(reply: FastifyReply, authUser: AuthUser | undefined): A
   return authUser;
 }
 
-export function listRoutes(database: Database, guards: AuthGuards): FastifyPluginAsync {
+export function listRoutes(
+  database: Database,
+  guards: AuthGuards,
+  hub: SyncHub,
+): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
 
@@ -140,7 +145,9 @@ export function listRoutes(database: Database, guards: AuthGuards): FastifyPlugi
           return reply.code(400).send({ error: 'invalid_store' });
         }
         await updateList(database, list.id, request.body);
-        return getListById(database, list.id);
+        const updated = await getListById(database, list.id);
+        hub.publish(listTopic(list.id), { type: 'list.updated', data: updated });
+        return updated;
       },
     );
 
@@ -156,6 +163,7 @@ export function listRoutes(database: Database, guards: AuthGuards): FastifyPlugi
         if (list.ownerId !== auth.id) {
           return reply.code(403).send({ error: 'forbidden' });
         }
+        hub.publish(listTopic(list.id), { type: 'list.deleted', data: { id: list.id } });
         await deleteList(database, list.id);
         return reply.code(204).send();
       },
@@ -180,6 +188,7 @@ export function listRoutes(database: Database, guards: AuthGuards): FastifyPlugi
           return reply.code(400).send({ error: 'invalid_user' });
         }
         await addListMember(database, list.id, target.id);
+        hub.publish(listTopic(list.id), { type: 'member.added', data: { userId: target.id } });
         return reply.code(204).send();
       },
     );
@@ -200,6 +209,10 @@ export function listRoutes(database: Database, guards: AuthGuards): FastifyPlugi
           return reply.code(400).send({ error: 'cannot_remove_owner' });
         }
         await removeListMember(database, list.id, request.params.userId);
+        const topic = listTopic(list.id);
+        hub.publish(topic, { type: 'member.removed', data: { userId: request.params.userId } });
+        // Removed members must stop receiving this list's events immediately.
+        hub.evict(topic, request.params.userId);
         return reply.code(204).send();
       },
     );

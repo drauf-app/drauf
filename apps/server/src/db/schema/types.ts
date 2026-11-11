@@ -109,6 +109,12 @@ export interface PlanEntry {
   createdAt: Date;
 }
 
+export interface AppliedOperation {
+  id: string;
+  userId: string;
+  appliedAt: Date;
+}
+
 export type PortionOrigin = 'manual' | 'recipe';
 
 export interface ListEntry {
@@ -119,6 +125,8 @@ export interface ListEntry {
   variant: string | null;
   note: string | null;
   categoryId: string | null;
+  /** JSON object of per-field last-write times (epoch ms) for sync LWW. */
+  fieldTimes: string | null;
   checkedAt: Date | null;
   checkedById: string | null;
   createdAt: Date;
@@ -173,6 +181,10 @@ type _PgStoreCategory = Assert<Eq<typeof pg.storeCategories.$inferSelect, StoreC
 type _SqliteCategory = Assert<Eq<typeof sqlite.categories.$inferSelect, Category>>;
 type _SqliteStore = Assert<Eq<typeof sqlite.stores.$inferSelect, Store>>;
 type _SqliteStoreCategory = Assert<Eq<typeof sqlite.storeCategories.$inferSelect, StoreCategory>>;
+type _PgAppliedOperation = Assert<Eq<typeof pg.appliedOperations.$inferSelect, AppliedOperation>>;
+type _SqliteAppliedOperation = Assert<
+  Eq<typeof sqlite.appliedOperations.$inferSelect, AppliedOperation>
+>;
 type _PgMealSlot = Assert<Eq<typeof pg.mealSlots.$inferSelect, MealSlot>>;
 type _PgPlanEntry = Assert<Eq<typeof pg.planEntries.$inferSelect, PlanEntry>>;
 type _SqliteMealSlot = Assert<Eq<typeof sqlite.mealSlots.$inferSelect, MealSlot>>;
