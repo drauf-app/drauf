@@ -5,7 +5,7 @@ import { seedDefaultHousehold } from './db/seed.js';
 
 const config = loadConfig();
 const database = connectDatabase(config.database);
-const app = buildApp(config);
+const app = await buildApp(config, database);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {

@@ -3,7 +3,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { newId } from './ids.js';
 import type { Database } from './index.js';
 import type * as pgSchema from './schema/pg.js';
-import type { Household, HouseholdMember, User } from './schema/types.js';
+import type { Household, HouseholdMember, RefreshToken, User } from './schema/types.js';
 
 /**
  * Types queries against the Postgres schema while executing them on the
@@ -20,10 +20,24 @@ function unwrap(database: Database): { db: NodePgDatabase<typeof pgSchema>; t: t
 
 export async function createUser(
   database: Database,
-  input: { username: string; displayName: string },
+  input: {
+    username: string;
+    displayName: string;
+    passwordHash?: string | null;
+    isAdmin?: boolean;
+  },
 ): Promise<User> {
   const { db, t } = unwrap(database);
-  const user: User = { id: newId(), ...input, createdAt: new Date() };
+  const user: User = {
+    id: newId(),
+    username: input.username,
+    displayName: input.displayName,
+    passwordHash: input.passwordHash ?? null,
+    isAdmin: input.isAdmin ?? false,
+    failedLogins: 0,
+    lockedUntil: null,
+    createdAt: new Date(),
+  };
   await db.insert(t.users).values(user);
   return user;
 }
@@ -32,6 +46,75 @@ export async function getUserById(database: Database, id: string): Promise<User 
   const { db, t } = unwrap(database);
   const rows = await db.select().from(t.users).where(eq(t.users.id, id));
   return rows[0];
+}
+
+export async function getUserByUsername(
+  database: Database,
+  username: string,
+): Promise<User | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db.select().from(t.users).where(eq(t.users.username, username));
+  return rows[0];
+}
+
+export async function listUsers(database: Database): Promise<User[]> {
+  const { db, t } = unwrap(database);
+  return db.select().from(t.users).orderBy(asc(t.users.createdAt));
+}
+
+export async function countUsers(database: Database): Promise<number> {
+  const { db, t } = unwrap(database);
+  const rows = await db.select({ id: t.users.id }).from(t.users);
+  return rows.length;
+}
+
+export async function updateUserLoginState(
+  database: Database,
+  userId: string,
+  state: { failedLogins: number; lockedUntil: Date | null },
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.users).set(state).where(eq(t.users.id, userId));
+}
+
+export async function createRefreshToken(
+  database: Database,
+  input: { userId: string; tokenHash: string; deviceName: string | null; expiresAt: Date },
+): Promise<RefreshToken> {
+  const { db, t } = unwrap(database);
+  const now = new Date();
+  const token: RefreshToken = { id: newId(), createdAt: now, lastUsedAt: now, ...input };
+  await db.insert(t.refreshTokens).values(token);
+  return token;
+}
+
+export async function getRefreshTokenByHash(
+  database: Database,
+  tokenHash: string,
+): Promise<RefreshToken | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.refreshTokens)
+    .where(eq(t.refreshTokens.tokenHash, tokenHash));
+  return rows[0];
+}
+
+export async function deleteRefreshToken(database: Database, id: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.refreshTokens).where(eq(t.refreshTokens.id, id));
+}
+
+export async function listRefreshTokensByUser(
+  database: Database,
+  userId: string,
+): Promise<RefreshToken[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.refreshTokens)
+    .where(eq(t.refreshTokens.userId, userId))
+    .orderBy(asc(t.refreshTokens.createdAt));
 }
 
 export async function createHousehold(
