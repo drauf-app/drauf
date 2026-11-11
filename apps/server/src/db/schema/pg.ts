@@ -88,6 +88,48 @@ export const oidcTransactions = pgTable('oidc_transactions', {
   expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
+export const lists = pgTable('lists', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  color: text('color'),
+  archived: boolean('archived').notNull(),
+  // No cascade: deleting a user must never silently delete a shared list.
+  ownerId: text('owner_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+/** Lists belong to households n:m; in the MVP always the default household. */
+export const listHouseholds = pgTable(
+  'list_households',
+  {
+    listId: text('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.listId, t.householdId] })],
+);
+
+export const listMembers = pgTable(
+  'list_members',
+  {
+    listId: text('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.listId, t.userId] })],
+);
+
 /** One-time codes handed to the client after the OIDC callback; stored hashed. */
 export const loginCodes = pgTable('login_codes', {
   id: text('id').primaryKey(),

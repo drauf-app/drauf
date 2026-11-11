@@ -66,6 +66,28 @@ export interface HouseholdMember {
   createdAt: Date;
 }
 
+export interface List {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  archived: boolean;
+  ownerId: string;
+  createdAt: Date;
+}
+
+export interface ListHousehold {
+  listId: string;
+  householdId: string;
+  createdAt: Date;
+}
+
+export interface ListMember {
+  listId: string;
+  userId: string;
+  createdAt: Date;
+}
+
 import type * as pg from './pg.js';
 import type * as sqlite from './sqlite.js';
 
@@ -76,6 +98,12 @@ type _PgUser = Assert<Eq<typeof pg.users.$inferSelect, User>>;
 type _PgUserIdentity = Assert<Eq<typeof pg.userIdentities.$inferSelect, UserIdentity>>;
 type _PgOidcTransaction = Assert<Eq<typeof pg.oidcTransactions.$inferSelect, OidcTransaction>>;
 type _PgLoginCode = Assert<Eq<typeof pg.loginCodes.$inferSelect, LoginCode>>;
+type _PgList = Assert<Eq<typeof pg.lists.$inferSelect, List>>;
+type _PgListHousehold = Assert<Eq<typeof pg.listHouseholds.$inferSelect, ListHousehold>>;
+type _PgListMember = Assert<Eq<typeof pg.listMembers.$inferSelect, ListMember>>;
+type _SqliteList = Assert<Eq<typeof sqlite.lists.$inferSelect, List>>;
+type _SqliteListHousehold = Assert<Eq<typeof sqlite.listHouseholds.$inferSelect, ListHousehold>>;
+type _SqliteListMember = Assert<Eq<typeof sqlite.listMembers.$inferSelect, ListMember>>;
 type _SqliteUserIdentity = Assert<Eq<typeof sqlite.userIdentities.$inferSelect, UserIdentity>>;
 type _SqliteOidcTransaction = Assert<
   Eq<typeof sqlite.oidcTransactions.$inferSelect, OidcTransaction>
