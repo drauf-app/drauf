@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  doublePrecision,
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -129,6 +131,39 @@ export const listMembers = pgTable(
   },
   (t) => [primaryKey({ columns: [t.listId, t.userId] })],
 );
+
+/** One row per distinct item on a list; quantities live in entryPortions. */
+export const listEntries = pgTable(
+  'list_entries',
+  {
+    id: text('id').primaryKey(),
+    listId: text('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** Merge key (with variant): lowercased, whitespace-collapsed name. */
+    nameNormalized: text('name_normalized').notNull(),
+    variant: text('variant'),
+    note: text('note'),
+    checkedAt: timestamp('checked_at', { withTimezone: true, mode: 'date' }),
+    checkedById: text('checked_by_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  },
+  (t) => [index('list_entries_list_name_idx').on(t.listId, t.nameNormalized)],
+);
+
+/** One partial quantity of an entry, with its origin kept traceable (L4). */
+export const entryPortions = pgTable('entry_portions', {
+  id: text('id').primaryKey(),
+  entryId: text('entry_id')
+    .notNull()
+    .references(() => listEntries.id, { onDelete: 'cascade' }),
+  quantity: doublePrecision('quantity'),
+  unit: text('unit'),
+  origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
+  addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+});
 
 /** One-time codes handed to the client after the OIDC callback; stored hashed. */
 export const loginCodes = pgTable('login_codes', {

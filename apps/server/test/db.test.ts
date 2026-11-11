@@ -4,20 +4,27 @@ import {
   addHouseholdMember,
   addListHousehold,
   addListMember,
+  createEntryPortion,
   createHousehold,
   createList,
+  createListEntry,
   createRefreshToken,
   createUser,
   deleteList,
+  deleteListEntry,
   deleteRefreshToken,
+  findMergeableEntry,
   getDefaultHousehold,
   getListById,
+  getListEntry,
   getRefreshTokenByHash,
   getUserById,
   isUserInListHousehold,
   listHouseholdMembers,
   listListsForUser,
+  listPortionsForEntries,
   listRefreshTokensByUser,
+  setEntryChecked,
   updateList,
   updateUserLoginState,
 } from '../src/db/repositories.js';
@@ -172,6 +179,46 @@ function suite(getDb: () => Database) {
     await deleteList(database, list.id);
     expect(await getListById(database, list.id)).toBeUndefined();
     expect(await listListsForUser(database, user.id)).toEqual([]);
+  });
+
+  it('stores entries with portions and cascades their deletion', async () => {
+    const database = getDb();
+    const user = await createUser(database, { username: 'kathrin', displayName: 'Kathrin' });
+    const list = await createList(database, {
+      name: 'Weekly shop',
+      icon: null,
+      color: null,
+      ownerId: user.id,
+    });
+    const entry = await createListEntry(database, {
+      listId: list.id,
+      name: 'Zwiebeln',
+      nameNormalized: 'zwiebeln',
+      variant: null,
+      note: null,
+    });
+    await createEntryPortion(database, {
+      entryId: entry.id,
+      quantity: 1.5,
+      unit: 'kg',
+      origin: 'manual',
+      addedById: user.id,
+    });
+
+    // Variant comparison is null-safe for the merge lookup.
+    expect(await findMergeableEntry(database, list.id, 'zwiebeln', null)).toEqual(entry);
+    expect(await findMergeableEntry(database, list.id, 'zwiebeln', 'rot')).toBeUndefined();
+
+    const checkedAt = new Date();
+    await setEntryChecked(database, entry.id, { checkedAt, checkedById: user.id });
+    expect(await findMergeableEntry(database, list.id, 'zwiebeln', null)).toBeUndefined();
+    expect(await getListEntry(database, list.id, entry.id)).toMatchObject({
+      checkedAt,
+      checkedById: user.id,
+    });
+
+    await deleteListEntry(database, entry.id);
+    expect(await listPortionsForEntries(database, [entry.id])).toEqual([]);
   });
 }
 

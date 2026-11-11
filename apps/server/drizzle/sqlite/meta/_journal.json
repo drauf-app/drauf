@@ -29,6 +29,13 @@
       "when": 1794430412168,
       "tag": "0003_parched_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794430815003,
+      "tag": "0004_woozy_exiles",
+      "breakpoints": true
     }
   ]
 }

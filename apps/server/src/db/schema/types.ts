@@ -66,6 +66,30 @@ export interface HouseholdMember {
   createdAt: Date;
 }
 
+export type PortionOrigin = 'manual' | 'recipe';
+
+export interface ListEntry {
+  id: string;
+  listId: string;
+  name: string;
+  nameNormalized: string;
+  variant: string | null;
+  note: string | null;
+  checkedAt: Date | null;
+  checkedById: string | null;
+  createdAt: Date;
+}
+
+export interface EntryPortion {
+  id: string;
+  entryId: string;
+  quantity: number | null;
+  unit: string | null;
+  origin: PortionOrigin;
+  addedById: string | null;
+  createdAt: Date;
+}
+
 export interface List {
   id: string;
   name: string;
@@ -98,6 +122,10 @@ type _PgUser = Assert<Eq<typeof pg.users.$inferSelect, User>>;
 type _PgUserIdentity = Assert<Eq<typeof pg.userIdentities.$inferSelect, UserIdentity>>;
 type _PgOidcTransaction = Assert<Eq<typeof pg.oidcTransactions.$inferSelect, OidcTransaction>>;
 type _PgLoginCode = Assert<Eq<typeof pg.loginCodes.$inferSelect, LoginCode>>;
+type _PgListEntry = Assert<Eq<typeof pg.listEntries.$inferSelect, ListEntry>>;
+type _PgEntryPortion = Assert<Eq<typeof pg.entryPortions.$inferSelect, EntryPortion>>;
+type _SqliteListEntry = Assert<Eq<typeof sqlite.listEntries.$inferSelect, ListEntry>>;
+type _SqliteEntryPortion = Assert<Eq<typeof sqlite.entryPortions.$inferSelect, EntryPortion>>;
 type _PgList = Assert<Eq<typeof pg.lists.$inferSelect, List>>;
 type _PgListHousehold = Assert<Eq<typeof pg.listHouseholds.$inferSelect, ListHousehold>>;
 type _PgListMember = Assert<Eq<typeof pg.listMembers.$inferSelect, ListMember>>;
