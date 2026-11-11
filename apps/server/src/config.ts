@@ -14,6 +14,10 @@ export interface Config {
   port: number;
   logLevel: LogLevel;
   database: DatabaseConfig;
+  /** Signs access tokens. Required, at least 32 characters. */
+  authSecret: string;
+  /** Local username/password login can be turned off for OIDC-only installs. */
+  localLoginEnabled: boolean;
 }
 
 interface Env {
@@ -22,16 +26,21 @@ interface Env {
   LOG_LEVEL: LogLevel;
   DATABASE_URL?: string;
   DATA_DIR: string;
+  AUTH_SECRET: string;
+  AUTH_LOCAL_ENABLED: boolean;
 }
 
 const schema = {
   type: 'object',
+  required: ['AUTH_SECRET'],
   properties: {
     HOST: { type: 'string', default: '0.0.0.0' },
     PORT: { type: 'number', minimum: 1, maximum: 65535, default: 3000 },
     LOG_LEVEL: { type: 'string', enum: [...LOG_LEVELS], default: 'info' },
     DATABASE_URL: { type: 'string' },
     DATA_DIR: { type: 'string', default: './data' },
+    AUTH_SECRET: { type: 'string', minLength: 32 },
+    AUTH_LOCAL_ENABLED: { type: 'boolean', default: true },
   },
 } as const;
 
@@ -56,5 +65,7 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
     port: env.PORT,
     logLevel: env.LOG_LEVEL,
     database: resolveDatabase(env.DATABASE_URL, env.DATA_DIR),
+    authSecret: env.AUTH_SECRET,
+    localLoginEnabled: env.AUTH_LOCAL_ENABLED,
   };
 }

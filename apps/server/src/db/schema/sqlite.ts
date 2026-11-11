@@ -7,7 +7,25 @@ export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   username: text('username').notNull().unique(),
   displayName: text('display_name').notNull(),
+  // Null for accounts that sign in via OIDC only.
+  passwordHash: text('password_hash'),
+  isAdmin: integer('is_admin', { mode: 'boolean' }).notNull(),
+  failedLogins: integer('failed_logins').notNull(),
+  lockedUntil: integer('locked_until', { mode: 'timestamp_ms' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+export const refreshTokens = sqliteTable('refresh_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  // Only a hash of the token is stored; the token itself exists client-side only.
+  tokenHash: text('token_hash').notNull().unique(),
+  deviceName: text('device_name'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
 export const households = sqliteTable(

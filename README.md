@@ -45,6 +45,17 @@ pnpm test         # build, then run all tests
 pnpm lint         # Biome lint + format check
 ```
 
+The server requires `AUTH_SECRET` (at least 32 characters, e.g. from
+`openssl rand -base64 32`) for signing access tokens. The first account is
+created on the host or in the container with the bundled CLI:
+
+```bash
+node apps/server/dist/cli/create-user.js --admin alice   # prompts for a password
+# in Docker: docker compose exec drauf node dist/cli/create-user.js --admin alice
+```
+
+Further accounts can then be created by the admin via `POST /api/users`.
+
 The server stores its data in an SQLite file under `./data` by default; set
 `DATABASE_URL=postgres://…` to use PostgreSQL instead. Schema changes are made
 in `apps/server/src/db/schema/` (one file per dialect) and turned into

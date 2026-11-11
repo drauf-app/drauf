@@ -3,10 +3,15 @@ import { connectDatabase, type Database, runMigrations } from '../src/db/index.j
 import {
   addHouseholdMember,
   createHousehold,
+  createRefreshToken,
   createUser,
+  deleteRefreshToken,
   getDefaultHousehold,
+  getRefreshTokenByHash,
   getUserById,
   listHouseholdMembers,
+  listRefreshTokensByUser,
+  updateUserLoginState,
 } from '../src/db/repositories.js';
 import { DEFAULT_HOUSEHOLD_ID, seedDefaultHousehold } from '../src/db/seed.js';
 
@@ -73,6 +78,61 @@ function suite(getDb: () => Database) {
     await db.delete(t.users).where(eq(t.users.id, user.id));
 
     expect(await listHouseholdMembers(database, DEFAULT_HOUSEHOLD_ID)).toHaveLength(0);
+  });
+
+  it('stores and updates login state', async () => {
+    const database = getDb();
+    const user = await createUser(database, { username: 'kathrin', displayName: 'Kathrin' });
+    expect(user).toMatchObject({
+      passwordHash: null,
+      isAdmin: false,
+      failedLogins: 0,
+      lockedUntil: null,
+    });
+
+    const lockedUntil = new Date(Date.now() + 60_000);
+    await updateUserLoginState(database, user.id, { failedLogins: 3, lockedUntil });
+
+    const updated = await getUserById(database, user.id);
+    expect(updated?.failedLogins).toBe(3);
+    expect(updated?.lockedUntil).toEqual(lockedUntil);
+  });
+
+  it('creates, finds and deletes refresh tokens', async () => {
+    const database = getDb();
+    const user = await createUser(database, { username: 'kathrin', displayName: 'Kathrin' });
+    const token = await createRefreshToken(database, {
+      userId: user.id,
+      tokenHash: 'hash-1',
+      deviceName: 'iPad',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    expect(await getRefreshTokenByHash(database, 'hash-1')).toEqual(token);
+    expect(await listRefreshTokensByUser(database, user.id)).toHaveLength(1);
+
+    await deleteRefreshToken(database, token.id);
+    expect(await getRefreshTokenByHash(database, 'hash-1')).toBeUndefined();
+  });
+
+  it('cascades refresh tokens when a user is removed', async () => {
+    const database = getDb();
+    const user = await createUser(database, { username: 'kathrin', displayName: 'Kathrin' });
+    await createRefreshToken(database, {
+      userId: user.id,
+      tokenHash: 'hash-2',
+      deviceName: null,
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    const { eq } = await import('drizzle-orm');
+    const db = database.db as import('drizzle-orm/node-postgres').NodePgDatabase<
+      typeof import('../src/db/schema/pg.js')
+    >;
+    const t = database.schema as typeof import('../src/db/schema/pg.js');
+    await db.delete(t.users).where(eq(t.users.id, user.id));
+
+    expect(await getRefreshTokenByHash(database, 'hash-2')).toBeUndefined();
   });
 }
 

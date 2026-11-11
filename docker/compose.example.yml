@@ -12,6 +12,10 @@ services:
       HOST: "0.0.0.0"
       PORT: "3000"
       LOG_LEVEL: "info"
+      # Required. Generate with: openssl rand -base64 32
+      AUTH_SECRET: "change-me-change-me-change-me-change-me"
+      # Set to "false" for OIDC-only installs (OIDC support is upcoming).
+      # AUTH_LOCAL_ENABLED: "true"
       # DATABASE_URL: "postgres://drauf:change-me@db:5432/drauf"
     ports:
       - "3000:3000"
