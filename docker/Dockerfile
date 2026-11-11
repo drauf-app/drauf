@@ -29,6 +29,9 @@ COPY packages/shared/package.json packages/shared/
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY apps/server/package.json apps/server/
 COPY --from=build /app/apps/server/dist apps/server/dist
+COPY --from=build /app/apps/server/drizzle apps/server/drizzle
+RUN mkdir /data && chown node:node /data
+ENV DATA_DIR=/data
 USER node
 EXPOSE 3000
 WORKDIR /app/apps/server

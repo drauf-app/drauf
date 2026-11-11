@@ -12,6 +12,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:9ba53c7d41ea093baf5c1ba635ba5434c4f979880527d49bb7d9237d3193085b
+        env:
+          POSTGRES_DB: drauf_test
+          POSTGRES_USER: drauf
+          POSTGRES_PASSWORD: drauf
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drauf"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://drauf:drauf@localhost:5432/drauf_test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
