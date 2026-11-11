@@ -20,10 +20,14 @@ import {
   getRefreshTokenByHash,
   getUserById,
   isUserInListHousehold,
+  listCategories,
   listHouseholdMembers,
   listListsForUser,
   listPortionsForEntries,
   listRefreshTokensByUser,
+  recordCatalogUsage,
+  searchCatalogUsage,
+  setCatalogUsageCategory,
   setEntryChecked,
   updateList,
   updateUserLoginState,
@@ -220,6 +224,46 @@ function suite(getDb: () => Database) {
 
     await deleteListEntry(database, entry.id);
     expect(await listPortionsForEntries(database, [entry.id])).toEqual([]);
+  });
+
+  it('records and searches catalog usage', async () => {
+    const database = getDb();
+    const base = {
+      name: 'Zimtschnecken',
+      nameNormalized: 'zimtschnecken',
+      quantity: 4,
+      unit: 'Stück',
+      variant: null,
+      categoryId: null,
+    };
+    await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, base);
+    const categories = await listCategories(database, DEFAULT_HOUSEHOLD_ID);
+    const categoryId = categories[0]?.id as string;
+    await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, {
+      ...base,
+      name: 'zimtschnecken',
+      quantity: 6,
+      categoryId,
+    });
+    // An add without a category must not erase the learned one.
+    await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, { ...base, quantity: 2 });
+
+    const rows = await searchCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, 'zimt', 10);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      name: 'Zimtschnecken',
+      count: 3,
+      lastQuantity: 2,
+      categoryId,
+    });
+
+    await setCatalogUsageCategory(database, DEFAULT_HOUSEHOLD_ID, 'zimtschnecken', null);
+    expect(
+      (await searchCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, 'zimt', 10))[0]?.categoryId,
+    ).toBeNull();
+
+    // Wildcards in the prefix never act as LIKE patterns.
+    expect(await searchCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, '%', 10)).toEqual([]);
   });
 }
 

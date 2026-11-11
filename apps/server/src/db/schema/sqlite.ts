@@ -214,6 +214,30 @@ export const planEntries = sqliteTable(
   (t) => [uniqueIndex('plan_entries_day_slot_idx').on(t.householdId, t.date, t.slotId)],
 );
 
+/**
+ * Household shopping history per item name (K3 + K4): learning store for
+ * suggestions and, for items unknown to the base catalogue, the household
+ * catalogue itself (the row carries the learned category).
+ */
+export const catalogUsage = sqliteTable(
+  'catalog_usage',
+  {
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    nameNormalized: text('name_normalized').notNull(),
+    /** Last-used display spelling. */
+    name: text('name').notNull(),
+    count: integer('count').notNull(),
+    categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    lastQuantity: real('last_quantity'),
+    lastUnit: text('last_unit'),
+    lastVariant: text('last_variant'),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.householdId, t.nameNormalized] })],
+);
+
 /** One row per distinct item on a list; quantities live in entryPortions. */
 export const listEntries = sqliteTable(
   'list_entries',

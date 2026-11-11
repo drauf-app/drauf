@@ -1,9 +1,10 @@
-import { and, asc, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, like, lt, lte } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { newId } from './ids.js';
 import type { Database } from './index.js';
 import type * as pgSchema from './schema/pg.js';
 import type {
+  CatalogUsage,
   Category,
   EntryPortion,
   Household,
@@ -807,6 +808,118 @@ export async function isOperationApplied(
     .from(t.appliedOperations)
     .where(eq(t.appliedOperations.id, operationId));
   return rows.length > 0;
+}
+
+/** The household a list is attached to (the default household in the MVP). */
+export async function getListHouseholdId(
+  database: Database,
+  listId: string,
+): Promise<string | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ householdId: t.listHouseholds.householdId })
+    .from(t.listHouseholds)
+    .where(eq(t.listHouseholds.listId, listId));
+  return rows[0]?.householdId;
+}
+
+/** Bumps the household's shopping history for an item (K4 learning). */
+export async function recordCatalogUsage(
+  database: Database,
+  householdId: string,
+  input: {
+    name: string;
+    nameNormalized: string;
+    quantity: number | null;
+    unit: string | null;
+    variant: string | null;
+    categoryId: string | null;
+  },
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  const key = and(
+    eq(t.catalogUsage.householdId, householdId),
+    eq(t.catalogUsage.nameNormalized, input.nameNormalized),
+  );
+  const existing = (await db.select().from(t.catalogUsage).where(key))[0];
+  const now = new Date();
+  if (existing === undefined) {
+    await db.insert(t.catalogUsage).values({
+      householdId,
+      nameNormalized: input.nameNormalized,
+      name: input.name,
+      count: 1,
+      categoryId: input.categoryId,
+      lastQuantity: input.quantity,
+      lastUnit: input.unit,
+      lastVariant: input.variant,
+      updatedAt: now,
+    });
+  } else {
+    await db
+      .update(t.catalogUsage)
+      .set({
+        name: input.name,
+        count: existing.count + 1,
+        // A learned category survives adds without one.
+        categoryId: input.categoryId ?? existing.categoryId,
+        lastQuantity: input.quantity,
+        lastUnit: input.unit,
+        lastVariant: input.variant,
+        updatedAt: now,
+      })
+      .where(key);
+  }
+}
+
+/** Remembers the category chosen for an item, when a history row exists. */
+export async function setCatalogUsageCategory(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+  categoryId: string | null,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.catalogUsage)
+    .set({ categoryId })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
+}
+
+function escapeLikePrefix(prefix: string): string {
+  // SQLite LIKE has no default ESCAPE character, so wildcards are stripped
+  // instead of escaped; item names never contain them anyway.
+  return prefix.replace(/[\\%_]/g, '');
+}
+
+/** Household history matching the normalized prefix, most-used first. */
+export async function searchCatalogUsage(
+  database: Database,
+  householdId: string,
+  normalizedPrefix: string,
+  limit: number,
+): Promise<CatalogUsage[]> {
+  const prefix = escapeLikePrefix(normalizedPrefix);
+  if (prefix === '') {
+    return [];
+  }
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.catalogUsage)
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        like(t.catalogUsage.nameNormalized, `${prefix}%`),
+      ),
+    )
+    .orderBy(desc(t.catalogUsage.count), desc(t.catalogUsage.updatedAt))
+    .limit(limit);
 }
 
 /** Whether the store belongs to a household the list is attached to. */

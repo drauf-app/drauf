@@ -1,19 +1,19 @@
+import { normalizeItemName } from '@drauf/shared';
 import type { Database } from '../db/index.js';
 import {
   createEntryPortion,
   createListEntry,
   deletePortionsForEntry,
   findMergeableEntry,
+  getListHouseholdId,
   listEntriesForList,
   listPortionsForEntries,
+  recordCatalogUsage,
   updateListEntry,
 } from '../db/repositories.js';
 import type { EntryPortion, ListEntry, PortionOrigin } from '../db/schema/types.js';
 
-/** Merge key part: lowercased, whitespace-collapsed (L4: same item only once). */
-export function normalizeItemName(name: string): string {
-  return name.trim().replace(/\s+/g, ' ').toLowerCase();
-}
+export { normalizeItemName } from '@drauf/shared';
 
 function normalizeOptional(value: string | undefined): string | null {
   const trimmed = value?.trim() ?? '';
@@ -112,6 +112,20 @@ export async function addItemToList(
     origin,
     addedById: userId,
   });
+
+  // Every add path (REST, sync replay, import) feeds the household's
+  // shopping history, which powers quick-add suggestions (K4).
+  const householdId = await getListHouseholdId(database, listId);
+  if (householdId !== undefined) {
+    await recordCatalogUsage(database, householdId, {
+      name: entry.name,
+      nameNormalized: entry.nameNormalized,
+      quantity: input.quantity ?? null,
+      unit: normalizeOptional(input.unit),
+      variant,
+      categoryId: entry.categoryId,
+    });
+  }
   return { entry, merged };
 }
 

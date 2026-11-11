@@ -1,3 +1,4 @@
+import { buildCatalogIndex, type CatalogItem, loadCatalog } from '@drauf/catalog';
 import { allProviders, type ProviderContext, type RecipeProvider } from '@drauf/providers';
 import type { HealthResponse } from '@drauf/shared';
 import rateLimit from '@fastify/rate-limit';
@@ -9,6 +10,7 @@ import type { Config } from './config.js';
 import type { Database } from './db/index.js';
 import { fetchGuarded } from './import/fetch.js';
 import { authRoutes } from './routes/auth.js';
+import { catalogRoutes } from './routes/catalog.js';
 import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
 import { importRoutes } from './routes/import.js';
@@ -23,6 +25,8 @@ import { SyncHub } from './sync/hub.js';
 export interface BuildAppOptions {
   /** Test seam: replaces the built-in recipe providers. */
   providers?: RecipeProvider[];
+  /** Test seam: replaces the base item catalogue. */
+  catalog?: CatalogItem[];
   /** Test seam: replaces the SSRF-guarded page fetcher handed to providers. */
   providerContext?: ProviderContext;
 }
@@ -65,6 +69,8 @@ export async function buildApp(
   await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
   await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
   await app.register(planRoutes(database, guards, hub), { prefix: '/api/plan' });
+  const catalogIndex = buildCatalogIndex(options.catalog ?? loadCatalog());
+  await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
   await app.register(syncRoutes(database, config, guards, hub), { prefix: '/api/sync' });
 
   const providers = (options.providers ?? allProviders).filter(

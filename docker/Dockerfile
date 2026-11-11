@@ -9,10 +9,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json apps/server/
 COPY packages/shared/package.json packages/shared/
 COPY packages/providers/package.json packages/providers/
+COPY packages/catalog/package.json packages/catalog/
 RUN pnpm install --frozen-lockfile
 COPY tsconfig.json tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY packages/providers packages/providers
+COPY packages/catalog packages/catalog
 COPY apps/server apps/server
 RUN pnpm run build
 
@@ -21,6 +23,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json apps/server/
 COPY packages/shared/package.json packages/shared/
 COPY packages/providers/package.json packages/providers/
+COPY packages/catalog/package.json packages/catalog/
 RUN pnpm install --frozen-lockfile --prod
 
 FROM node:24-slim
@@ -32,6 +35,9 @@ COPY packages/shared/package.json packages/shared/
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY packages/providers/package.json packages/providers/
 COPY --from=build /app/packages/providers/dist packages/providers/dist
+COPY packages/catalog/package.json packages/catalog/
+COPY --from=build /app/packages/catalog/dist packages/catalog/dist
+COPY packages/catalog/data packages/catalog/data
 COPY apps/server/package.json apps/server/
 COPY --from=build /app/apps/server/dist apps/server/dist
 COPY --from=build /app/apps/server/drizzle apps/server/drizzle
