@@ -36,6 +36,13 @@
       "when": 1794430815003,
       "tag": "0004_woozy_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794431497625,
+      "tag": "0005_shallow_hemingway",
+      "breakpoints": true
     }
   ]
 }

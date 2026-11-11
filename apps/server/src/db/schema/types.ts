@@ -66,6 +66,29 @@ export interface HouseholdMember {
   createdAt: Date;
 }
 
+export interface Category {
+  id: string;
+  householdId: string;
+  /** Stable identifier of seeded base categories; null for household-created ones. */
+  key: string | null;
+  name: string;
+  sortOrder: number;
+  createdAt: Date;
+}
+
+export interface Store {
+  id: string;
+  householdId: string;
+  name: string;
+  createdAt: Date;
+}
+
+export interface StoreCategory {
+  storeId: string;
+  categoryId: string;
+  position: number;
+}
+
 export type PortionOrigin = 'manual' | 'recipe';
 
 export interface ListEntry {
@@ -75,6 +98,7 @@ export interface ListEntry {
   nameNormalized: string;
   variant: string | null;
   note: string | null;
+  categoryId: string | null;
   checkedAt: Date | null;
   checkedById: string | null;
   createdAt: Date;
@@ -97,6 +121,7 @@ export interface List {
   color: string | null;
   archived: boolean;
   ownerId: string;
+  defaultStoreId: string | null;
   createdAt: Date;
 }
 
@@ -122,6 +147,12 @@ type _PgUser = Assert<Eq<typeof pg.users.$inferSelect, User>>;
 type _PgUserIdentity = Assert<Eq<typeof pg.userIdentities.$inferSelect, UserIdentity>>;
 type _PgOidcTransaction = Assert<Eq<typeof pg.oidcTransactions.$inferSelect, OidcTransaction>>;
 type _PgLoginCode = Assert<Eq<typeof pg.loginCodes.$inferSelect, LoginCode>>;
+type _PgCategory = Assert<Eq<typeof pg.categories.$inferSelect, Category>>;
+type _PgStore = Assert<Eq<typeof pg.stores.$inferSelect, Store>>;
+type _PgStoreCategory = Assert<Eq<typeof pg.storeCategories.$inferSelect, StoreCategory>>;
+type _SqliteCategory = Assert<Eq<typeof sqlite.categories.$inferSelect, Category>>;
+type _SqliteStore = Assert<Eq<typeof sqlite.stores.$inferSelect, Store>>;
+type _SqliteStoreCategory = Assert<Eq<typeof sqlite.storeCategories.$inferSelect, StoreCategory>>;
 type _PgListEntry = Assert<Eq<typeof pg.listEntries.$inferSelect, ListEntry>>;
 type _PgEntryPortion = Assert<Eq<typeof pg.entryPortions.$inferSelect, EntryPortion>>;
 type _SqliteListEntry = Assert<Eq<typeof sqlite.listEntries.$inferSelect, ListEntry>>;

@@ -6,6 +6,7 @@ import {
   deleteList,
   getListById,
   getUserById,
+  isStoreLinkedToList,
   isUserInListHousehold,
   listListMemberUsers,
   listListsForUser,
@@ -35,6 +36,7 @@ const patchBody = {
     icon: { type: 'string', maxLength: 64 },
     color: { type: 'string', pattern: COLOR_PATTERN },
     archived: { type: 'boolean' },
+    defaultStoreId: { type: ['string', 'null'], maxLength: 64 },
   },
   additionalProperties: false,
 } as const;
@@ -65,6 +67,7 @@ interface PatchInput {
   icon?: string;
   color?: string;
   archived?: boolean;
+  defaultStoreId?: string | null;
 }
 
 interface ListParamsInput {
@@ -126,6 +129,15 @@ export function listRoutes(database: Database, guards: AuthGuards): FastifyPlugi
         const list = await getListForMember(database, request.params.id, auth.id);
         if (list === undefined) {
           return reply.code(404).send({ error: 'not_found' });
+        }
+        // The store id comes from the payload: it must belong to a household
+        // this list is attached to (L7 default store per list).
+        const { defaultStoreId } = request.body;
+        if (
+          typeof defaultStoreId === 'string' &&
+          !(await isStoreLinkedToList(database, list.id, defaultStoreId))
+        ) {
+          return reply.code(400).send({ error: 'invalid_store' });
         }
         await updateList(database, list.id, request.body);
         return getListById(database, list.id);

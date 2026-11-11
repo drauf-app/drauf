@@ -6,9 +6,11 @@ import { createOidcService } from './auth/oidc.js';
 import type { Config } from './config.js';
 import type { Database } from './db/index.js';
 import { authRoutes } from './routes/auth.js';
+import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
 import { listRoutes } from './routes/lists.js';
 import { oidcRoutes } from './routes/oidc.js';
+import { storeRoutes } from './routes/stores.js';
 import { userRoutes } from './routes/users.js';
 
 export async function buildApp(config: Config, database: Database): Promise<FastifyInstance> {
@@ -40,6 +42,8 @@ export async function buildApp(config: Config, database: Database): Promise<Fast
   await app.register(userRoutes(database, guards), { prefix: '/api/users' });
   await app.register(listRoutes(database, guards), { prefix: '/api/lists' });
   await app.register(entryRoutes(database, guards), { prefix: '/api/lists' });
+  await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
+  await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
 
   return app;
 }
