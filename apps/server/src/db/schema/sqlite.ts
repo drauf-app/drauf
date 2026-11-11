@@ -1,5 +1,13 @@
 import { sql } from 'drizzle-orm';
-import { integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 
 // Mirrors schema/pg.ts; both must infer the row types in schema/types.ts.
 
@@ -120,6 +128,39 @@ export const listMembers = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.listId, t.userId] })],
 );
+
+/** One row per distinct item on a list; quantities live in entryPortions. */
+export const listEntries = sqliteTable(
+  'list_entries',
+  {
+    id: text('id').primaryKey(),
+    listId: text('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** Merge key (with variant): lowercased, whitespace-collapsed name. */
+    nameNormalized: text('name_normalized').notNull(),
+    variant: text('variant'),
+    note: text('note'),
+    checkedAt: integer('checked_at', { mode: 'timestamp_ms' }),
+    checkedById: text('checked_by_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('list_entries_list_name_idx').on(t.listId, t.nameNormalized)],
+);
+
+/** One partial quantity of an entry, with its origin kept traceable (L4). */
+export const entryPortions = sqliteTable('entry_portions', {
+  id: text('id').primaryKey(),
+  entryId: text('entry_id')
+    .notNull()
+    .references(() => listEntries.id, { onDelete: 'cascade' }),
+  quantity: real('quantity'),
+  unit: text('unit'),
+  origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
+  addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
 
 /** One-time codes handed to the client after the OIDC callback; stored hashed. */
 export const loginCodes = sqliteTable('login_codes', {

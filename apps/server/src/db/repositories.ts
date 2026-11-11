@@ -1,15 +1,18 @@
-import { and, asc, eq, lt } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lt } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { newId } from './ids.js';
 import type { Database } from './index.js';
 import type * as pgSchema from './schema/pg.js';
 import type {
+  EntryPortion,
   Household,
   HouseholdMember,
   List,
+  ListEntry,
   ListMember,
   LoginCode,
   OidcTransaction,
+  PortionOrigin,
   RefreshToken,
   User,
   UserIdentity,
@@ -363,6 +366,132 @@ export async function listListMemberUsers(
     .innerJoin(t.users, eq(t.listMembers.userId, t.users.id))
     .where(eq(t.listMembers.listId, listId))
     .orderBy(asc(t.listMembers.createdAt));
+}
+
+export async function createListEntry(
+  database: Database,
+  input: {
+    listId: string;
+    name: string;
+    nameNormalized: string;
+    variant: string | null;
+    note: string | null;
+  },
+): Promise<ListEntry> {
+  const { db, t } = unwrap(database);
+  const entry: ListEntry = {
+    id: newId(),
+    checkedAt: null,
+    checkedById: null,
+    createdAt: new Date(),
+    ...input,
+  };
+  await db.insert(t.listEntries).values(entry);
+  return entry;
+}
+
+/** Scoped by list id so callers cannot reach entries of foreign lists. */
+export async function getListEntry(
+  database: Database,
+  listId: string,
+  entryId: string,
+): Promise<ListEntry | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.listEntries)
+    .where(and(eq(t.listEntries.id, entryId), eq(t.listEntries.listId, listId)));
+  return rows[0];
+}
+
+/** The unchecked entry a new addition of the same item merges into, if any. */
+export async function findMergeableEntry(
+  database: Database,
+  listId: string,
+  nameNormalized: string,
+  variant: string | null,
+): Promise<ListEntry | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.listEntries)
+    .where(
+      and(
+        eq(t.listEntries.listId, listId),
+        eq(t.listEntries.nameNormalized, nameNormalized),
+        variant === null ? isNull(t.listEntries.variant) : eq(t.listEntries.variant, variant),
+        isNull(t.listEntries.checkedAt),
+      ),
+    );
+  return rows[0];
+}
+
+export async function listEntriesForList(database: Database, listId: string): Promise<ListEntry[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.listEntries)
+    .where(eq(t.listEntries.listId, listId))
+    .orderBy(asc(t.listEntries.createdAt));
+}
+
+export async function updateListEntry(
+  database: Database,
+  entryId: string,
+  patch: Partial<Pick<ListEntry, 'name' | 'nameNormalized' | 'variant' | 'note'>>,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.listEntries).set(patch).where(eq(t.listEntries.id, entryId));
+}
+
+export async function setEntryChecked(
+  database: Database,
+  entryId: string,
+  checked: { checkedAt: Date | null; checkedById: string | null },
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.listEntries).set(checked).where(eq(t.listEntries.id, entryId));
+}
+
+export async function deleteListEntry(database: Database, entryId: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.listEntries).where(eq(t.listEntries.id, entryId));
+}
+
+export async function createEntryPortion(
+  database: Database,
+  input: {
+    entryId: string;
+    quantity: number | null;
+    unit: string | null;
+    origin: PortionOrigin;
+    addedById: string | null;
+  },
+): Promise<EntryPortion> {
+  const { db, t } = unwrap(database);
+  const portion: EntryPortion = { id: newId(), createdAt: new Date(), ...input };
+  await db.insert(t.entryPortions).values(portion);
+  return portion;
+}
+
+export async function listPortionsForEntries(
+  database: Database,
+  entryIds: string[],
+): Promise<EntryPortion[]> {
+  if (entryIds.length === 0) {
+    return [];
+  }
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.entryPortions)
+    .where(inArray(t.entryPortions.entryId, entryIds))
+    .orderBy(asc(t.entryPortions.createdAt));
+}
+
+export async function deletePortionsForEntry(database: Database, entryId: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.entryPortions).where(eq(t.entryPortions.entryId, entryId));
 }
 
 /** Whether the user belongs to any household the list is attached to. */

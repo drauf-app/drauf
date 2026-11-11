@@ -6,6 +6,7 @@ import { createOidcService } from './auth/oidc.js';
 import type { Config } from './config.js';
 import type { Database } from './db/index.js';
 import { authRoutes } from './routes/auth.js';
+import { entryRoutes } from './routes/entries.js';
 import { listRoutes } from './routes/lists.js';
 import { oidcRoutes } from './routes/oidc.js';
 import { userRoutes } from './routes/users.js';
@@ -38,6 +39,7 @@ export async function buildApp(config: Config, database: Database): Promise<Fast
   await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
   await app.register(userRoutes(database, guards), { prefix: '/api/users' });
   await app.register(listRoutes(database, guards), { prefix: '/api/lists' });
+  await app.register(entryRoutes(database, guards), { prefix: '/api/lists' });
 
   return app;
 }
