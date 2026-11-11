@@ -1,0 +1,23 @@
+[
+  { "name": "Müsli", "icon": "🥣", "sizes": ["500 g", "750 g"], "varieties": ["Frucht", "Schoko", "Knusper", "Nuss"] },
+  { "name": "Cornflakes", "icon": "🥣", "sizes": ["375 g", "500 g"] },
+  { "name": "Marmelade", "synonyms": ["Konfitüre", "Fruchtaufstrich"], "icon": "🍓", "sizes": ["250 g", "450 g"], "varieties": ["Erdbeere", "Himbeere", "Aprikose", "Kirsche"] },
+  { "name": "Nussnugatcreme", "synonyms": ["Schokocreme", "Nuss-Nougat-Creme"], "icon": "🍫", "sizes": ["400 g", "750 g"] },
+  { "name": "Kaffee", "icon": "☕", "sizes": ["500 g", "1 kg"], "varieties": ["ganze Bohnen", "gemahlen", "entkoffeiniert"] },
+  { "name": "Espresso", "synonyms": ["Espressobohnen"], "icon": "☕", "sizes": ["500 g", "1 kg"] },
+  { "name": "Tee", "icon": "🍵", "varieties": ["Schwarz", "Grün", "Kräuter", "Früchte", "Kamille"] },
+  { "name": "Kakao-Getränkepulver", "synonyms": ["Kakaopulver gezuckert", "Trinkkakao"], "icon": "🍫", "sizes": ["400 g", "800 g"] },
+  { "name": "Schokolade", "synonyms": ["Tafel Schokolade"], "icon": "🍫", "sizes": ["100 g"], "varieties": ["Vollmilch", "Zartbitter", "Nuss", "weiß"] },
+  { "name": "Pralinen", "icon": "🍫" },
+  { "name": "Gummibärchen", "synonyms": ["Fruchtgummi", "Weingummi"], "icon": "🐻", "sizes": ["200 g", "300 g"] },
+  { "name": "Lakritz", "icon": "🍬" },
+  { "name": "Bonbons", "icon": "🍬" },
+  { "name": "Kekse", "synonyms": ["Butterkekse", "Plätzchen"], "icon": "🍪", "varieties": ["Butter", "Schoko", "Doppelkeks"] },
+  { "name": "Waffeln", "icon": "🧇" },
+  { "name": "Zwiebackbrei", "synonyms": ["Babybrei"], "icon": "🍼" },
+  { "name": "Reiswaffeln", "icon": "🍘" },
+  { "name": "Studentenfutter", "synonyms": ["Nussmischung"], "icon": "🥜", "sizes": ["200 g"] },
+  { "name": "Honigwaffeln", "synonyms": ["Stroopwafels"], "icon": "🧇" },
+  { "name": "Croissant-Aufbackteig", "synonyms": ["Aufbackcroissants"], "icon": "🥐" },
+  { "name": "Porridge", "synonyms": ["Haferbrei"], "icon": "🥣", "sizes": ["400 g"] }
+]

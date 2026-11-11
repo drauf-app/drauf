@@ -1,0 +1,12 @@
+[
+  { "name": "Blumen", "synonyms": ["Blumenstrauß"], "icon": "💐" },
+  { "name": "Geschenkpapier", "icon": "🎁" },
+  { "name": "Grußkarte", "synonyms": ["Geburtstagskarte", "Glückwunschkarte"], "icon": "💌" },
+  { "name": "Briefmarken", "icon": "📮" },
+  { "name": "Katzenfutter", "icon": "🐱", "varieties": ["nass", "trocken"] },
+  { "name": "Hundefutter", "icon": "🐶", "varieties": ["nass", "trocken"] },
+  { "name": "Katzenstreu", "icon": "🐱" },
+  { "name": "Vogelfutter", "icon": "🐦" },
+  { "name": "Blumenerde", "icon": "🪴", "sizes": ["10 l", "20 l"] },
+  { "name": "Pfandflaschen zurückbringen", "synonyms": ["Leergut", "Pfand"], "icon": "♻️" }
+]
