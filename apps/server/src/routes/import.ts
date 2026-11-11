@@ -9,6 +9,7 @@ import {
   getMealSlot,
   isCategoryLinkedToList,
 } from '../db/repositories.js';
+import type { PlanEntry } from '../db/schema/types.js';
 import { getHouseholdForMember } from '../households/service.js';
 import { FetchGuardError, fetchGuarded } from '../import/fetch.js';
 import { addItemToList, type EntryView, getEntryView } from '../lists/items.js';
@@ -247,7 +248,7 @@ export function importRoutes(
           }
         }
 
-        let planEntry;
+        let planEntry: PlanEntry | undefined;
         if (planInput !== undefined && householdId !== undefined) {
           try {
             planEntry = await createPlanEntry(database, {
