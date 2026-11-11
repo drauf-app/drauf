@@ -1,0 +1,118 @@
+[
+  {
+    "name": "Zahnpasta",
+    "synonyms": ["Zahncreme"],
+    "icon": "🪥"
+  },
+  {
+    "name": "Zahnbürsten",
+    "synonyms": ["Zahnbürste"],
+    "icon": "🪥"
+  },
+  {
+    "name": "Zahnseide",
+    "icon": "🦷"
+  },
+  {
+    "name": "Duschgel",
+    "icon": "🧴",
+    "sizes": ["250 ml", "300 ml"]
+  },
+  {
+    "name": "Shampoo",
+    "icon": "🧴",
+    "sizes": ["250 ml", "300 ml"]
+  },
+  {
+    "name": "Spülung",
+    "synonyms": ["Conditioner"],
+    "icon": "🧴"
+  },
+  {
+    "name": "Seife",
+    "synonyms": ["Handseife", "Flüssigseife"],
+    "icon": "🧼",
+    "varieties": ["flüssig", "Stück", "Nachfüllpack"]
+  },
+  {
+    "name": "Deo",
+    "synonyms": ["Deodorant"],
+    "icon": "🧴",
+    "varieties": ["Roller", "Spray", "Stick"]
+  },
+  {
+    "name": "Bodylotion",
+    "synonyms": ["Körperlotion"],
+    "icon": "🧴"
+  },
+  {
+    "name": "Handcreme",
+    "icon": "🧴"
+  },
+  {
+    "name": "Sonnencreme",
+    "synonyms": ["Sonnenmilch"],
+    "icon": "🧴",
+    "varieties": ["LSF 30", "LSF 50", "Kinder"]
+  },
+  {
+    "name": "Rasierschaum",
+    "synonyms": ["Rasiergel"],
+    "icon": "🪒"
+  },
+  {
+    "name": "Rasierklingen",
+    "icon": "🪒"
+  },
+  {
+    "name": "Wattepads",
+    "icon": "🧻"
+  },
+  {
+    "name": "Wattestäbchen",
+    "icon": "🧻"
+  },
+  {
+    "name": "Taschentücher",
+    "icon": "🤧",
+    "sizes": ["10 Stück", "30 Stück"]
+  },
+  {
+    "name": "Toilettenpapier",
+    "synonyms": ["Klopapier"],
+    "icon": "🧻",
+    "sizes": ["8 Rollen", "16 Rollen"],
+    "varieties": ["3-lagig", "4-lagig"]
+  },
+  {
+    "name": "Feuchttücher",
+    "icon": "🧻"
+  },
+  {
+    "name": "Windeln",
+    "icon": "🍼",
+    "varieties": ["Größe 3", "Größe 4", "Größe 5"]
+  },
+  {
+    "name": "Binden",
+    "synonyms": ["Damenbinden"],
+    "icon": "🩹"
+  },
+  {
+    "name": "Tampons",
+    "icon": "🩹"
+  },
+  {
+    "name": "Pflaster",
+    "icon": "🩹"
+  },
+  {
+    "name": "Lippenpflege",
+    "synonyms": ["Lippenbalsam"],
+    "icon": "💄"
+  },
+  {
+    "name": "Nagelfeile",
+    "icon": "💅"
+  }
+]

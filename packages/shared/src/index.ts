@@ -1,2 +1,9 @@
+export { BASE_CATEGORIES, BASE_CATEGORY_KEYS } from './categories.js';
 export type { HealthResponse } from './health.js';
-export { type ParsedItemLine, parseItemLine } from './items.js';
+export {
+  normalizeItemName,
+  type ParsedItemLine,
+  type ParsedSize,
+  parseItemLine,
+  parseSize,
+} from './items.js';

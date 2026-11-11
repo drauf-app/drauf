@@ -1,0 +1,97 @@
+[
+  {
+    "name": "Äpfel",
+    "synonyms": ["Apfel"],
+    "icon": "🍎",
+    "varieties": ["Elstar", "Braeburn", "Gala", "Boskop", "Pink Lady"]
+  },
+  { "name": "Bananen", "synonyms": ["Banane"], "icon": "🍌" },
+  { "name": "Birnen", "synonyms": ["Birne"], "icon": "🍐" },
+  { "name": "Orangen", "synonyms": ["Orange", "Apfelsinen"], "icon": "🍊" },
+  { "name": "Mandarinen", "synonyms": ["Clementinen"], "icon": "🍊" },
+  { "name": "Zitronen", "synonyms": ["Zitrone"], "icon": "🍋" },
+  { "name": "Limetten", "synonyms": ["Limette"], "icon": "🍋" },
+  {
+    "name": "Trauben",
+    "synonyms": ["Weintrauben"],
+    "icon": "🍇",
+    "varieties": ["hell", "dunkel", "kernlos"]
+  },
+  { "name": "Erdbeeren", "icon": "🍓", "sizes": ["250 g", "500 g"] },
+  { "name": "Himbeeren", "icon": "🫐", "sizes": ["125 g", "250 g"] },
+  { "name": "Heidelbeeren", "synonyms": ["Blaubeeren"], "icon": "🫐", "sizes": ["125 g", "250 g"] },
+  { "name": "Kirschen", "icon": "🍒" },
+  { "name": "Pfirsiche", "synonyms": ["Pfirsich"], "icon": "🍑" },
+  { "name": "Nektarinen", "icon": "🍑" },
+  { "name": "Pflaumen", "synonyms": ["Zwetschgen"], "icon": "🍑" },
+  { "name": "Ananas", "icon": "🍍" },
+  { "name": "Mango", "icon": "🥭" },
+  { "name": "Kiwi", "icon": "🥝" },
+  { "name": "Melone", "synonyms": ["Wassermelone", "Honigmelone"], "icon": "🍉" },
+  { "name": "Avocado", "icon": "🥑" },
+  {
+    "name": "Tomaten",
+    "synonyms": ["Tomate", "Paradeiser"],
+    "icon": "🍅",
+    "sizes": ["500 g", "1 kg"],
+    "varieties": ["Cherry", "Rispe", "Fleisch", "Cocktail"]
+  },
+  { "name": "Gurke", "synonyms": ["Salatgurke", "Gurken"], "icon": "🥒" },
+  { "name": "Paprika", "icon": "🫑", "varieties": ["rot", "gelb", "grün", "spitz"] },
+  { "name": "Zucchini", "icon": "🥒" },
+  { "name": "Aubergine", "icon": "🍆" },
+  {
+    "name": "Karotten",
+    "synonyms": ["Möhren", "Karotte"],
+    "icon": "🥕",
+    "sizes": ["500 g", "1 kg"]
+  },
+  {
+    "name": "Kartoffeln",
+    "synonyms": ["Erdäpfel"],
+    "icon": "🥔",
+    "sizes": ["1 kg", "2,5 kg"],
+    "varieties": ["festkochend", "vorwiegend festkochend", "mehlig"]
+  },
+  { "name": "Süßkartoffeln", "icon": "🍠" },
+  {
+    "name": "Zwiebeln",
+    "synonyms": ["Zwiebel"],
+    "icon": "🧅",
+    "sizes": ["500 g", "1 kg"],
+    "varieties": ["gelb", "rot", "Gemüsezwiebel"]
+  },
+  { "name": "Knoblauch", "icon": "🧄" },
+  { "name": "Lauch", "synonyms": ["Porree"], "icon": "🥬" },
+  { "name": "Frühlingszwiebeln", "synonyms": ["Lauchzwiebeln"], "icon": "🧅" },
+  {
+    "name": "Salat",
+    "synonyms": ["Kopfsalat"],
+    "icon": "🥬",
+    "varieties": ["Kopfsalat", "Eisberg", "Romana", "Feldsalat", "Rucola"]
+  },
+  { "name": "Spinat", "icon": "🥬" },
+  { "name": "Brokkoli", "icon": "🥦" },
+  { "name": "Blumenkohl", "synonyms": ["Karfiol"], "icon": "🥦" },
+  { "name": "Kohlrabi", "icon": "🥬" },
+  { "name": "Weißkohl", "synonyms": ["Rotkohl", "Spitzkohl"], "icon": "🥬" },
+  { "name": "Rosenkohl", "icon": "🥬" },
+  { "name": "Kürbis", "synonyms": ["Hokkaido"], "icon": "🎃" },
+  {
+    "name": "Champignons",
+    "synonyms": ["Pilze"],
+    "icon": "🍄",
+    "sizes": ["250 g", "400 g"],
+    "varieties": ["weiß", "braun"]
+  },
+  { "name": "Ingwer", "icon": "🫚" },
+  { "name": "Radieschen", "icon": "🌶️" },
+  { "name": "Sellerie", "synonyms": ["Staudensellerie", "Knollensellerie"], "icon": "🥬" },
+  { "name": "Fenchel", "icon": "🥬" },
+  { "name": "Spargel", "icon": "🥬", "varieties": ["weiß", "grün"] },
+  { "name": "Petersilie", "icon": "🌿" },
+  { "name": "Basilikum", "icon": "🌿" },
+  { "name": "Schnittlauch", "icon": "🌿" },
+  { "name": "Koriander", "icon": "🌿" },
+  { "name": "Dill", "icon": "🌿" }
+]

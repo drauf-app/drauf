@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Hackfleisch",
+    "synonyms": ["Hack", "Faschiertes"],
+    "icon": "🥩",
+    "sizes": ["250 g", "500 g", "1 kg"],
+    "varieties": ["gemischt", "Rind", "Schwein"]
+  },
+  {
+    "name": "Hähnchenbrust",
+    "synonyms": ["Hühnerbrust", "Hähnchenbrustfilet"],
+    "icon": "🍗",
+    "sizes": ["400 g", "600 g"]
+  },
+  { "name": "Hähnchenschenkel", "icon": "🍗" },
+  { "name": "Putenschnitzel", "synonyms": ["Pute"], "icon": "🍗" },
+  { "name": "Schweineschnitzel", "synonyms": ["Schnitzel"], "icon": "🥩" },
+  { "name": "Rindersteak", "synonyms": ["Steak"], "icon": "🥩" },
+  { "name": "Gulasch", "icon": "🥩", "varieties": ["Rind", "Schwein", "gemischt"] },
+  {
+    "name": "Bratwurst",
+    "synonyms": ["Bratwürste"],
+    "icon": "🌭",
+    "varieties": ["grob", "fein", "Rostbratwurst"]
+  },
+  { "name": "Wiener Würstchen", "synonyms": ["Wiener", "Frankfurter"], "icon": "🌭" },
+  { "name": "Aufschnitt", "synonyms": ["Wurstaufschnitt"], "icon": "🥓" },
+  { "name": "Schinken", "icon": "🥓", "varieties": ["gekocht", "roh", "Serrano"] },
+  { "name": "Salami", "icon": "🥓" },
+  { "name": "Speck", "synonyms": ["Bacon"], "icon": "🥓", "sizes": ["125 g", "250 g"] },
+  { "name": "Leberwurst", "icon": "🥓" },
+  { "name": "Lachs", "synonyms": ["Lachsfilet"], "icon": "🐟", "sizes": ["250 g", "500 g"] },
+  { "name": "Forelle", "icon": "🐟" },
+  { "name": "Garnelen", "synonyms": ["Shrimps"], "icon": "🦐" },
+  { "name": "Räucherlachs", "icon": "🐟", "sizes": ["100 g", "200 g"] }
+]

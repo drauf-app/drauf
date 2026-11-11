@@ -1,0 +1,118 @@
+[
+  {
+    "name": "Milch",
+    "synonyms": ["Vollmilch", "Frischmilch"],
+    "icon": "🥛",
+    "sizes": ["1 l"],
+    "varieties": ["3,5 %", "1,5 %", "laktosefrei"]
+  },
+  { "name": "Hafermilch", "synonyms": ["Haferdrink"], "icon": "🥛", "sizes": ["1 l"] },
+  {
+    "name": "Butter",
+    "icon": "🧈",
+    "sizes": ["250 g"],
+    "varieties": ["mild gesäuert", "Süßrahm", "streichzart"]
+  },
+  { "name": "Margarine", "icon": "🧈", "sizes": ["250 g", "500 g"] },
+  {
+    "name": "Eier",
+    "synonyms": ["Ei"],
+    "icon": "🥚",
+    "sizes": ["6 Stück", "10 Stück"],
+    "varieties": ["Freiland", "Bio", "Bodenhaltung"]
+  },
+  {
+    "name": "Joghurt",
+    "synonyms": ["Jogurt"],
+    "icon": "🥛",
+    "sizes": ["150 g", "500 g"],
+    "varieties": ["Natur", "griechisch", "Vanille", "Erdbeere"]
+  },
+  {
+    "name": "Quark",
+    "synonyms": ["Topfen"],
+    "icon": "🥛",
+    "sizes": ["250 g", "500 g"],
+    "varieties": ["Magerstufe", "20 %", "40 %"]
+  },
+  { "name": "Skyr", "icon": "🥛", "sizes": ["450 g"] },
+  {
+    "name": "Sahne",
+    "synonyms": ["Schlagsahne", "Obers"],
+    "icon": "🥛",
+    "sizes": ["200 g", "500 g"]
+  },
+  { "name": "Saure Sahne", "synonyms": ["Sauerrahm"], "icon": "🥛", "sizes": ["150 g", "200 g"] },
+  { "name": "Schmand", "icon": "🥛", "sizes": ["200 g"] },
+  {
+    "name": "Crème fraîche",
+    "synonyms": ["Creme fraiche"],
+    "icon": "🥛",
+    "sizes": ["150 g", "200 g"]
+  },
+  {
+    "name": "Käse",
+    "icon": "🧀",
+    "varieties": ["Gouda", "Emmentaler", "Bergkäse", "jung", "mittelalt"]
+  },
+  {
+    "name": "Käseaufschnitt",
+    "synonyms": ["Scheibenkäse"],
+    "icon": "🧀",
+    "sizes": ["150 g", "250 g"]
+  },
+  {
+    "name": "Reibekäse",
+    "synonyms": ["geriebener Käse", "Streukäse"],
+    "icon": "🧀",
+    "sizes": ["200 g"],
+    "varieties": ["Gouda", "Mozzarella", "Pizza-Mix"]
+  },
+  {
+    "name": "Mozzarella",
+    "icon": "🧀",
+    "sizes": ["125 g"],
+    "varieties": ["Kugel", "Mini", "Büffel"]
+  },
+  {
+    "name": "Feta",
+    "synonyms": ["Hirtenkäse", "Schafskäse"],
+    "icon": "🧀",
+    "sizes": ["150 g", "200 g"]
+  },
+  {
+    "name": "Parmesan",
+    "synonyms": ["Grana Padano"],
+    "icon": "🧀",
+    "varieties": ["Stück", "gerieben"]
+  },
+  {
+    "name": "Frischkäse",
+    "icon": "🧀",
+    "sizes": ["150 g", "300 g"],
+    "varieties": ["Natur", "Kräuter"]
+  },
+  { "name": "Camembert", "icon": "🧀" },
+  { "name": "Halloumi", "synonyms": ["Grillkäse"], "icon": "🧀" },
+  { "name": "Butterkäse", "icon": "🧀" },
+  {
+    "name": "Hüttenkäse",
+    "synonyms": ["körniger Frischkäse", "Cottage Cheese"],
+    "icon": "🧀",
+    "sizes": ["200 g"]
+  },
+  {
+    "name": "Tofu",
+    "icon": "🥡",
+    "sizes": ["200 g", "400 g"],
+    "varieties": ["natur", "geräuchert"]
+  },
+  { "name": "Pudding", "icon": "🍮", "varieties": ["Vanille", "Schoko"] },
+  { "name": "Kaffeesahne", "synonyms": ["Kondensmilch"], "icon": "🥛" },
+  { "name": "Buttermilch", "icon": "🥛", "sizes": ["500 ml"] },
+  { "name": "Kefir", "icon": "🥛", "sizes": ["500 ml"] },
+  { "name": "Blätterteig", "icon": "🥐", "sizes": ["275 g"] },
+  { "name": "Pizzateig", "icon": "🍕", "sizes": ["400 g"] },
+  { "name": "Fischstäbchen", "icon": "🐟", "sizes": ["15 Stück"] },
+  { "name": "Fleischsalat", "icon": "🥗" }
+]

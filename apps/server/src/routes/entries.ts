@@ -4,7 +4,9 @@ import type { Database } from '../db/index.js';
 import {
   deleteListEntry,
   getListEntry,
+  getListHouseholdId,
   isCategoryLinkedToList,
+  setCatalogUsageCategory,
   setEntryChecked,
   updateListEntry,
 } from '../db/repositories.js';
@@ -199,6 +201,18 @@ export function entryRoutes(
           patch.fieldTimes = stampFieldTimes(entry.fieldTimes, editedFields, Date.now());
           await updateListEntry(database, entry.id, patch);
           entry = { ...entry, ...patch };
+        }
+        if (patch.categoryId !== undefined) {
+          // "Kategorie erfragt": remember the chosen category for next time (K3).
+          const householdId = await getListHouseholdId(database, entry.listId);
+          if (householdId !== undefined) {
+            await setCatalogUsageCategory(
+              database,
+              householdId,
+              entry.nameNormalized,
+              patch.categoryId,
+            );
+          }
         }
         const view = await getEntryView(database, entry);
         hub.publish(listTopic(entry.listId), { type: 'entry.updated', data: view });

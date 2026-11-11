@@ -116,6 +116,18 @@ export interface AppliedOperation {
   appliedAt: Date;
 }
 
+export interface CatalogUsage {
+  householdId: string;
+  nameNormalized: string;
+  name: string;
+  count: number;
+  categoryId: string | null;
+  lastQuantity: number | null;
+  lastUnit: string | null;
+  lastVariant: string | null;
+  updatedAt: Date;
+}
+
 export type PortionOrigin = 'manual' | 'recipe';
 
 export interface ListEntry {
@@ -186,6 +198,8 @@ type _PgAppliedOperation = Assert<Eq<typeof pg.appliedOperations.$inferSelect, A
 type _SqliteAppliedOperation = Assert<
   Eq<typeof sqlite.appliedOperations.$inferSelect, AppliedOperation>
 >;
+type _PgCatalogUsage = Assert<Eq<typeof pg.catalogUsage.$inferSelect, CatalogUsage>>;
+type _SqliteCatalogUsage = Assert<Eq<typeof sqlite.catalogUsage.$inferSelect, CatalogUsage>>;
 type _PgMealSlot = Assert<Eq<typeof pg.mealSlots.$inferSelect, MealSlot>>;
 type _PgPlanEntry = Assert<Eq<typeof pg.planEntries.$inferSelect, PlanEntry>>;
 type _SqliteMealSlot = Assert<Eq<typeof sqlite.mealSlots.$inferSelect, MealSlot>>;

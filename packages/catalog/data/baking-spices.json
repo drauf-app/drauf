@@ -1,0 +1,106 @@
+[
+  {
+    "name": "Mehl",
+    "icon": "🌾",
+    "sizes": ["1 kg"],
+    "varieties": ["Weizen 405", "Weizen 550", "Dinkel 630", "Vollkorn"]
+  },
+  { "name": "Zucker", "icon": "🍬", "sizes": ["500 g", "1 kg"] },
+  { "name": "Brauner Zucker", "synonyms": ["Rohrzucker"], "icon": "🍬", "sizes": ["500 g"] },
+  { "name": "Puderzucker", "icon": "🍬", "sizes": ["250 g"] },
+  { "name": "Vanillezucker", "icon": "🍬" },
+  { "name": "Salz", "synonyms": ["Speisesalz", "Meersalz"], "icon": "🧂", "sizes": ["500 g"] },
+  { "name": "Pfeffer", "icon": "🧂", "varieties": ["schwarz", "bunt", "gemahlen", "ganz"] },
+  {
+    "name": "Paprikapulver",
+    "synonyms": ["Paprika edelsüß"],
+    "icon": "🧂",
+    "varieties": ["edelsüß", "rosenscharf", "geräuchert"]
+  },
+  { "name": "Currypulver", "synonyms": ["Curry"], "icon": "🧂" },
+  { "name": "Kurkuma", "icon": "🧂" },
+  { "name": "Kreuzkümmel", "synonyms": ["Cumin"], "icon": "🧂" },
+  { "name": "Zimt", "icon": "🧂", "varieties": ["gemahlen", "Stangen"] },
+  { "name": "Muskatnuss", "synonyms": ["Muskat"], "icon": "🧂" },
+  { "name": "Oregano", "icon": "🌿" },
+  { "name": "Thymian", "icon": "🌿" },
+  { "name": "Rosmarin", "icon": "🌿" },
+  { "name": "Lorbeerblätter", "icon": "🌿" },
+  { "name": "Chiliflocken", "synonyms": ["Chili"], "icon": "🌶️" },
+  { "name": "Backpulver", "icon": "🧁" },
+  { "name": "Natron", "icon": "🧁" },
+  { "name": "Hefe", "icon": "🧁", "varieties": ["frisch", "trocken"] },
+  { "name": "Vanilleextrakt", "synonyms": ["Vanille"], "icon": "🧁" },
+  {
+    "name": "Kakao",
+    "synonyms": ["Backkakao", "Kakaopulver"],
+    "icon": "🍫",
+    "sizes": ["125 g", "250 g"]
+  },
+  {
+    "name": "Blockschokolade",
+    "synonyms": ["Kuvertüre"],
+    "icon": "🍫",
+    "sizes": ["200 g"],
+    "varieties": ["zartbitter", "vollmilch", "weiß"]
+  },
+  {
+    "name": "Gemahlene Mandeln",
+    "synonyms": ["Mandeln gemahlen"],
+    "icon": "🥜",
+    "sizes": ["200 g"]
+  },
+  {
+    "name": "Gemahlene Haselnüsse",
+    "synonyms": ["Haselnüsse gemahlen"],
+    "icon": "🥜",
+    "sizes": ["200 g"]
+  },
+  {
+    "name": "Speisestärke",
+    "synonyms": ["Stärke", "Maisstärke"],
+    "icon": "🌾",
+    "sizes": ["250 g", "400 g"]
+  },
+  {
+    "name": "Grieß",
+    "synonyms": ["Hartweizengrieß", "Weichweizengrieß"],
+    "icon": "🌾",
+    "sizes": ["500 g"]
+  },
+  {
+    "name": "Olivenöl",
+    "icon": "🫒",
+    "sizes": ["500 ml", "750 ml"],
+    "varieties": ["nativ extra", "mild"]
+  },
+  { "name": "Rapsöl", "synonyms": ["Öl", "Pflanzenöl"], "icon": "🛢️", "sizes": ["750 ml", "1 l"] },
+  { "name": "Sonnenblumenöl", "icon": "🛢️", "sizes": ["750 ml", "1 l"] },
+  {
+    "name": "Essig",
+    "synonyms": ["Balsamico", "Weißweinessig"],
+    "icon": "🍶",
+    "varieties": ["Balsamico", "Apfelessig", "Weißwein"]
+  },
+  { "name": "Sojasauce", "icon": "🍶", "sizes": ["150 ml", "250 ml"] },
+  {
+    "name": "Senf",
+    "icon": "🌭",
+    "sizes": ["200 ml"],
+    "varieties": ["mittelscharf", "scharf", "süß", "Dijon"]
+  },
+  {
+    "name": "Ketchup",
+    "synonyms": ["Tomatenketchup"],
+    "icon": "🍅",
+    "sizes": ["500 ml", "750 ml"]
+  },
+  { "name": "Mayonnaise", "synonyms": ["Mayo"], "icon": "🥪", "sizes": ["250 ml", "500 ml"] },
+  {
+    "name": "Honig",
+    "icon": "🍯",
+    "sizes": ["250 g", "500 g"],
+    "varieties": ["flüssig", "cremig", "Wald", "Blüten"]
+  },
+  { "name": "Ahornsirup", "icon": "🍁", "sizes": ["250 ml"] }
+]

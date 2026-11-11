@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Nudeln",
+    "synonyms": ["Pasta"],
+    "icon": "🍝",
+    "sizes": ["500 g", "1 kg"],
+    "varieties": ["Spaghetti", "Fusilli", "Penne", "Farfalle", "Rigatoni"]
+  },
+  { "name": "Spätzle", "icon": "🍝", "sizes": ["500 g"] },
+  { "name": "Lasagneplatten", "synonyms": ["Lasagne"], "icon": "🍝", "sizes": ["250 g", "500 g"] },
+  { "name": "Gnocchi", "icon": "🍝", "sizes": ["500 g"] },
+  { "name": "Tortellini", "icon": "🍝", "sizes": ["250 g", "400 g"] },
+  {
+    "name": "Reis",
+    "icon": "🍚",
+    "sizes": ["500 g", "1 kg"],
+    "varieties": ["Basmati", "Jasmin", "Langkorn", "Risotto", "Milchreis"]
+  },
+  { "name": "Couscous", "icon": "🍚", "sizes": ["500 g"] },
+  { "name": "Bulgur", "icon": "🍚", "sizes": ["500 g"] },
+  { "name": "Quinoa", "icon": "🍚", "sizes": ["250 g", "500 g"] },
+  { "name": "Linsen", "icon": "🫘", "sizes": ["500 g"], "varieties": ["rot", "braun", "Beluga"] },
+  {
+    "name": "Kichererbsen",
+    "icon": "🫘",
+    "sizes": ["265 g", "425 g"],
+    "varieties": ["Dose", "getrocknet"]
+  },
+  {
+    "name": "Kidneybohnen",
+    "synonyms": ["rote Bohnen"],
+    "icon": "🫘",
+    "sizes": ["255 g", "425 g"]
+  },
+  { "name": "Weiße Bohnen", "icon": "🫘", "sizes": ["425 g"] },
+  {
+    "name": "Mais",
+    "synonyms": ["Zuckermais", "Maiskörner"],
+    "icon": "🌽",
+    "sizes": ["285 g", "425 g"]
+  },
+  {
+    "name": "Gehackte Tomaten",
+    "synonyms": ["Dosentomaten", "Tomaten in Stücken"],
+    "icon": "🥫",
+    "sizes": ["400 g"]
+  },
+  {
+    "name": "Passierte Tomaten",
+    "synonyms": ["Tomatenpassata", "Passata"],
+    "icon": "🥫",
+    "sizes": ["500 g", "700 g"]
+  },
+  { "name": "Tomatenmark", "icon": "🥫", "sizes": ["70 g", "200 g"] },
+  { "name": "Kokosmilch", "icon": "🥥", "sizes": ["400 ml"] },
+  {
+    "name": "Thunfisch",
+    "synonyms": ["Thunfisch in Dose"],
+    "icon": "🐟",
+    "sizes": ["140 g", "195 g"],
+    "varieties": ["in Öl", "im eigenen Saft"]
+  },
+  { "name": "Sauerkraut", "icon": "🥫", "sizes": ["500 g"] },
+  { "name": "Rotkohl im Glas", "synonyms": ["Apfelrotkohl"], "icon": "🥫", "sizes": ["700 g"] },
+  {
+    "name": "Gewürzgurken",
+    "synonyms": ["Essiggurken", "Cornichons"],
+    "icon": "🥒",
+    "sizes": ["330 g", "670 g"]
+  },
+  {
+    "name": "Oliven",
+    "icon": "🫒",
+    "sizes": ["150 g", "350 g"],
+    "varieties": ["grün", "schwarz", "mit Stein", "ohne Stein"]
+  },
+  { "name": "Pesto", "icon": "🥫", "sizes": ["190 g"], "varieties": ["Genovese", "Rosso"] },
+  { "name": "Tomatensauce", "synonyms": ["Pastasauce"], "icon": "🥫", "sizes": ["400 g"] },
+  { "name": "Gemüsebrühe", "synonyms": ["Brühe", "Gemüsebouillon"], "icon": "🥣" },
+  { "name": "Haferflocken", "icon": "🥣", "sizes": ["500 g"], "varieties": ["zart", "kernig"] },
+  { "name": "Erdnussbutter", "synonyms": ["Erdnussmus"], "icon": "🥜", "sizes": ["250 g", "350 g"] }
+]

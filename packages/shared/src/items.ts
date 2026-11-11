@@ -1,3 +1,8 @@
+/** Merge/search key: lowercased, whitespace-collapsed (L4: same item only once). */
+export function normalizeItemName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 /** Result of parsing a free-text item line such as "500 g Hack" (K7). */
 export interface ParsedItemLine {
   name: string;
@@ -45,6 +50,8 @@ const UNITS = new Set([
   'tassen',
   'blatt',
   'blätter',
+  'rolle',
+  'rollen',
 ]);
 
 function parseQuantityToken(token: string): number | null {
@@ -101,4 +108,23 @@ export function parseItemLine(line: string): ParsedItemLine {
     ...(quantity === null ? {} : { quantity }),
     ...(unit === undefined ? {} : { unit }),
   };
+}
+
+/** A size chip such as "500 g" or "1,5 l": quantity and unit, nothing else. */
+export interface ParsedSize {
+  quantity: number;
+  unit: string;
+}
+
+export function parseSize(size: string): ParsedSize | undefined {
+  const tokens = size.trim().replace(/\s+/g, ' ').split(' ');
+  if (tokens.length !== 2) {
+    return undefined;
+  }
+  const quantity = parseQuantityToken(tokens[0] as string);
+  const unit = (tokens[1] as string).replace(/\.$/, '');
+  if (quantity === null || !UNITS.has(unit.toLowerCase())) {
+    return undefined;
+  }
+  return { quantity, unit };
 }

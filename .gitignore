@@ -13,6 +13,9 @@ coverage/
 
 # Local runtime data
 data/
+# ...but the item catalogue's data files are source, not runtime data
+!packages/catalog/data/
+!packages/catalog/data/**
 *.db
 *.db-wal
 *.db-shm

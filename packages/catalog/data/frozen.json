@@ -1,0 +1,39 @@
+[
+  {
+    "name": "Pizza",
+    "synonyms": ["Tiefkühlpizza", "TK-Pizza"],
+    "icon": "🍕",
+    "varieties": ["Margherita", "Salami", "Thunfisch", "Gemüse"]
+  },
+  { "name": "Pommes", "synonyms": ["Pommes frites"], "icon": "🍟", "sizes": ["750 g", "1 kg"] },
+  {
+    "name": "TK-Spinat",
+    "synonyms": ["Tiefkühlspinat", "Rahmspinat"],
+    "icon": "🥬",
+    "sizes": ["450 g", "800 g"]
+  },
+  {
+    "name": "TK-Gemüse",
+    "synonyms": ["Tiefkühlgemüse", "Gemüsemischung"],
+    "icon": "🥦",
+    "sizes": ["750 g", "1 kg"]
+  },
+  { "name": "TK-Erbsen", "synonyms": ["Erbsen"], "icon": "🫛", "sizes": ["450 g", "750 g"] },
+  {
+    "name": "TK-Beeren",
+    "synonyms": ["Tiefkühlbeeren", "Beerenmischung"],
+    "icon": "🫐",
+    "sizes": ["300 g", "500 g"]
+  },
+  {
+    "name": "Eis",
+    "synonyms": ["Speiseeis", "Eiscreme"],
+    "icon": "🍨",
+    "varieties": ["Vanille", "Schoko", "Erdbeere", "Stracciatella"]
+  },
+  { "name": "TK-Kräuter", "synonyms": ["8-Kräuter"], "icon": "🌿" },
+  { "name": "TK-Lachsfilet", "icon": "🐟", "sizes": ["250 g", "500 g"] },
+  { "name": "TK-Brötchen", "synonyms": ["Aufbackbrötchen"], "icon": "🥖" },
+  { "name": "TK-Blätterteig", "icon": "🥐" },
+  { "name": "Gemüsepfanne", "synonyms": ["TK-Pfannengemüse"], "icon": "🥘", "sizes": ["750 g"] }
+]

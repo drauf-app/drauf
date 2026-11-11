@@ -1,6 +1,7 @@
+import { BASE_CATEGORIES } from '@drauf/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Category } from '../src/db/schema/types.js';
-import { BASE_CATEGORIES, seedDefaultHousehold } from '../src/db/seed.js';
+import { seedDefaultHousehold } from '../src/db/seed.js';
 import { createLocalUser } from '../src/users/service.js';
 import { createTestApp, type TestApp } from './helpers.js';
 

@@ -65,6 +65,12 @@ membership in that IdP group grants (and its absence revokes) the admin role
 on each login. The server starts fine while the IdP is unreachable — local
 accounts keep working.
 
+The item catalogue lives in `packages/catalog` (CC BY-SA 4.0) as plain JSON
+data files — contributions need no coding. `GET /api/catalog/suggest?q=…`
+powers quick-add: the household's own shopping history ranks first, base
+catalogue matches (names and synonyms) follow, each with its category and the
+size/variety chips.
+
 Recipe providers live in `packages/providers` (one folder per provider;
 Cookidoo is the first). They run server-side only, fetch public addresses
 only, and store nothing beyond title, link, image URL and the imported

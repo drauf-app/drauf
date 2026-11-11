@@ -175,6 +175,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@drauf/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
       '@drauf/providers':
         specifier: workspace:*
         version: link:../../packages/providers
@@ -236,6 +239,19 @@ importers:
       tsx:
         specifier: 4.23.15
         version: 4.23.15
+      vitest:
+        specifier: 5.1.0
+        version: 5.1.0(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))
+
+  packages/catalog:
+    dependencies:
+      '@drauf/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: 24.19.2
+        version: 24.19.2
       vitest:
         specifier: 5.1.0
         version: 5.1.0(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))
