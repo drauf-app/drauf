@@ -45,6 +45,13 @@ pnpm test         # build, then run all tests
 pnpm lint         # Biome lint + format check
 ```
 
+The server stores its data in an SQLite file under `./data` by default; set
+`DATABASE_URL=postgres://…` to use PostgreSQL instead. Schema changes are made
+in `apps/server/src/db/schema/` (one file per dialect) and turned into
+migrations with `pnpm --filter @drauf/server db:generate`; migrations run
+automatically when the server starts. The PostgreSQL tests are skipped unless
+`TEST_DATABASE_URL` points at a disposable database (CI provides one).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: see [SECURITY.md](SECURITY.md).

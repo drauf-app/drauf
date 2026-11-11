@@ -1,4 +1,7 @@
 # Example Compose setup. Run TLS termination with the reverse proxy of your choice.
+#
+# Without DATABASE_URL the server stores its data in an SQLite file under /data.
+# To use PostgreSQL instead, uncomment the db service and DATABASE_URL below.
 services:
   drauf:
     build:
@@ -9,5 +12,22 @@ services:
       HOST: "0.0.0.0"
       PORT: "3000"
       LOG_LEVEL: "info"
+      # DATABASE_URL: "postgres://drauf:change-me@db:5432/drauf"
     ports:
       - "3000:3000"
+    volumes:
+      - drauf-data:/data
+
+  # db:
+  #   image: postgres:18-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: drauf
+  #     POSTGRES_USER: drauf
+  #     POSTGRES_PASSWORD: change-me
+  #   volumes:
+  #     - drauf-db:/var/lib/postgresql/data
+
+volumes:
+  drauf-data:
+  # drauf-db:
