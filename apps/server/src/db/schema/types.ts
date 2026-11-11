@@ -89,6 +89,26 @@ export interface StoreCategory {
   position: number;
 }
 
+export interface MealSlot {
+  id: string;
+  householdId: string;
+  name: string;
+  sortOrder: number;
+  createdAt: Date;
+}
+
+export interface PlanEntry {
+  id: string;
+  householdId: string;
+  /** ISO calendar date (YYYY-MM-DD). */
+  date: string;
+  slotId: string;
+  text: string | null;
+  link: string | null;
+  cookId: string | null;
+  createdAt: Date;
+}
+
 export type PortionOrigin = 'manual' | 'recipe';
 
 export interface ListEntry {
@@ -153,6 +173,10 @@ type _PgStoreCategory = Assert<Eq<typeof pg.storeCategories.$inferSelect, StoreC
 type _SqliteCategory = Assert<Eq<typeof sqlite.categories.$inferSelect, Category>>;
 type _SqliteStore = Assert<Eq<typeof sqlite.stores.$inferSelect, Store>>;
 type _SqliteStoreCategory = Assert<Eq<typeof sqlite.storeCategories.$inferSelect, StoreCategory>>;
+type _PgMealSlot = Assert<Eq<typeof pg.mealSlots.$inferSelect, MealSlot>>;
+type _PgPlanEntry = Assert<Eq<typeof pg.planEntries.$inferSelect, PlanEntry>>;
+type _SqliteMealSlot = Assert<Eq<typeof sqlite.mealSlots.$inferSelect, MealSlot>>;
+type _SqlitePlanEntry = Assert<Eq<typeof sqlite.planEntries.$inferSelect, PlanEntry>>;
 type _PgListEntry = Assert<Eq<typeof pg.listEntries.$inferSelect, ListEntry>>;
 type _PgEntryPortion = Assert<Eq<typeof pg.entryPortions.$inferSelect, EntryPortion>>;
 type _SqliteListEntry = Assert<Eq<typeof sqlite.listEntries.$inferSelect, ListEntry>>;

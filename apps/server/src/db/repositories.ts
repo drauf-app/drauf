@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, lt } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { newId } from './ids.js';
 import type { Database } from './index.js';
@@ -12,7 +12,9 @@ import type {
   ListEntry,
   ListMember,
   LoginCode,
+  MealSlot,
   OidcTransaction,
+  PlanEntry,
   PortionOrigin,
   RefreshToken,
   Store,
@@ -638,6 +640,138 @@ export async function getStoreCategoryOrder(
     .where(eq(t.storeCategories.storeId, storeId))
     .orderBy(asc(t.storeCategories.position));
   return rows.map((row) => row.categoryId);
+}
+
+export async function createMealSlot(
+  database: Database,
+  input: { householdId: string; name: string; sortOrder: number },
+): Promise<MealSlot> {
+  const { db, t } = unwrap(database);
+  const slot: MealSlot = { id: newId(), createdAt: new Date(), ...input };
+  await db.insert(t.mealSlots).values(slot);
+  return slot;
+}
+
+export async function listMealSlots(database: Database, householdId: string): Promise<MealSlot[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.mealSlots)
+    .where(eq(t.mealSlots.householdId, householdId))
+    .orderBy(asc(t.mealSlots.sortOrder), asc(t.mealSlots.createdAt));
+}
+
+/** Scoped by household so callers cannot reach foreign slots. */
+export async function getMealSlot(
+  database: Database,
+  householdId: string,
+  slotId: string,
+): Promise<MealSlot | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.mealSlots)
+    .where(and(eq(t.mealSlots.id, slotId), eq(t.mealSlots.householdId, householdId)));
+  return rows[0];
+}
+
+export async function updateMealSlot(
+  database: Database,
+  slotId: string,
+  patch: Partial<Pick<MealSlot, 'name' | 'sortOrder'>>,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.mealSlots).set(patch).where(eq(t.mealSlots.id, slotId));
+}
+
+export async function deleteMealSlot(database: Database, slotId: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.mealSlots).where(eq(t.mealSlots.id, slotId));
+}
+
+export async function createPlanEntry(
+  database: Database,
+  input: {
+    householdId: string;
+    date: string;
+    slotId: string;
+    text: string | null;
+    link: string | null;
+    cookId: string | null;
+  },
+): Promise<PlanEntry> {
+  const { db, t } = unwrap(database);
+  const entry: PlanEntry = { id: newId(), createdAt: new Date(), ...input };
+  await db.insert(t.planEntries).values(entry);
+  return entry;
+}
+
+/** Scoped by household so callers cannot reach foreign plan entries. */
+export async function getPlanEntry(
+  database: Database,
+  householdId: string,
+  entryId: string,
+): Promise<PlanEntry | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.planEntries)
+    .where(and(eq(t.planEntries.id, entryId), eq(t.planEntries.householdId, householdId)));
+  return rows[0];
+}
+
+export async function findPlanEntryForSlot(
+  database: Database,
+  householdId: string,
+  date: string,
+  slotId: string,
+): Promise<PlanEntry | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.planEntries)
+    .where(
+      and(
+        eq(t.planEntries.householdId, householdId),
+        eq(t.planEntries.date, date),
+        eq(t.planEntries.slotId, slotId),
+      ),
+    );
+  return rows[0];
+}
+
+export async function listPlanEntries(
+  database: Database,
+  householdId: string,
+  from: string,
+  to: string,
+): Promise<PlanEntry[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.planEntries)
+    .where(
+      and(
+        eq(t.planEntries.householdId, householdId),
+        gte(t.planEntries.date, from),
+        lte(t.planEntries.date, to),
+      ),
+    )
+    .orderBy(asc(t.planEntries.date), asc(t.planEntries.createdAt));
+}
+
+export async function updatePlanEntry(
+  database: Database,
+  entryId: string,
+  patch: Partial<Pick<PlanEntry, 'date' | 'slotId' | 'text' | 'link' | 'cookId'>>,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.planEntries).set(patch).where(eq(t.planEntries.id, entryId));
+}
+
+export async function deletePlanEntry(database: Database, entryId: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.planEntries).where(eq(t.planEntries.id, entryId));
 }
 
 /** Whether the store belongs to a household the list is attached to. */

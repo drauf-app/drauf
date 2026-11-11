@@ -10,6 +10,7 @@ import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
 import { listRoutes } from './routes/lists.js';
 import { oidcRoutes } from './routes/oidc.js';
+import { planRoutes } from './routes/plan.js';
 import { storeRoutes } from './routes/stores.js';
 import { userRoutes } from './routes/users.js';
 
@@ -44,6 +45,7 @@ export async function buildApp(config: Config, database: Database): Promise<Fast
   await app.register(entryRoutes(database, guards), { prefix: '/api/lists' });
   await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
   await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
+  await app.register(planRoutes(database, guards), { prefix: '/api/plan' });
 
   return app;
 }
