@@ -183,6 +183,38 @@ export const storeCategories = pgTable(
   (t) => [primaryKey({ columns: [t.storeId, t.categoryId] })],
 );
 
+/** Meal slots of a household's weekly plan (W2), e.g. lunch and dinner. */
+export const mealSlots = pgTable('meal_slots', {
+  id: text('id').primaryKey(),
+  householdId: text('household_id')
+    .notNull()
+    .references(() => households.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  sortOrder: integer('sort_order').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+/** One plan entry per day and slot: free text or a recipe link, plus who cooks. */
+export const planEntries = pgTable(
+  'plan_entries',
+  {
+    id: text('id').primaryKey(),
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    /** ISO calendar date (YYYY-MM-DD); text keeps it identical across dialects. */
+    date: text('date').notNull(),
+    slotId: text('slot_id')
+      .notNull()
+      .references(() => mealSlots.id, { onDelete: 'cascade' }),
+    text: text('text'),
+    link: text('link'),
+    cookId: text('cook_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  },
+  (t) => [uniqueIndex('plan_entries_day_slot_idx').on(t.householdId, t.date, t.slotId)],
+);
+
 /** One row per distinct item on a list; quantities live in entryPortions. */
 export const listEntries = pgTable(
   'list_entries',

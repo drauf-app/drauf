@@ -2,6 +2,7 @@ import type { Database } from './index.js';
 import {
   createCategory,
   createHousehold,
+  createMealSlot,
   getDefaultHousehold,
   listCategories,
 } from './repositories.js';
@@ -35,12 +36,26 @@ export const BASE_CATEGORIES: ReadonlyArray<{ key: string; name: string }> = [
  */
 export async function seedDefaultHousehold(database: Database): Promise<void> {
   let household = await getDefaultHousehold(database);
-  household ??= await createHousehold(database, {
-    id: DEFAULT_HOUSEHOLD_ID,
-    // The default name is user-facing data, not a UI string: German first.
-    name: 'Zuhause',
-    isDefault: true,
-  });
+  if (household === undefined) {
+    household = await createHousehold(database, {
+      id: DEFAULT_HOUSEHOLD_ID,
+      // The default name is user-facing data, not a UI string: German first.
+      name: 'Zuhause',
+      isDefault: true,
+    });
+    // Starter meal slots only at household creation: unlike base categories
+    // they are fully editable and deletable, so the seed must not resurrect them.
+    await createMealSlot(database, {
+      householdId: household.id,
+      name: 'Mittagessen',
+      sortOrder: 10,
+    });
+    await createMealSlot(database, {
+      householdId: household.id,
+      name: 'Abendessen',
+      sortOrder: 20,
+    });
+  }
 
   const existingKeys = new Set(
     (await listCategories(database, household.id)).map((category) => category.key),
