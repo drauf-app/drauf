@@ -16,6 +16,7 @@ import {
   updatePlanEntry,
 } from '../db/repositories.js';
 import { getHouseholdForMember } from '../households/service.js';
+import { planTopic, type SyncHub } from '../sync/hub.js';
 
 const DATE_PATTERN = '^\\d{4}-\\d{2}-\\d{2}$';
 /** Longest range one query may span, in whole days. */
@@ -141,7 +142,11 @@ function normalized(value: string | undefined): string | null | undefined {
   return trimmed === '' ? null : trimmed;
 }
 
-export function planRoutes(database: Database, guards: AuthGuards): FastifyPluginAsync {
+export function planRoutes(
+  database: Database,
+  guards: AuthGuards,
+  hub: SyncHub,
+): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
 
@@ -174,6 +179,7 @@ export function planRoutes(database: Database, guards: AuthGuards): FastifyPlugi
           name: request.body.name.trim(),
           sortOrder: maxOrder + 10,
         });
+        hub.publish(planTopic(home.id), { type: 'slot.created', data: slot });
         return reply.code(201).send(slot);
       },
     );
@@ -196,7 +202,9 @@ export function planRoutes(database: Database, guards: AuthGuards): FastifyPlugi
           ...(request.body.sortOrder === undefined ? {} : { sortOrder: request.body.sortOrder }),
         };
         await updateMealSlot(database, slot.id, patch);
-        return { ...slot, ...patch };
+        const updated = { ...slot, ...patch };
+        hub.publish(planTopic(home.id), { type: 'slot.updated', data: updated });
+        return updated;
       },
     );
 
@@ -214,6 +222,7 @@ export function planRoutes(database: Database, guards: AuthGuards): FastifyPlugi
           return reply.code(404).send({ error: 'not_found' });
         }
         await deleteMealSlot(database, slot.id);
+        hub.publish(planTopic(home.id), { type: 'slot.deleted', data: { id: slot.id } });
         return reply.code(204).send();
       },
     );
@@ -307,6 +316,7 @@ export function planRoutes(database: Database, guards: AuthGuards): FastifyPlugi
             link,
             cookId,
           });
+          hub.publish(planTopic(home.id), { type: 'plan.entry.created', data: entry });
           return reply.code(201).send(entry);
         } catch {
           // Unique(household, date, slot) race between check and insert.
@@ -363,6 +373,7 @@ export function planRoutes(database: Database, guards: AuthGuards): FastifyPlugi
         } catch {
           return reply.code(409).send({ error: 'slot_occupied' });
         }
+        hub.publish(planTopic(home.id), { type: 'plan.entry.updated', data: next });
         return next;
       },
     );
@@ -381,6 +392,7 @@ export function planRoutes(database: Database, guards: AuthGuards): FastifyPlugi
           return reply.code(404).send({ error: 'not_found' });
         }
         await deletePlanEntry(database, entry.id);
+        hub.publish(planTopic(home.id), { type: 'plan.entry.deleted', data: { id: entry.id } });
         return reply.code(204).send();
       },
     );

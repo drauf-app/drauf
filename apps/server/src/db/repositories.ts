@@ -392,6 +392,7 @@ export async function createListEntry(
   const { db, t } = unwrap(database);
   const entry: ListEntry = {
     id: newId(),
+    fieldTimes: null,
     checkedAt: null,
     checkedById: null,
     createdAt: new Date(),
@@ -449,7 +450,9 @@ export async function listEntriesForList(database: Database, listId: string): Pr
 export async function updateListEntry(
   database: Database,
   entryId: string,
-  patch: Partial<Pick<ListEntry, 'name' | 'nameNormalized' | 'variant' | 'note' | 'categoryId'>>,
+  patch: Partial<
+    Pick<ListEntry, 'name' | 'nameNormalized' | 'variant' | 'note' | 'categoryId' | 'fieldTimes'>
+  >,
 ): Promise<void> {
   const { db, t } = unwrap(database);
   await db.update(t.listEntries).set(patch).where(eq(t.listEntries.id, entryId));
@@ -772,6 +775,37 @@ export async function updatePlanEntry(
 export async function deletePlanEntry(database: Database, entryId: string): Promise<void> {
   const { db, t } = unwrap(database);
   await db.delete(t.planEntries).where(eq(t.planEntries.id, entryId));
+}
+
+/** Records a processed sync operation id; returns false when it was already known. */
+export async function markOperationApplied(
+  database: Database,
+  operationId: string,
+  userId: string,
+): Promise<boolean> {
+  const { db, t } = unwrap(database);
+  try {
+    await db.insert(t.appliedOperations).values({
+      id: operationId,
+      userId,
+      appliedAt: new Date(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function isOperationApplied(
+  database: Database,
+  operationId: string,
+): Promise<boolean> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ id: t.appliedOperations.id })
+    .from(t.appliedOperations)
+    .where(eq(t.appliedOperations.id, operationId));
+  return rows.length > 0;
 }
 
 /** Whether the store belongs to a household the list is attached to. */

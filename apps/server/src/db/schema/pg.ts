@@ -229,6 +229,8 @@ export const listEntries = pgTable(
     variant: text('variant'),
     note: text('note'),
     categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    /** JSON object of per-field last-write times (epoch ms) for sync LWW. */
+    fieldTimes: text('field_times'),
     checkedAt: timestamp('checked_at', { withTimezone: true, mode: 'date' }),
     checkedById: text('checked_by_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
@@ -247,6 +249,15 @@ export const entryPortions = pgTable('entry_portions', {
   origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
   addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+/** Processed sync operation ids: replaying a queued operation is a no-op. */
+export const appliedOperations = pgTable('applied_operations', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  appliedAt: timestamp('applied_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
 /** One-time codes handed to the client after the OIDC callback; stored hashed. */

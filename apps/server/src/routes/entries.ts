@@ -16,6 +16,8 @@ import {
   replaceEntryQuantity,
 } from '../lists/items.js';
 import { getListForMember } from '../lists/service.js';
+import { listTopic, type SyncHub } from '../sync/hub.js';
+import { stampFieldTimes } from '../sync/operations.js';
 
 const addBody = {
   type: 'object',
@@ -88,7 +90,11 @@ function requireAuthUser(reply: FastifyReply, authUser: AuthUser | undefined): A
   return authUser;
 }
 
-export function entryRoutes(database: Database, guards: AuthGuards): FastifyPluginAsync {
+export function entryRoutes(
+  database: Database,
+  guards: AuthGuards,
+  hub: SyncHub,
+): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
 
@@ -139,7 +145,12 @@ export function entryRoutes(database: Database, guards: AuthGuards): FastifyPlug
           ...request.body,
           categoryId: categoryId ?? null,
         });
-        return reply.code(merged ? 200 : 201).send(await getEntryView(database, entry));
+        const view = await getEntryView(database, entry);
+        hub.publish(listTopic(request.params.id), {
+          type: merged ? 'entry.updated' : 'entry.created',
+          data: view,
+        });
+        return reply.code(merged ? 200 : 201).send(view);
       },
     );
 
@@ -154,6 +165,7 @@ export function entryRoutes(database: Database, guards: AuthGuards): FastifyPlug
 
         const { name, variant, note, quantity, unit, categoryId } = request.body;
         const patch: Parameters<typeof updateListEntry>[2] = {};
+        const editedFields: string[] = [];
         if (categoryId !== undefined) {
           const trimmed = categoryId.trim();
           if (trimmed === '') {
@@ -163,25 +175,34 @@ export function entryRoutes(database: Database, guards: AuthGuards): FastifyPlug
           } else {
             return reply.code(400).send({ error: 'invalid_category' });
           }
+          editedFields.push('categoryId');
         }
         if (name !== undefined) {
           patch.name = name.trim().replace(/\s+/g, ' ');
           patch.nameNormalized = normalizeItemName(name);
+          editedFields.push('name');
         }
         if (variant !== undefined) {
           patch.variant = variant.trim() === '' ? null : variant.trim();
+          editedFields.push('variant');
         }
         if (note !== undefined) {
           patch.note = note.trim() === '' ? null : note.trim();
-        }
-        if (Object.keys(patch).length > 0) {
-          await updateListEntry(database, entry.id, patch);
-          entry = { ...entry, ...patch };
+          editedFields.push('note');
         }
         if (quantity !== undefined || unit !== undefined) {
           await replaceEntryQuantity(database, entry, auth.id, quantity ?? null, unit);
+          editedFields.push('quantity');
         }
-        return getEntryView(database, entry);
+        if (editedFields.length > 0) {
+          // Online edits participate in the same per-field clocks as offline sync.
+          patch.fieldTimes = stampFieldTimes(entry.fieldTimes, editedFields, Date.now());
+          await updateListEntry(database, entry.id, patch);
+          entry = { ...entry, ...patch };
+        }
+        const view = await getEntryView(database, entry);
+        hub.publish(listTopic(entry.listId), { type: 'entry.updated', data: view });
+        return view;
       },
     );
 
@@ -198,7 +219,12 @@ export function entryRoutes(database: Database, guards: AuthGuards): FastifyPlug
           if (resolved?.entry === undefined) return reply;
           const state = makeState(auth);
           await setEntryChecked(database, resolved.entry.id, state);
-          return getEntryView(database, { ...resolved.entry, ...state });
+          const view = await getEntryView(database, { ...resolved.entry, ...state });
+          hub.publish(listTopic(resolved.entry.listId), {
+            type: action === 'check' ? 'entry.checked' : 'entry.unchecked',
+            data: view,
+          });
+          return view;
         },
       );
     }
@@ -211,6 +237,10 @@ export function entryRoutes(database: Database, guards: AuthGuards): FastifyPlug
         const resolved = await resolve(reply, auth.id, request.params.id, request.params.entryId);
         if (resolved?.entry === undefined) return reply;
         await deleteListEntry(database, resolved.entry.id);
+        hub.publish(listTopic(resolved.entry.listId), {
+          type: 'entry.deleted',
+          data: { id: resolved.entry.id, listId: resolved.entry.listId },
+        });
         return reply.code(204).send();
       },
     );
