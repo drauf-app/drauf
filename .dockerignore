@@ -1,0 +1,15 @@
+# Keep the build context minimal and free of local-only files.
+.git
+.github
+.idea
+.vscode
+**/node_modules
+**/dist
+coverage
+docker
+*.md
+CLAUDE.local.md
+.private
+.env
+.env.*
+data

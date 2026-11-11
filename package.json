@@ -1,0 +1,20 @@
+{
+  "name": "drauf",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "pnpm --filter @drauf/server dev",
+    "format": "biome format --write .",
+    "lint": "biome check .",
+    "test": "pnpm run build && pnpm -r run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.6",
+    "typescript": "5.9.3"
+  }
+}
