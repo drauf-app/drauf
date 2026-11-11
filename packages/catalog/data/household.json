@@ -1,24 +1,53 @@
 [
   { "name": "Spülmittel", "synonyms": ["Geschirrspülmittel"], "icon": "🧽", "sizes": ["500 ml"] },
   { "name": "Spülmaschinentabs", "synonyms": ["Geschirrspültabs", "Tabs"], "icon": "🧽" },
-  { "name": "Spülmaschinensalz", "synonyms": ["Regeneriersalz"], "icon": "🧂", "sizes": ["1,2 kg", "2 kg"] },
+  {
+    "name": "Spülmaschinensalz",
+    "synonyms": ["Regeneriersalz"],
+    "icon": "🧂",
+    "sizes": ["1,2 kg", "2 kg"]
+  },
   { "name": "Klarspüler", "icon": "🧽", "sizes": ["500 ml"] },
-  { "name": "Waschmittel", "icon": "🧺", "varieties": ["Vollwaschmittel", "Color", "flüssig", "Pulver"] },
+  {
+    "name": "Waschmittel",
+    "icon": "🧺",
+    "varieties": ["Vollwaschmittel", "Color", "flüssig", "Pulver"]
+  },
   { "name": "Weichspüler", "icon": "🧺" },
-  { "name": "Allzweckreiniger", "synonyms": ["Universalreiniger", "Allesreiniger"], "icon": "🧴", "sizes": ["1 l"] },
+  {
+    "name": "Allzweckreiniger",
+    "synonyms": ["Universalreiniger", "Allesreiniger"],
+    "icon": "🧴",
+    "sizes": ["1 l"]
+  },
   { "name": "Badreiniger", "icon": "🧴" },
   { "name": "Glasreiniger", "icon": "🧴" },
   { "name": "WC-Reiniger", "synonyms": ["Klo-Reiniger"], "icon": "🚽" },
   { "name": "Schwämme", "synonyms": ["Spülschwämme", "Schwamm"], "icon": "🧽" },
   { "name": "Spültücher", "synonyms": ["Putzlappen", "Mikrofasertücher"], "icon": "🧽" },
-  { "name": "Küchenrolle", "synonyms": ["Küchenpapier", "Küchentücher"], "icon": "🧻", "sizes": ["4 Rollen"] },
-  { "name": "Müllbeutel", "synonyms": ["Mülltüten", "Müllsäcke"], "icon": "🗑️", "sizes": ["20 l", "35 l", "60 l"] },
+  {
+    "name": "Küchenrolle",
+    "synonyms": ["Küchenpapier", "Küchentücher"],
+    "icon": "🧻",
+    "sizes": ["4 Rollen"]
+  },
+  {
+    "name": "Müllbeutel",
+    "synonyms": ["Mülltüten", "Müllsäcke"],
+    "icon": "🗑️",
+    "sizes": ["20 l", "35 l", "60 l"]
+  },
   { "name": "Gefrierbeutel", "icon": "🧊", "sizes": ["1 l", "3 l", "6 l"] },
   { "name": "Frischhaltefolie", "icon": "🎞️" },
   { "name": "Alufolie", "icon": "🎞️" },
   { "name": "Backpapier", "icon": "📄" },
   { "name": "Batterien", "icon": "🔋", "varieties": ["AA", "AAA"] },
-  { "name": "Glühbirne", "synonyms": ["LED-Lampe", "Leuchtmittel"], "icon": "💡", "varieties": ["E27", "E14", "GU10"] },
+  {
+    "name": "Glühbirne",
+    "synonyms": ["LED-Lampe", "Leuchtmittel"],
+    "icon": "💡",
+    "varieties": ["E27", "E14", "GU10"]
+  },
   { "name": "Teelichter", "synonyms": ["Kerzen"], "icon": "🕯️" },
   { "name": "Streichhölzer", "synonyms": ["Zündhölzer"], "icon": "🔥" },
   { "name": "Entkalker", "icon": "🧴" }

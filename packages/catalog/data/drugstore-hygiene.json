@@ -1,16 +1,12 @@
 [
   {
     "name": "Zahnpasta",
-    "synonyms": [
-      "Zahncreme"
-    ],
+    "synonyms": ["Zahncreme"],
     "icon": "🪥"
   },
   {
     "name": "Zahnbürsten",
-    "synonyms": [
-      "Zahnbürste"
-    ],
+    "synonyms": ["Zahnbürste"],
     "icon": "🪥"
   },
   {
@@ -20,56 +16,33 @@
   {
     "name": "Duschgel",
     "icon": "🧴",
-    "sizes": [
-      "250 ml",
-      "300 ml"
-    ]
+    "sizes": ["250 ml", "300 ml"]
   },
   {
     "name": "Shampoo",
     "icon": "🧴",
-    "sizes": [
-      "250 ml",
-      "300 ml"
-    ]
+    "sizes": ["250 ml", "300 ml"]
   },
   {
     "name": "Spülung",
-    "synonyms": [
-      "Conditioner"
-    ],
+    "synonyms": ["Conditioner"],
     "icon": "🧴"
   },
   {
     "name": "Seife",
-    "synonyms": [
-      "Handseife",
-      "Flüssigseife"
-    ],
+    "synonyms": ["Handseife", "Flüssigseife"],
     "icon": "🧼",
-    "varieties": [
-      "flüssig",
-      "Stück",
-      "Nachfüllpack"
-    ]
+    "varieties": ["flüssig", "Stück", "Nachfüllpack"]
   },
   {
     "name": "Deo",
-    "synonyms": [
-      "Deodorant"
-    ],
+    "synonyms": ["Deodorant"],
     "icon": "🧴",
-    "varieties": [
-      "Roller",
-      "Spray",
-      "Stick"
-    ]
+    "varieties": ["Roller", "Spray", "Stick"]
   },
   {
     "name": "Bodylotion",
-    "synonyms": [
-      "Körperlotion"
-    ],
+    "synonyms": ["Körperlotion"],
     "icon": "🧴"
   },
   {
@@ -78,21 +51,13 @@
   },
   {
     "name": "Sonnencreme",
-    "synonyms": [
-      "Sonnenmilch"
-    ],
+    "synonyms": ["Sonnenmilch"],
     "icon": "🧴",
-    "varieties": [
-      "LSF 30",
-      "LSF 50",
-      "Kinder"
-    ]
+    "varieties": ["LSF 30", "LSF 50", "Kinder"]
   },
   {
     "name": "Rasierschaum",
-    "synonyms": [
-      "Rasiergel"
-    ],
+    "synonyms": ["Rasiergel"],
     "icon": "🪒"
   },
   {
@@ -110,25 +75,14 @@
   {
     "name": "Taschentücher",
     "icon": "🤧",
-    "sizes": [
-      "10 Stück",
-      "30 Stück"
-    ]
+    "sizes": ["10 Stück", "30 Stück"]
   },
   {
     "name": "Toilettenpapier",
-    "synonyms": [
-      "Klopapier"
-    ],
+    "synonyms": ["Klopapier"],
     "icon": "🧻",
-    "sizes": [
-      "8 Rollen",
-      "16 Rollen"
-    ],
-    "varieties": [
-      "3-lagig",
-      "4-lagig"
-    ]
+    "sizes": ["8 Rollen", "16 Rollen"],
+    "varieties": ["3-lagig", "4-lagig"]
   },
   {
     "name": "Feuchttücher",
@@ -137,17 +91,11 @@
   {
     "name": "Windeln",
     "icon": "🍼",
-    "varieties": [
-      "Größe 3",
-      "Größe 4",
-      "Größe 5"
-    ]
+    "varieties": ["Größe 3", "Größe 4", "Größe 5"]
   },
   {
     "name": "Binden",
-    "synonyms": [
-      "Damenbinden"
-    ],
+    "synonyms": ["Damenbinden"],
     "icon": "🩹"
   },
   {
@@ -160,9 +108,7 @@
   },
   {
     "name": "Lippenpflege",
-    "synonyms": [
-      "Lippenbalsam"
-    ],
+    "synonyms": ["Lippenbalsam"],
     "icon": "💄"
   },
   {

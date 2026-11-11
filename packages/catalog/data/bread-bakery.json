@@ -1,8 +1,22 @@
 [
-  { "name": "Brot", "icon": "🍞", "varieties": ["Vollkorn", "Roggen", "Dinkel", "Mischbrot", "Weißbrot"] },
-  { "name": "Brötchen", "synonyms": ["Semmeln", "Weckle", "Schrippen"], "icon": "🥖", "varieties": ["Weizen", "Vollkorn", "Körner", "Laugenbrötchen"] },
+  {
+    "name": "Brot",
+    "icon": "🍞",
+    "varieties": ["Vollkorn", "Roggen", "Dinkel", "Mischbrot", "Weißbrot"]
+  },
+  {
+    "name": "Brötchen",
+    "synonyms": ["Semmeln", "Weckle", "Schrippen"],
+    "icon": "🥖",
+    "varieties": ["Weizen", "Vollkorn", "Körner", "Laugenbrötchen"]
+  },
   { "name": "Baguette", "icon": "🥖" },
-  { "name": "Toastbrot", "synonyms": ["Toast"], "icon": "🍞", "varieties": ["Butter", "Vollkorn", "Sandwich"] },
+  {
+    "name": "Toastbrot",
+    "synonyms": ["Toast"],
+    "icon": "🍞",
+    "varieties": ["Butter", "Vollkorn", "Sandwich"]
+  },
   { "name": "Croissants", "synonyms": ["Croissant"], "icon": "🥐" },
   { "name": "Brezeln", "synonyms": ["Brezel", "Laugenbrezel"], "icon": "🥨" },
   { "name": "Knäckebrot", "icon": "🍞" },

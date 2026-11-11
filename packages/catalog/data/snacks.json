@@ -1,8 +1,25 @@
 [
-  { "name": "Chips", "synonyms": ["Kartoffelchips"], "icon": "🥔", "sizes": ["150 g", "200 g"], "varieties": ["Paprika", "gesalzen", "Sour Cream"] },
-  { "name": "Tortilla-Chips", "synonyms": ["Nachos"], "icon": "🌮", "sizes": ["125 g", "300 g"], "varieties": ["gesalzen", "Chili"] },
+  {
+    "name": "Chips",
+    "synonyms": ["Kartoffelchips"],
+    "icon": "🥔",
+    "sizes": ["150 g", "200 g"],
+    "varieties": ["Paprika", "gesalzen", "Sour Cream"]
+  },
+  {
+    "name": "Tortilla-Chips",
+    "synonyms": ["Nachos"],
+    "icon": "🌮",
+    "sizes": ["125 g", "300 g"],
+    "varieties": ["gesalzen", "Chili"]
+  },
   { "name": "Salzstangen", "synonyms": ["Salzbrezeln"], "icon": "🥨", "sizes": ["250 g"] },
-  { "name": "Erdnüsse", "icon": "🥜", "sizes": ["200 g", "500 g"], "varieties": ["gesalzen", "ungesalzen"] },
+  {
+    "name": "Erdnüsse",
+    "icon": "🥜",
+    "sizes": ["200 g", "500 g"],
+    "varieties": ["gesalzen", "ungesalzen"]
+  },
   { "name": "Cashewkerne", "synonyms": ["Cashews"], "icon": "🥜", "sizes": ["150 g", "200 g"] },
   { "name": "Mandeln", "icon": "🥜", "sizes": ["200 g"] },
   { "name": "Walnüsse", "icon": "🥜", "sizes": ["200 g"] },

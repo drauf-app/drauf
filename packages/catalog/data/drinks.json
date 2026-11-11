@@ -1,187 +1,106 @@
 [
   {
     "name": "Wasser",
-    "synonyms": [
-      "Mineralwasser",
-      "Sprudel"
-    ],
+    "synonyms": ["Mineralwasser", "Sprudel"],
     "icon": "💧",
-    "sizes": [
-      "1,5 l",
-      "0,7 l"
-    ],
-    "varieties": [
-      "spritzig",
-      "medium",
-      "still"
-    ]
+    "sizes": ["1,5 l", "0,7 l"],
+    "varieties": ["spritzig", "medium", "still"]
   },
   {
     "name": "Apfelsaft",
     "icon": "🧃",
-    "sizes": [
-      "1 l"
-    ],
-    "varieties": [
-      "klar",
-      "naturtrüb",
-      "Schorle"
-    ]
+    "sizes": ["1 l"],
+    "varieties": ["klar", "naturtrüb", "Schorle"]
   },
   {
     "name": "Orangensaft",
-    "synonyms": [
-      "O-Saft"
-    ],
+    "synonyms": ["O-Saft"],
     "icon": "🧃",
-    "sizes": [
-      "1 l"
-    ],
-    "varieties": [
-      "mit Fruchtfleisch",
-      "ohne Fruchtfleisch"
-    ]
+    "sizes": ["1 l"],
+    "varieties": ["mit Fruchtfleisch", "ohne Fruchtfleisch"]
   },
   {
     "name": "Multivitaminsaft",
     "icon": "🧃",
-    "sizes": [
-      "1 l"
-    ]
+    "sizes": ["1 l"]
   },
   {
     "name": "Apfelschorle",
     "icon": "🧃",
-    "sizes": [
-      "1,5 l"
-    ]
+    "sizes": ["1,5 l"]
   },
   {
     "name": "Cola",
     "icon": "🥤",
-    "sizes": [
-      "1 l",
-      "1,5 l"
-    ],
-    "varieties": [
-      "klassisch",
-      "zero"
-    ]
+    "sizes": ["1 l", "1,5 l"],
+    "varieties": ["klassisch", "zero"]
   },
   {
     "name": "Limonade",
-    "synonyms": [
-      "Limo"
-    ],
+    "synonyms": ["Limo"],
     "icon": "🥤",
-    "varieties": [
-      "Zitrone",
-      "Orange"
-    ]
+    "varieties": ["Zitrone", "Orange"]
   },
   {
     "name": "Eistee",
     "icon": "🥤",
-    "sizes": [
-      "1,5 l"
-    ],
-    "varieties": [
-      "Pfirsich",
-      "Zitrone"
-    ]
+    "sizes": ["1,5 l"],
+    "varieties": ["Pfirsich", "Zitrone"]
   },
   {
     "name": "Bier",
     "icon": "🍺",
-    "sizes": [
-      "0,5 l",
-      "0,33 l"
-    ],
-    "varieties": [
-      "Pils",
-      "Helles",
-      "Weizen",
-      "alkoholfrei"
-    ]
+    "sizes": ["0,5 l", "0,33 l"],
+    "varieties": ["Pils", "Helles", "Weizen", "alkoholfrei"]
   },
   {
     "name": "Radler",
     "icon": "🍺",
-    "sizes": [
-      "0,5 l"
-    ],
-    "varieties": [
-      "klassisch",
-      "alkoholfrei"
-    ]
+    "sizes": ["0,5 l"],
+    "varieties": ["klassisch", "alkoholfrei"]
   },
   {
     "name": "Rotwein",
     "icon": "🍷",
-    "sizes": [
-      "0,75 l"
-    ]
+    "sizes": ["0,75 l"]
   },
   {
     "name": "Weißwein",
     "icon": "🍷",
-    "sizes": [
-      "0,75 l"
-    ],
-    "varieties": [
-      "trocken",
-      "halbtrocken"
-    ]
+    "sizes": ["0,75 l"],
+    "varieties": ["trocken", "halbtrocken"]
   },
   {
     "name": "Sekt",
-    "synonyms": [
-      "Prosecco"
-    ],
+    "synonyms": ["Prosecco"],
     "icon": "🍾",
-    "sizes": [
-      "0,75 l"
-    ]
+    "sizes": ["0,75 l"]
   },
   {
     "name": "Hafermilch-Barista",
-    "synonyms": [
-      "Barista-Haferdrink"
-    ],
+    "synonyms": ["Barista-Haferdrink"],
     "icon": "🥛",
-    "sizes": [
-      "1 l"
-    ]
+    "sizes": ["1 l"]
   },
   {
     "name": "Tonic Water",
-    "synonyms": [
-      "Tonic"
-    ],
+    "synonyms": ["Tonic"],
     "icon": "🥤",
-    "sizes": [
-      "1 l"
-    ]
+    "sizes": ["1 l"]
   },
   {
     "name": "Kinderpunsch",
-    "synonyms": [
-      "Punsch"
-    ],
+    "synonyms": ["Punsch"],
     "icon": "🍵"
   },
   {
     "name": "Smoothie",
     "icon": "🧃",
-    "sizes": [
-      "250 ml"
-    ]
+    "sizes": ["250 ml"]
   },
   {
     "name": "Kokoswasser",
     "icon": "🥥",
-    "sizes": [
-      "1 l"
-    ]
+    "sizes": ["1 l"]
   }
 ]
