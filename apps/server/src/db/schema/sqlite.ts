@@ -79,6 +79,48 @@ export const oidcTransactions = sqliteTable('oidc_transactions', {
   expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
+export const lists = sqliteTable('lists', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  color: text('color'),
+  archived: integer('archived', { mode: 'boolean' }).notNull(),
+  // No cascade: deleting a user must never silently delete a shared list.
+  ownerId: text('owner_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+/** Lists belong to households n:m; in the MVP always the default household. */
+export const listHouseholds = sqliteTable(
+  'list_households',
+  {
+    listId: text('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.listId, t.householdId] })],
+);
+
+export const listMembers = sqliteTable(
+  'list_members',
+  {
+    listId: text('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.listId, t.userId] })],
+);
+
 /** One-time codes handed to the client after the OIDC callback; stored hashed. */
 export const loginCodes = sqliteTable('login_codes', {
   id: text('id').primaryKey(),

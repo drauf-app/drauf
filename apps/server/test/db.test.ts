@@ -2,15 +2,23 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { connectDatabase, type Database, runMigrations } from '../src/db/index.js';
 import {
   addHouseholdMember,
+  addListHousehold,
+  addListMember,
   createHousehold,
+  createList,
   createRefreshToken,
   createUser,
+  deleteList,
   deleteRefreshToken,
   getDefaultHousehold,
+  getListById,
   getRefreshTokenByHash,
   getUserById,
+  isUserInListHousehold,
   listHouseholdMembers,
+  listListsForUser,
   listRefreshTokensByUser,
+  updateList,
   updateUserLoginState,
 } from '../src/db/repositories.js';
 import { DEFAULT_HOUSEHOLD_ID, seedDefaultHousehold } from '../src/db/seed.js';
@@ -133,6 +141,37 @@ function suite(getDb: () => Database) {
     await db.delete(t.users).where(eq(t.users.id, user.id));
 
     expect(await getRefreshTokenByHash(database, 'hash-2')).toBeUndefined();
+  });
+
+  it('stores lists with household links and memberships', async () => {
+    const database = getDb();
+    const user = await createUser(database, { username: 'kathrin', displayName: 'Kathrin' });
+    const list = await createList(database, {
+      name: 'Weekly shop',
+      icon: 'cart',
+      color: '#33AA55',
+      ownerId: user.id,
+    });
+
+    await addListHousehold(database, list.id, DEFAULT_HOUSEHOLD_ID);
+    await addHouseholdMember(database, DEFAULT_HOUSEHOLD_ID, user.id);
+    await addListMember(database, list.id, user.id);
+    // Adding twice is idempotent.
+    await addListMember(database, list.id, user.id);
+
+    expect(await listListsForUser(database, user.id)).toEqual([list]);
+    expect(await isUserInListHousehold(database, list.id, user.id)).toBe(true);
+
+    await updateList(database, list.id, { name: 'Drugstore', archived: true });
+    expect(await getListById(database, list.id)).toMatchObject({
+      name: 'Drugstore',
+      archived: true,
+      icon: 'cart',
+    });
+
+    await deleteList(database, list.id);
+    expect(await getListById(database, list.id)).toBeUndefined();
+    expect(await listListsForUser(database, user.id)).toEqual([]);
   });
 }
 
