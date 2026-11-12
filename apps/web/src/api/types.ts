@@ -66,6 +66,8 @@ export interface EntryView {
   name: string;
   nameNormalized: string;
   variant: string | null;
+  /** Comma list of fixed shopping flags (Angebot, Dringend, …). */
+  flags: string | null;
   note: string | null;
   categoryId: string | null;
   fieldTimes: string | null;

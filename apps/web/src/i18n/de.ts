@@ -91,6 +91,9 @@ export const de = {
     close: 'Schließen',
     customVariant: 'Eigene Variante',
     applyVariant: 'Variante übernehmen',
+    editDetails: 'Eigene Details bearbeiten',
+    detailsField: 'Details',
+    closeDetails: 'Details schließen',
   },
   import: {
     title: 'Rezept-Import',

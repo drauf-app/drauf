@@ -139,6 +139,8 @@ export interface ListEntry {
   name: string;
   nameNormalized: string;
   variant: string | null;
+  /** Comma list of fixed shopping flags (badges; not part of the merge key). */
+  flags: string | null;
   note: string | null;
   categoryId: string | null;
   /** JSON object of per-field last-write times (epoch ms) for sync LWW. */

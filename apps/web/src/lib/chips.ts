@@ -141,6 +141,15 @@ export function variantTogglePatch(
   return { variant: joinVariants(next) };
 }
 
+/** Toggles one fixed shopping flag on the entry. */
+export function flagsTogglePatch(entry: { flags: string | null }, flag: string): PatchEntryInput {
+  const current = splitVariants(entry.flags);
+  const next = current.includes(flag)
+    ? current.filter((value) => value !== flag)
+    : [...current, flag];
+  return { flags: joinVariants(next) };
+}
+
 /** Merges typed modifiers (possibly a comma list) into the entry's variants. */
 export function addVariantsPatch(entry: { variant: string | null }, text: string): PatchEntryInput {
   const next = splitVariants(entry.variant);

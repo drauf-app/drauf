@@ -1225,3 +1225,71 @@ button:disabled {
   border-radius: 999px;
   font-size: 0.85rem;
 }
+
+/* Shopping flags and the details editor */
+
+.entry-flag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgb(217 119 6 / 16%);
+  color: #b45309;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .entry-flag {
+    color: #fbbf24;
+  }
+}
+
+.tile-flags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.tile-flags .entry-flag {
+  margin-left: 0;
+}
+
+.chip-flag {
+  border-style: dashed;
+}
+
+.chip-flag.active {
+  background: rgb(217 119 6 / 20%);
+  border: 1px solid #b45309;
+  color: #b45309;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chip-flag.active {
+    color: #fbbf24;
+    border-color: #fbbf24;
+  }
+}
+
+.details-toggle {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+}
+
+.details-editor {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.details-editor input {
+  flex: 1;
+}

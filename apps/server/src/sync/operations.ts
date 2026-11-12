@@ -1,4 +1,5 @@
 import type { CatalogIndex } from '@drauf/catalog';
+import { ENTRY_FLAGS, splitVariants } from '@drauf/shared';
 import type { Database } from '../db/index.js';
 import {
   deleteListEntry,
@@ -198,6 +199,7 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
   const scalarFields = [
     ['name', 100],
     ['variant', 64],
+    ['flags', 128],
     ['note', 500],
     ['categoryId', 64],
   ] as const;
@@ -221,6 +223,14 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
         throw new OperationError('invalid_category');
       }
       patch.categoryId = value;
+    } else if (field === 'flags') {
+      if (
+        value !== null &&
+        splitVariants(value).some((flag) => !(ENTRY_FLAGS as readonly string[]).includes(flag))
+      ) {
+        throw new OperationError('invalid_payload');
+      }
+      patch.flags = value;
     } else {
       patch[field] = value;
     }

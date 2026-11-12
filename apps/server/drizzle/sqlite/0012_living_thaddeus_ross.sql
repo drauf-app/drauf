@@ -1,0 +1,1 @@
+ALTER TABLE `list_entries` ADD `flags` text;

@@ -1,4 +1,5 @@
 import type { CatalogIndex } from '@drauf/catalog';
+import { ENTRY_FLAGS, joinVariants, splitVariants } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
@@ -47,6 +48,7 @@ const patchBody = {
     unit: { type: 'string', maxLength: 32 },
     count: { type: 'integer', minimum: 1, maximum: 99 },
     variant: { type: 'string', maxLength: 64 },
+    flags: { type: 'string', maxLength: 128 },
     note: { type: 'string', maxLength: 500 },
     categoryId: { type: 'string', maxLength: 64 },
   },
@@ -78,7 +80,10 @@ interface AddInput {
   categoryId?: string;
 }
 
-interface PatchInput extends Partial<AddInput> {}
+interface PatchInput extends Partial<AddInput> {
+  /** Comma list of fixed shopping flags; '' clears them. */
+  flags?: string;
+}
 
 interface ListParamsInput {
   id: string;
@@ -175,7 +180,7 @@ export function entryRoutes(
         if (resolved?.entry === undefined) return reply;
         let entry = resolved.entry;
 
-        const { name, variant, note, quantity, unit, count, categoryId } = request.body;
+        const { name, variant, flags, note, quantity, unit, count, categoryId } = request.body;
         const patch: Parameters<typeof updateListEntry>[2] = {};
         const editedFields: string[] = [];
         if (categoryId !== undefined) {
@@ -197,6 +202,14 @@ export function entryRoutes(
         if (variant !== undefined) {
           patch.variant = variant.trim() === '' ? null : variant.trim();
           editedFields.push('variant');
+        }
+        if (flags !== undefined) {
+          const parsed = splitVariants(flags);
+          if (parsed.some((flag) => !(ENTRY_FLAGS as readonly string[]).includes(flag))) {
+            return reply.code(400).send({ error: 'invalid_flags' });
+          }
+          patch.flags = parsed.length === 0 ? null : joinVariants(parsed);
+          editedFields.push('flags');
         }
         if (note !== undefined) {
           patch.note = note.trim() === '' ? null : note.trim();

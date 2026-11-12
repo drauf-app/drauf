@@ -45,6 +45,7 @@ function entryView(overrides: Partial<EntryView>): EntryView {
     name: 'Milch',
     nameNormalized: 'milch',
     variant: null,
+    flags: null,
     note: null,
     categoryId: 'c1',
     fieldTimes: null,
@@ -388,5 +389,95 @@ describe('tile view', () => {
 
     await screen.findByText('Milch');
     expect(document.querySelector('.entries.tiles')).not.toBeNull();
+  });
+});
+
+describe('flags and the details editor', () => {
+  function stubWithPatchReducer() {
+    const patched: string[] = [];
+    let current = entryView({ id: 'e7', name: 'Nudeln', nameNormalized: 'nudeln' });
+    stubListApi({
+      onEntryPost: () => current,
+      onEntryPatch: (_url, body) => {
+        patched.push(body);
+        const fields = JSON.parse(body) as {
+          quantity?: number;
+          unit?: string;
+          count?: number;
+          variant?: string;
+          flags?: string;
+        };
+        current = {
+          ...current,
+          ...(fields.variant === undefined ? {} : { variant: fields.variant || null }),
+          ...(fields.flags === undefined ? {} : { flags: fields.flags || null }),
+          ...(fields.quantity !== undefined || fields.count !== undefined
+            ? {
+                quantities: [
+                  {
+                    unit: fields.unit === '' || fields.unit === undefined ? null : fields.unit,
+                    quantity: fields.quantity ?? fields.count ?? 0,
+                    ...(fields.quantity !== undefined && fields.count !== undefined
+                      ? { count: fields.count }
+                      : {}),
+                  },
+                ],
+              }
+            : fields.unit !== undefined
+              ? { quantities: [] }
+              : {}),
+        };
+        return current;
+      },
+    });
+    return patched;
+  }
+
+  async function openDetails(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(await screen.findByLabelText('Was brauchst du?'), 'nud');
+    await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
+    await screen.findByLabelText('Nächster Artikel …');
+  }
+
+  it('toggles fixed flags and shows them as badges', async () => {
+    const patched = stubWithPatchReducer();
+    renderListPage();
+    const user = userEvent.setup();
+    await openDetails(user);
+
+    await user.click(screen.getByRole('button', { name: 'Dringend' }));
+    expect(JSON.parse(patched[0] ?? '{}')).toEqual({ flags: 'Dringend' });
+    expect(await screen.findByText('Dringend', { selector: '.entry-flag' })).toBeDefined();
+
+    await user.click(screen.getByRole('button', { name: 'Angebot' }));
+    expect(JSON.parse(patched[1] ?? '{}')).toEqual({ flags: 'Dringend, Angebot' });
+  });
+
+  it('parses the details text field live in both directions', async () => {
+    const patched = stubWithPatchReducer();
+    renderListPage();
+    const user = userEvent.setup();
+    await openDetails(user);
+
+    await user.click(screen.getByRole('button', { name: 'Eigene Details bearbeiten' }));
+    const field = screen.getByLabelText('Details') as HTMLInputElement;
+    expect(field.value).toBe('');
+
+    await user.type(field, '3, 3-lagig, sehr weich');
+    // The count chip reflects the field immediately, before any request.
+    expect(screen.getByRole('button', { name: '3' }).className).toContain('active');
+
+    // Tapping a chip while the field is open edits the text, not the entry.
+    await user.click(screen.getByRole('button', { name: '500 g' }));
+    expect(field.value).toBe('3, 500 g, 3-lagig, sehr weich');
+
+    // Closing flushes one PATCH with everything parsed from the field.
+    await user.click(screen.getByRole('button', { name: 'Details schließen' }));
+    expect(JSON.parse(patched[patched.length - 1] ?? '{}')).toEqual({
+      quantity: 500,
+      unit: 'g',
+      count: 3,
+      variant: '3-lagig, sehr weich',
+    });
   });
 });

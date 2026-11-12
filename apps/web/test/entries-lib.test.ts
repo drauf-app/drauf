@@ -27,6 +27,7 @@ function entry(id: string, overrides: Partial<EntryView> = {}): EntryView {
     name: id,
     nameNormalized: id,
     variant: null,
+    flags: null,
     note: null,
     categoryId: null,
     fieldTimes: null,

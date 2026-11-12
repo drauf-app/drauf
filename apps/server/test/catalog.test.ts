@@ -497,3 +497,76 @@ describe('pack counts (2 × 500 g)', () => {
     expect(suggestion?.lastCount).toBe(2);
   });
 });
+
+describe('entry flags', () => {
+  let ctx: TestApp;
+  let christian: { id: string; token: string };
+  let listId: string;
+  let entryId: string;
+
+  function as(user: { token: string }) {
+    return { authorization: `Bearer ${user.token}` };
+  }
+
+  beforeEach(async () => {
+    ctx = await createTestApp({}, { catalog: fakeCatalog });
+    const result = await createLocalUser(ctx.database, {
+      username: 'christian',
+      password: PASSWORD,
+      displayName: 'Christian',
+      isAdmin: false,
+    });
+    if (!result.ok) throw new Error('fixture user not created');
+    const login = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'christian', password: PASSWORD },
+    });
+    christian = {
+      id: result.user.id,
+      token: (login.json() as { accessToken: string }).accessToken,
+    };
+    const list = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Weekly shop' },
+    });
+    listId = (list.json() as { id: string }).id;
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+      payload: { name: 'Milch' },
+    });
+    entryId = (created.json() as { id: string }).id;
+  });
+
+  afterEach(async () => {
+    await ctx.close();
+  });
+
+  async function patchFlags(flags: string) {
+    return ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${entryId}`,
+      headers: as(christian),
+      payload: { flags },
+    });
+  }
+
+  it('sets, keeps and clears the fixed flags', async () => {
+    const set = await patchFlags('Dringend, Angebot');
+    expect(set.statusCode).toBe(200);
+    expect((set.json() as { flags: string }).flags).toBe('Dringend, Angebot');
+
+    const cleared = await patchFlags('');
+    expect((cleared.json() as { flags: string | null }).flags).toBeNull();
+  });
+
+  it('rejects unknown flags', async () => {
+    const response = await patchFlags('Dringend, Später');
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ error: 'invalid_flags' });
+  });
+});
