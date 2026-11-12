@@ -45,6 +45,8 @@ function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCa
   // Row midpoints captured at drag start: the preview reorders the DOM, so
   // live positions would drift under the pointer.
   const midpoints = useRef<number[]>([]);
+  const dragRef = useRef(drag);
+  dragRef.current = drag;
   const ordered = orderedCategories(store, categories);
 
   function run(action: () => Promise<void>): void {
@@ -73,36 +75,66 @@ function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCa
     saveOrder(index, target);
   }
 
+  const saveOrderRef = useRef(saveOrder);
+  saveOrderRef.current = saveOrder;
+  const dragCleanup = useRef<(() => void) | undefined>(undefined);
+  // A drag may outlive the component (navigation mid-drag): drop listeners.
+  useEffect(() => () => dragCleanup.current?.(), []);
+
+  /**
+   * The preview reorders the DOM, which cancels pointer capture on the
+   * handle — so the drag is tracked with window-level listeners, registered
+   * synchronously here so even the fastest drag never misses its events.
+   */
   function startDrag(index: number, event: ReactPointerEvent<HTMLButtonElement>): void {
     const list = listRef.current;
-    if (list === null) {
+    if (list === null || dragCleanup.current !== undefined) {
       return;
     }
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
     midpoints.current = [...list.querySelectorAll('li')].map((row) => {
       const rect = row.getBoundingClientRect();
       return rect.top + rect.height / 2;
     });
-    setDrag({ from: index, to: index });
-  }
+    dragRef.current = { from: index, to: index };
+    setDrag(dragRef.current);
 
-  function updateDrag(event: ReactPointerEvent<HTMLButtonElement>): void {
-    if (drag === undefined) {
-      return;
-    }
-    const to = dropTargetIndex(midpoints.current, drag.from, event.clientY);
-    if (to !== drag.to) {
-      setDrag({ from: drag.from, to });
-    }
-  }
-
-  function endDrag(): void {
-    if (drag === undefined) {
-      return;
-    }
-    setDrag(undefined);
-    saveOrder(drag.from, drag.to);
+    const onMove = (moveEvent: PointerEvent) => {
+      const current = dragRef.current;
+      if (current === undefined) {
+        return;
+      }
+      moveEvent.preventDefault();
+      const to = dropTargetIndex(midpoints.current, current.from, moveEvent.clientY);
+      if (to !== current.to) {
+        dragRef.current = { from: current.from, to };
+        setDrag(dragRef.current);
+      }
+    };
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      dragCleanup.current = undefined;
+    };
+    const onUp = () => {
+      const current = dragRef.current;
+      dragRef.current = undefined;
+      setDrag(undefined);
+      cleanup();
+      if (current !== undefined) {
+        saveOrderRef.current(current.from, current.to);
+      }
+    };
+    const onCancel = () => {
+      dragRef.current = undefined;
+      setDrag(undefined);
+      cleanup();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    dragCleanup.current = cleanup;
   }
 
   function handleRename(event: FormEvent): void {
@@ -166,9 +198,6 @@ function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCa
                 tabIndex={-1}
                 aria-hidden="true"
                 onPointerDown={(event) => startDrag(index, event)}
-                onPointerMove={updateDrag}
-                onPointerUp={endDrag}
-                onPointerCancel={() => setDrag(undefined)}
               >
                 ⠿
               </button>
