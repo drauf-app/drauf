@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { ImportPage } from './pages/ImportPage';
 import { ListPage } from './pages/ListPage';
 import { ListsPage } from './pages/ListsPage';
 import { LoginPage } from './pages/LoginPage';
@@ -20,6 +21,7 @@ export function App() {
             <Route path="/lists/:id" element={<ListPage />} />
             <Route path="/plan" element={<PlanPage />} />
             <Route path="/stores" element={<StoresPage />} />
+            <Route path="/import" element={<ImportPage />} />
           </Route>
         </Route>
       </Routes>

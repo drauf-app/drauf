@@ -699,3 +699,106 @@ button:disabled {
   color: var(--error);
   margin-left: auto;
 }
+
+/* Recipe import */
+
+.import-input {
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+.import-input input {
+  flex: 1;
+}
+
+.import-preview {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.import-head {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.import-head h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+}
+
+.import-image {
+  width: 7rem;
+  height: 7rem;
+  object-fit: cover;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.import-servings {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.import-servings button {
+  padding: 0.2rem 0.7rem;
+}
+
+.import-preview h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.import-ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.import-ingredients label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.import-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.8rem;
+}
+
+.import-target {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.import-targets select {
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.import-plan-target {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.import-plan-target select {
+  flex: 1;
+}
