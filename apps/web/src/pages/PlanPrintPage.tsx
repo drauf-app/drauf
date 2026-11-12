@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { fetchHousehold, fetchPlanEntries, fetchSlots } from '../api/plan';
 import type { HouseholdMember, MealSlot, PlanEntry } from '../api/types';
 import { useT } from '../i18n';
+import { sourceLabel } from '../lib/source';
 import { daysFrom, formatDay, formatWeek } from '../lib/week';
 
 type PrintTemplate = 'week' | 'calendar';
@@ -45,21 +46,16 @@ function weekdayName(day: number): string {
   return WEEKDAY_FORMAT.format(new Date(2026, 10, 1 + day));
 }
 
+/** "Tomatensuppe (Cookidoo)" — the source prints even though paper can't click. */
 function entryLabel(entry: PlanEntry | undefined): string {
   if (entry === undefined) {
     return '';
   }
-  if (entry.text !== null) {
-    return entry.text;
+  if (entry.link === null) {
+    return entry.text ?? '';
   }
-  if (entry.link !== null) {
-    try {
-      return new URL(entry.link).hostname;
-    } catch {
-      return entry.link;
-    }
-  }
-  return '';
+  const source = sourceLabel(entry.link);
+  return entry.text === null ? source : `${entry.text} (${source})`;
 }
 
 function chunkWeeks(days: string[]): string[][] {

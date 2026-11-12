@@ -1,16 +1,11 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  type ApplyInput,
-  applyImport,
-  type ImportPreview,
-  previewImport,
-  proxiedImageUrl,
-} from '../api/import';
+import { type ApplyInput, applyImport, type ImportPreview, previewImport } from '../api/import';
 import { fetchLists } from '../api/lists';
 import { fetchSlots } from '../api/plan';
 import type { List, MealSlot } from '../api/types';
 import { ApiError } from '../auth/store';
+import { ProxiedImage } from '../components/ProxiedImage';
 import { useT } from '../i18n';
 import { ingredientLabel, servingsFactor, toApplyItem } from '../lib/import';
 import { formatDay, isoDate } from '../lib/week';
@@ -183,7 +178,7 @@ export function ImportPage() {
         <div className="import-preview">
           <div className="import-head">
             {preview.imageUrl !== null && (
-              <img className="import-image" src={proxiedImageUrl(preview.imageUrl)} alt="" />
+              <ProxiedImage className="import-image" imageUrl={preview.imageUrl} />
             )}
             <div>
               <h2>{preview.title ?? preview.url}</h2>

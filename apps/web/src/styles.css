@@ -659,10 +659,12 @@ button:disabled {
   padding: 0.2rem;
 }
 
-.plan-open-link {
+.plan-source {
   color: var(--accent);
   text-decoration: none;
-  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.3rem;
+  white-space: nowrap;
 }
 
 .plan-editor {

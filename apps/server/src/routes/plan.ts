@@ -1,3 +1,4 @@
+import { matchProvider, type ProviderContext, type RecipeProvider } from '@drauf/providers';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
@@ -149,9 +150,33 @@ export function planRoutes(
   database: Database,
   guards: AuthGuards,
   hub: SyncHub,
+  providers: RecipeProvider[],
+  providerContext: ProviderContext,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
+
+    /**
+     * Link preview (W4): a provider-matching link fills in title and image
+     * when the entry has none. Every failure degrades to the bare link.
+     */
+    async function previewForLink(link: string): Promise<{ text?: string; imageUrl?: string }> {
+      const match = matchProvider(providers, link);
+      if (match === undefined) {
+        return {};
+      }
+      try {
+        const preview = await match.provider.fetch(match.url, providerContext);
+        return {
+          ...(preview.title === null ? {} : { text: preview.title }),
+          ...(preview.imageUrl === null || !isValidLink(preview.imageUrl)
+            ? {}
+            : { imageUrl: preview.imageUrl }),
+        };
+      } catch {
+        return {};
+      }
+    }
 
     async function household(reply: FastifyReply, auth: AuthUser) {
       const result = await getHouseholdForMember(database, auth.id);
@@ -290,12 +315,17 @@ export function planRoutes(
         const home = await household(reply, auth);
         if (home === undefined) return reply;
 
-        const text = normalized(request.body.text) ?? null;
+        let text = normalized(request.body.text) ?? null;
+        let imageUrl = normalized(request.body.imageUrl) ?? null;
         const link = normalized(request.body.link) ?? null;
-        const imageUrl = normalized(request.body.imageUrl) ?? null;
         const cookId = normalized(request.body.cookId) ?? null;
         if (text === null && link === null) {
           return reply.code(400).send({ error: 'text_or_link_required' });
+        }
+        if (text === null && link !== null) {
+          const preview = await previewForLink(link);
+          text = preview.text ?? null;
+          imageUrl ??= preview.imageUrl ?? null;
         }
         const error = await validateEntryInput(home.id, {
           date: request.body.date,
@@ -375,6 +405,17 @@ export function planRoutes(
         const next = { ...entry, ...patch };
         if (next.text === null && next.link === null) {
           return reply.code(400).send({ error: 'text_or_link_required' });
+        }
+        if (next.text === null && next.link !== null) {
+          const preview = await previewForLink(next.link);
+          if (preview.text !== undefined) {
+            patch.text = preview.text;
+            next.text = preview.text;
+          }
+          if (next.imageUrl === null && preview.imageUrl !== undefined) {
+            patch.imageUrl = preview.imageUrl;
+            next.imageUrl = preview.imageUrl;
+          }
         }
         // Moving (W6): the target day/slot must be free, ignoring the entry itself.
         const occupied = await findPlanEntryForSlot(database, home.id, next.date, next.slotId);
