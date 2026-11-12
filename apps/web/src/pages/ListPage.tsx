@@ -10,6 +10,7 @@ import {
   fetchCategories,
   fetchEntries,
   fetchList,
+  type PatchEntryInput,
   patchEntry,
   patchList,
 } from '../api/lists';
@@ -17,6 +18,7 @@ import { fetchStores } from '../api/stores';
 import type { Category, EntryView, ListDetail, StoreWithOrder, Suggestion } from '../api/types';
 import { ApiError, useAuth } from '../auth/store';
 import { ChipBar } from '../components/ChipBar';
+import { EntryEditForm } from '../components/EntryEditForm';
 import { QuickAdd } from '../components/QuickAdd';
 import { useT } from '../i18n';
 import { buildChipGroups, type Chip, type ChipGroups } from '../lib/chips';
@@ -59,18 +61,20 @@ function localEntryView(listId: string, input: AddEntryInput): EntryView {
   };
 }
 
-/** Mirrors a queued entry.setFields locally while offline. */
-function patchEntryLocally(
-  entry: EntryView,
-  patch: { quantity?: number; unit?: string; variant?: string; categoryId?: string },
-): EntryView {
+/** Mirrors a queued entry.setFields locally while offline ('' clears a field). */
+function patchEntryLocally(entry: EntryView, patch: PatchEntryInput): EntryView {
+  const cleared = (value: string | undefined) => (value === '' ? null : value);
   return {
     ...entry,
-    ...(patch.variant === undefined ? {} : { variant: patch.variant }),
-    ...(patch.categoryId === undefined ? {} : { categoryId: patch.categoryId }),
-    ...(patch.quantity === undefined
-      ? {}
-      : { quantities: [{ unit: patch.unit ?? null, quantity: patch.quantity }] }),
+    ...(patch.name === undefined || patch.name === '' ? {} : { name: patch.name }),
+    ...(patch.variant === undefined ? {} : { variant: cleared(patch.variant) ?? null }),
+    ...(patch.note === undefined ? {} : { note: cleared(patch.note) ?? null }),
+    ...(patch.categoryId === undefined ? {} : { categoryId: cleared(patch.categoryId) ?? null }),
+    ...(patch.quantity !== undefined
+      ? { quantities: [{ unit: cleared(patch.unit) ?? null, quantity: patch.quantity }] }
+      : patch.unit !== undefined
+        ? { quantities: [] } // unit without quantity clears all portions
+        : {}),
   };
 }
 
@@ -81,13 +85,12 @@ interface ChipTarget {
 
 interface EntryRowProps {
   entry: EntryView;
-  categories: Category[];
   onToggle: (entry: EntryView) => void;
   onDelete: (entry: EntryView) => void;
-  onSetCategory: (entry: EntryView, categoryId: string) => void;
+  onEdit: (entry: EntryView) => void;
 }
 
-function EntryRow({ entry, categories, onToggle, onDelete, onSetCategory }: EntryRowProps) {
+function EntryRow({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
   const t = useT();
   const checked = entry.checkedAt !== null;
   const quantities = formatQuantities(entry.quantities);
@@ -111,25 +114,14 @@ function EntryRow({ entry, categories, onToggle, onDelete, onSetCategory }: Entr
         </span>
         {quantities !== '' && <span className="entry-quantity">{quantities}</span>}
       </button>
-      {!checked && entry.categoryId === null && categories.length > 0 && (
-        <select
-          className="entry-category"
-          aria-label={t.list.setCategory}
-          value=""
-          onChange={(event) => {
-            if (event.target.value !== '') {
-              onSetCategory(entry, event.target.value);
-            }
-          }}
-        >
-          <option value="">{t.list.setCategory}</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      )}
+      <button
+        type="button"
+        className="entry-edit-button"
+        aria-label={`${t.list.editEntry}: ${entry.name}`}
+        onClick={() => onEdit(entry)}
+      >
+        ✎
+      </button>
       <button
         type="button"
         className="entry-delete"
@@ -157,6 +149,7 @@ export function ListPage() {
   const [actionFailed, setActionFailed] = useState(false);
   const [chipTarget, setChipTarget] = useState<ChipTarget>();
   const [renaming, setRenaming] = useState<string>();
+  const [editingId, setEditingId] = useState<string>();
 
   const reload = useCallback(async () => {
     const [listResult, entriesResult, categoriesResult, storesResult] = await Promise.all([
@@ -259,10 +252,7 @@ export function ListPage() {
   }
 
   /** Field edit with offline fallback: queue entry.setFields and apply locally. */
-  function setFields(
-    entryId: string,
-    fields: { quantity?: number; unit?: string; variant?: string; categoryId?: string },
-  ): void {
+  function setFields(entryId: string, fields: PatchEntryInput): void {
     setActionFailed(false);
     void (async () => {
       try {
@@ -342,8 +332,9 @@ export function ListPage() {
     }
   }
 
-  function handleSetCategory(entry: EntryView, categoryId: string): void {
-    setFields(entry.id, { categoryId });
+  function handleEditSave(entry: EntryView, fields: PatchEntryInput): void {
+    setEditingId(undefined);
+    setFields(entry.id, fields);
   }
 
   function handleRename(event: FormEvent): void {
@@ -405,6 +396,30 @@ export function ListPage() {
   const groups = groupEntries(entries, categories, selectedStore?.categoryOrder);
   const recent = recentEntries(entries);
 
+  function renderEntry(entry: EntryView) {
+    if (entry.id === editingId) {
+      return (
+        <li key={entry.id} className="entry entry-editing">
+          <EntryEditForm
+            entry={entry}
+            categories={categories}
+            onSave={(fields) => handleEditSave(entry, fields)}
+            onCancel={() => setEditingId(undefined)}
+          />
+        </li>
+      );
+    }
+    return (
+      <EntryRow
+        key={entry.id}
+        entry={entry}
+        onToggle={handleToggle}
+        onDelete={handleDelete}
+        onEdit={(target) => setEditingId(target.id)}
+      />
+    );
+  }
+
   return (
     <section className="list-page">
       <header className="list-header">
@@ -463,36 +478,14 @@ export function ListPage() {
       {groups.map((group) => (
         <div key={group.category?.id ?? 'uncategorized'} className="category-group">
           <h2>{group.category?.name ?? t.list.uncategorized}</h2>
-          <ul className="entries">
-            {group.entries.map((entry) => (
-              <EntryRow
-                key={entry.id}
-                entry={entry}
-                categories={categories}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
-                onSetCategory={handleSetCategory}
-              />
-            ))}
-          </ul>
+          <ul className="entries">{group.entries.map(renderEntry)}</ul>
         </div>
       ))}
 
       {recent.length > 0 && (
         <details className="recent">
           <summary>{t.list.recent}</summary>
-          <ul className="entries">
-            {recent.map((entry) => (
-              <EntryRow
-                key={entry.id}
-                entry={entry}
-                categories={categories}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
-                onSetCategory={handleSetCategory}
-              />
-            ))}
-          </ul>
+          <ul className="entries">{recent.map(renderEntry)}</ul>
         </details>
       )}
 

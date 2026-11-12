@@ -989,3 +989,42 @@ button:disabled {
     background: #f0f0f0;
   }
 }
+
+/* Entry editing */
+
+.entry-edit-button {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  padding: 0.3rem 0.4rem;
+}
+
+.entry-editing {
+  padding: 0.6rem 0.8rem;
+}
+
+.entry-edit {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.8rem;
+}
+
+.entry-edit .entry-edit-wide {
+  grid-column: 1 / -1;
+}
+
+.entry-edit select {
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.entry-edit-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.4rem;
+}

@@ -219,3 +219,77 @@ describe('ListPage', () => {
     expect(screen.queryByText('Obst & Gemüse')).toBeNull();
   });
 });
+
+describe('entry editing', () => {
+  it('saves only the changed fields and renders the updated entry', async () => {
+    const patched: string[] = [];
+    stubListApi({
+      onEntryPatch: (_url, body) => {
+        patched.push(body);
+        return entryView({
+          variant: 'Bio',
+          categoryId: 'c6',
+          quantities: [{ unit: 'g', quantity: 500 }],
+        });
+      },
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten: Milch' }));
+    const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
+    expect(nameInput.value).toBe('Milch');
+
+    await user.type(screen.getByLabelText('Menge'), '500');
+    await user.type(screen.getByLabelText('Einheit'), 'g');
+    await user.type(screen.getByLabelText('Variante'), 'Bio');
+    await user.selectOptions(screen.getByLabelText('Kategorie'), 'c6');
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    expect(patched).toHaveLength(1);
+    expect(JSON.parse(patched[0] ?? '{}')).toEqual({
+      variant: 'Bio',
+      categoryId: 'c6',
+      quantity: 500,
+      unit: 'g',
+    });
+    expect(await screen.findByText('Bio')).toBeDefined();
+    expect(screen.getByText('500 g', { selector: '.entry-quantity' })).toBeDefined();
+    expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+
+  it('queues the edit as an offline operation when the server is unreachable', async () => {
+    stubListApi(); // no PATCH handler: the request fails like a network error
+    renderListPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten: Milch' }));
+    await user.type(screen.getByLabelText('Variante'), 'Bio');
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    expect(await screen.findByText('Bio')).toBeDefined();
+    expect(pendingOps()).toHaveLength(1);
+    expect(pendingOps()[0]).toMatchObject({
+      type: 'entry.setFields',
+      data: { listId: 'l1', entryId: 'e1', fields: { variant: 'Bio' } },
+    });
+  });
+
+  it('cancels without a request when nothing changed', async () => {
+    const patched: string[] = [];
+    stubListApi({
+      onEntryPatch: (_url, body) => {
+        patched.push(body);
+        return entryView({});
+      },
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten: Milch' }));
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    expect(patched).toHaveLength(0);
+    expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+});
