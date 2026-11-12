@@ -283,68 +283,70 @@ export function PlanPage() {
         </div>
       </header>
 
-      {days.map((day) => (
-        <div key={day} className="plan-day">
-          <h2>{formatDay(day)}</h2>
-          <div className="plan-slots">
-            {slots.map((slot) => {
-              const entry = byCell.get(cellKey(day, slot.id));
-              const editing = editor?.date === day && editor.slotId === slot.id;
-              return (
-                <div key={slot.id} className="plan-cell">
-                  <span className="plan-slot-name">{slot.name}</span>
-                  {editing ? (
-                    <EntryEditor
-                      date={day}
-                      slotId={slot.id}
-                      entry={entry}
-                      days={days}
-                      slots={slots}
-                      members={members}
-                      onClose={() => setEditor(undefined)}
-                      onSaved={handleSaved}
-                      onDeleted={handleDeleted}
-                    />
-                  ) : entry !== undefined ? (
-                    <button
-                      type="button"
-                      className="plan-entry"
-                      onClick={() => setEditor({ date: day, slotId: slot.id })}
-                    >
-                      <span className="plan-entry-text">
-                        {entry.text ?? (entry.link === null ? '' : sourceLabel(entry.link))}
-                      </span>
-                      {entry.cookId !== null && (
-                        <span className="plan-cook">{cookNames.get(entry.cookId) ?? ''}</span>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="plan-add"
-                      aria-label={`${t.plan.addEntry}: ${formatDay(day)}, ${slot.name}`}
-                      onClick={() => setEditor({ date: day, slotId: slot.id })}
-                    >
-                      +
-                    </button>
-                  )}
-                  {entry?.link != null && !editing && (
-                    <a
-                      className="plan-source"
-                      href={entry.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={t.plan.openLink}
-                    >
-                      ({sourceLabel(entry.link)})
-                    </a>
-                  )}
-                </div>
-              );
-            })}
+      <div className="plan-days">
+        {days.map((day) => (
+          <div key={day} className="plan-day">
+            <h2>{formatDay(day)}</h2>
+            <div className="plan-slots">
+              {slots.map((slot) => {
+                const entry = byCell.get(cellKey(day, slot.id));
+                const editing = editor?.date === day && editor.slotId === slot.id;
+                return (
+                  <div key={slot.id} className="plan-cell">
+                    <span className="plan-slot-name">{slot.name}</span>
+                    {editing ? (
+                      <EntryEditor
+                        date={day}
+                        slotId={slot.id}
+                        entry={entry}
+                        days={days}
+                        slots={slots}
+                        members={members}
+                        onClose={() => setEditor(undefined)}
+                        onSaved={handleSaved}
+                        onDeleted={handleDeleted}
+                      />
+                    ) : entry !== undefined ? (
+                      <button
+                        type="button"
+                        className="plan-entry"
+                        onClick={() => setEditor({ date: day, slotId: slot.id })}
+                      >
+                        <span className="plan-entry-text">
+                          {entry.text ?? (entry.link === null ? '' : sourceLabel(entry.link))}
+                        </span>
+                        {entry.cookId !== null && (
+                          <span className="plan-cook">{cookNames.get(entry.cookId) ?? ''}</span>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="plan-add"
+                        aria-label={`${t.plan.addEntry}: ${formatDay(day)}, ${slot.name}`}
+                        onClick={() => setEditor({ date: day, slotId: slot.id })}
+                      >
+                        +
+                      </button>
+                    )}
+                    {entry?.link != null && !editing && (
+                      <a
+                        className="plan-source"
+                        href={entry.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={t.plan.openLink}
+                      >
+                        ({sourceLabel(entry.link)})
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </section>
   );
 }
