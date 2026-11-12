@@ -49,10 +49,15 @@ export function buildChipGroups(suggestion: Suggestion | undefined): ChipGroups 
     });
   }
 
-  // The household's own recent variants come first, catalogue varieties after.
+  // The household's own recent variants come first, catalogue varieties
+  // after — deduplicated case-insensitively so "Festkochend" (learned) and
+  // "festkochend" (catalogue) do not both show.
   const varietyLabels: string[] = [];
+  const seenLabels = new Set<string>();
   for (const label of [...(suggestion?.recentVariants ?? []), ...(suggestion?.varieties ?? [])]) {
-    if (!varietyLabels.includes(label)) {
+    const key = label.toLowerCase();
+    if (!seenLabels.has(key)) {
+      seenLabels.add(key);
       varietyLabels.push(label);
     }
   }
@@ -112,13 +117,23 @@ export function amountReplacePatch(
     only !== undefined && only.unit !== null
       ? { quantity: only.quantity, unit: only.unit }
       : undefined;
+  // A bare pack count is stored as a plain unitless quantity ("3"), so a
+  // plain integer group reads as the current count when composing.
+  const count =
+    only?.count ??
+    (only !== undefined &&
+    only.unit === null &&
+    Number.isInteger(only.quantity) &&
+    only.quantity >= 1 &&
+    only.quantity <= 99
+      ? only.quantity
+      : undefined);
   if (chip.patch.count !== undefined) {
     if (active) {
       return size ?? { unit: '' }; // drop the count, keep the size (or clear all)
     }
     return { count: chip.patch.count, ...(size ?? {}) };
   }
-  const count = only?.count;
   if (active) {
     return count === undefined ? { unit: '' } : { count }; // drop the size, keep the count
   }

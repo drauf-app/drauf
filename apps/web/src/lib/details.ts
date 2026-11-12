@@ -33,7 +33,7 @@ function splitDetails(text: string): string[] {
 export function parseDetails(text: string): DetailsDraft {
   const draft: DetailsDraft = { modifiers: [] };
   for (const token of splitDetails(text)) {
-    if (draft.count === undefined && draft.quantity === undefined && /^\d{1,2}$/.test(token)) {
+    if (draft.count === undefined && /^\d{1,2}$/.test(token)) {
       const value = Number(token);
       if (value >= 1 && value <= 99) {
         draft.count = value;

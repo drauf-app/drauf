@@ -330,15 +330,25 @@ export function ListPage() {
     }
   }
 
-  /** Field edit with offline fallback: queue entry.setFields and apply locally. */
+  /**
+   * Field edit, applied optimistically so rapid chip taps compose against
+   * the fresh state; the server view reconciles, offline queues the op.
+   */
   function setFields(entryId: string, fields: PatchEntryInput): void {
     setActionFailed(false);
+    setEntries((previous) =>
+      (previous ?? []).map((item) =>
+        item.id === entryId ? patchEntryLocally(item, fields) : item,
+      ),
+    );
     void (async () => {
       try {
         applyView(await patchEntry(listId, entryId, fields));
       } catch (err) {
         if (!isOfflineError(err)) {
+          // The optimistic change may be wrong now: fall back to the server.
           setActionFailed(true);
+          void reload().catch(() => {});
           return;
         }
         enqueueOp({
@@ -347,11 +357,6 @@ export function ListPage() {
           time: nowIso(),
           data: { listId, entryId, fields },
         });
-        setEntries((previous) =>
-          (previous ?? []).map((item) =>
-            item.id === entryId ? patchEntryLocally(item, fields) : item,
-          ),
-        );
       }
     })();
   }

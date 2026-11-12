@@ -67,6 +67,13 @@ h1 {
   display: flex;
   gap: 0.25rem;
   flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.app-header nav::-webkit-scrollbar {
+  display: none;
 }
 
 .app-header nav a {
@@ -86,6 +93,19 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .app-header {
+    gap: 0.6rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .user-name {
+    display: none;
+  }
 }
 
 .user-name {
@@ -155,7 +175,19 @@ input {
   font-size: 1rem;
 }
 
-input:focus-visible {
+select {
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -414,6 +446,9 @@ button:disabled {
   padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px));
   background: var(--surface);
   border-top: 1px solid var(--border);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  box-shadow: 0 -8px 28px rgb(0 0 0 / 12%);
 }
 
 .quick-add-area > * {
@@ -505,11 +540,7 @@ button:disabled {
 /* Store picker + stores page */
 
 .store-picker {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
   background: var(--surface);
-  color: var(--text);
   font-size: 0.9rem;
 }
 
@@ -684,14 +715,6 @@ button:disabled {
   flex: 1;
 }
 
-.plan-editor select {
-  padding: 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
-}
-
 .plan-editor-actions {
   display: flex;
   gap: 0.4rem;
@@ -788,14 +811,6 @@ button:disabled {
   color: var(--text);
 }
 
-.import-targets select {
-  padding: 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
-}
-
 .import-plan-target {
   display: flex;
   gap: 0.5rem;
@@ -845,14 +860,6 @@ button:disabled {
 .print-controls label {
   gap: 0.15rem;
   font-size: 0.8rem;
-}
-
-.print-controls select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
 }
 
 .print-header {
@@ -1013,14 +1020,6 @@ button:disabled {
 
 .entry-edit .entry-edit-wide {
   grid-column: 1 / -1;
-}
-
-.entry-edit select {
-  padding: 0.45rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
 }
 
 .entry-edit-actions {
@@ -1198,8 +1197,8 @@ button:disabled {
   border: none;
   background: none;
   color: var(--text-muted);
-  font-size: 0.85rem;
-  padding: 0.15rem 0.3rem;
+  font-size: 1rem;
+  padding: 0.3rem 0.45rem;
 }
 
 .chip-add {
@@ -1259,7 +1258,15 @@ button:disabled {
 }
 
 .chip-flag {
-  border-style: dashed;
+  border: 1px dashed rgb(180 83 9 / 50%);
+  color: #b45309;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chip-flag {
+    border-color: rgb(251 191 36 / 50%);
+    color: #fbbf24;
+  }
 }
 
 .chip-flag.active {

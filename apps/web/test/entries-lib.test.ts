@@ -156,6 +156,15 @@ describe('buildChipGroups', () => {
     expect(groups.varieties.map((chip) => chip.label)).toEqual(['Paprika', 'Penne', 'Spaghetti']);
   });
 
+  it('dedupes varieties case-insensitively, learned casing first', () => {
+    const groups = buildChipGroups({
+      ...suggestion,
+      varieties: ['festkochend', 'mehlig'],
+      recentVariants: ['Festkochend'],
+    });
+    expect(groups.varieties.map((chip) => chip.label)).toEqual(['Festkochend', 'mehlig']);
+  });
+
   it('offers only counts for free-text adds', () => {
     const groups = buildChipGroups(undefined);
     expect(groups.counts).toHaveLength(4);
@@ -219,6 +228,15 @@ describe('amountReplacePatch', () => {
       quantity: 500,
       unit: 'g',
       count: 2,
+    });
+  });
+
+  it('reads a bare unitless amount as the current count when composing', () => {
+    const counted = entry('hack', { quantities: [{ unit: null, quantity: 3 }] });
+    expect(amountReplacePatch(counted, size500, false)).toEqual({
+      quantity: 500,
+      unit: 'g',
+      count: 3,
     });
   });
 
