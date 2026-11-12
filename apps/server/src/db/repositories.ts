@@ -411,6 +411,7 @@ export async function createListEntry(
   const { db, t } = unwrap(database);
   const entry: ListEntry = {
     id: newId(),
+    flags: null,
     fieldTimes: null,
     checkedAt: null,
     checkedById: null,
@@ -470,7 +471,10 @@ export async function updateListEntry(
   database: Database,
   entryId: string,
   patch: Partial<
-    Pick<ListEntry, 'name' | 'nameNormalized' | 'variant' | 'note' | 'categoryId' | 'fieldTimes'>
+    Pick<
+      ListEntry,
+      'name' | 'nameNormalized' | 'variant' | 'flags' | 'note' | 'categoryId' | 'fieldTimes'
+    >
   >,
 ): Promise<void> {
   const { db, t } = unwrap(database);

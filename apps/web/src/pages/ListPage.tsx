@@ -1,4 +1,4 @@
-import { normalizeItemName } from '@drauf/shared';
+import { normalizeItemName, splitVariants } from '@drauf/shared';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
@@ -47,6 +47,7 @@ function localEntryView(listId: string, input: AddEntryInput): EntryView {
     name: input.name.trim().replace(/\s+/g, ' '),
     nameNormalized: normalizeItemName(input.name),
     variant: input.variant ?? null,
+    flags: null,
     note: input.note ?? null,
     categoryId: input.categoryId ?? null,
     fieldTimes: null,
@@ -85,6 +86,7 @@ function patchEntryLocally(entry: EntryView, patch: PatchEntryInput): EntryView 
     ...entry,
     ...(patch.name === undefined || patch.name === '' ? {} : { name: patch.name }),
     ...(patch.variant === undefined ? {} : { variant: cleared(patch.variant) ?? null }),
+    ...(patch.flags === undefined ? {} : { flags: cleared(patch.flags) ?? null }),
     ...(patch.note === undefined ? {} : { note: cleared(patch.note) ?? null }),
     ...(patch.categoryId === undefined ? {} : { categoryId: cleared(patch.categoryId) ?? null }),
     ...(hasAmount ? { quantities: localQuantities(patch) } : {}),
@@ -117,6 +119,11 @@ function EntryRow({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
           <span className="entry-name">
             {entry.name}
             {entry.variant !== null && <span className="entry-variant"> {entry.variant}</span>}
+            {splitVariants(entry.flags).map((flag) => (
+              <span key={flag} className="entry-flag">
+                {flag}
+              </span>
+            ))}
           </span>
           {entry.note !== null && <span className="entry-note">{entry.note}</span>}
         </span>
@@ -163,6 +170,15 @@ function EntryTile({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
         </span>
         <span className="tile-name">{entry.name}</span>
         {meta !== '' && <span className="tile-meta">{meta}</span>}
+        {entry.flags !== null && (
+          <span className="tile-flags">
+            {splitVariants(entry.flags).map((flag) => (
+              <span key={flag} className="entry-flag">
+                {flag}
+              </span>
+            ))}
+          </span>
+        )}
       </button>
       <span className="tile-actions">
         <button

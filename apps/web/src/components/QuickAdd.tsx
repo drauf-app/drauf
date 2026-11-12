@@ -1,20 +1,29 @@
-import { parseItemLine } from '@drauf/shared';
-import { type FormEvent, type ReactNode, useRef, useState } from 'react';
+import { ENTRY_FLAGS, parseItemLine, splitVariants } from '@drauf/shared';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import type { AddEntryInput, PatchEntryInput } from '../api/lists';
 import { fetchSuggestions } from '../api/lists';
 import type { EntryView, Suggestion } from '../api/types';
 import { useT } from '../i18n';
 import {
-  addVariantsPatch,
   amountReplacePatch,
   buildChipGroups,
   type Chip,
+  flagsTogglePatch,
   isChipActive,
   variantTogglePatch,
 } from '../lib/chips';
+import {
+  draftFromEntry,
+  draftPatch,
+  isDraftActive,
+  parseDetails,
+  serializeDraft,
+  toggleDraft,
+} from '../lib/details';
 import { formatQuantities } from '../lib/entries';
 
 const SUGGEST_DEBOUNCE_MS = 150;
+const DETAILS_PATCH_DEBOUNCE_MS = 500;
 
 interface QuickAddProps {
   /** Current entries; the details view reflects the live entry state. */
@@ -24,26 +33,21 @@ interface QuickAddProps {
   onPatch: (entryId: string, fields: PatchEntryInput) => void;
 }
 
-interface DetailsTarget {
-  entryId: string;
-  suggestion: Suggestion | undefined;
-}
-
 function ChipRow({
   chips,
-  entry,
-  onPatch,
+  isActive,
+  onTap,
   children,
 }: {
   chips: Chip[];
-  entry: EntryView;
-  onPatch: QuickAddProps['onPatch'];
+  isActive: (chip: Chip) => boolean;
+  onTap: (chip: Chip) => void;
   children?: ReactNode;
 }) {
   return (
     <div className="chip-group">
       {chips.map((chip) => {
-        const active = isChipActive(entry, chip);
+        const active = isActive(chip);
         const classes = ['chip'];
         if (active) classes.push('active');
         if (chip.highlighted && !active) classes.push('highlighted');
@@ -52,14 +56,7 @@ function ChipRow({
             key={chip.label}
             type="button"
             className={classes.join(' ')}
-            onClick={() =>
-              onPatch(
-                entry.id,
-                chip.patch.variant !== undefined
-                  ? variantTogglePatch(entry, chip.patch.variant)
-                  : amountReplacePatch(entry, chip, active),
-              )
-            }
+            onClick={() => onTap(chip)}
           >
             {chip.label}
           </button>
@@ -70,14 +67,8 @@ function ChipRow({
   );
 }
 
-/** The "+" chip: an inline input that applies a custom variant (K2). */
-function CustomVariantChip({
-  entry,
-  onPatch,
-}: {
-  entry: EntryView;
-  onPatch: QuickAddProps['onPatch'];
-}) {
+/** The "+" chip: an inline input that applies custom modifiers (K2). */
+function CustomVariantChip({ onApply }: { onApply: (text: string) => void }) {
   const t = useT();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
@@ -101,8 +92,7 @@ function CustomVariantChip({
         event.preventDefault();
         const variant = value.trim();
         if (variant !== '') {
-          // Typed text may itself be a comma list; merge into what is set.
-          onPatch(entry.id, addVariantsPatch(entry, variant));
+          onApply(variant);
         }
         setEditing(false);
         setValue('');
@@ -126,6 +116,153 @@ function CustomVariantChip({
 }
 
 /**
+ * Details for the just-added entry: amount/variety chips, the fixed flags,
+ * and the "Eigene Details bearbeiten" text field — one comma list (count,
+ * size, modifiers) parsed live in both directions while it is open.
+ */
+function DetailsView({
+  entry,
+  suggestion,
+  onPatch,
+}: {
+  entry: EntryView;
+  suggestion: Suggestion | undefined;
+  onPatch: QuickAddProps['onPatch'];
+}) {
+  const t = useT();
+  const groups = buildChipGroups(suggestion);
+  // undefined = the text field is closed; otherwise it is the source of truth.
+  const [raw, setRaw] = useState<string>();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const flush = useRef<() => void>(() => {});
+  const draft = raw === undefined ? undefined : parseDetails(raw);
+
+  flush.current = () => {
+    if (timer.current !== undefined) {
+      clearTimeout(timer.current);
+      timer.current = undefined;
+      if (raw !== undefined) {
+        const patch = draftPatch(entry, parseDetails(raw));
+        if (Object.keys(patch).length > 0) {
+          onPatch(entry.id, patch);
+        }
+      }
+    }
+  };
+  // Pending edits must not get lost when the drawer moves on or closes.
+  useEffect(() => () => flush.current(), []);
+
+  function schedulePatch(nextRaw: string): void {
+    if (timer.current !== undefined) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      timer.current = undefined;
+      const patch = draftPatch(entry, parseDetails(nextRaw));
+      if (Object.keys(patch).length > 0) {
+        onPatch(entry.id, patch);
+      }
+    }, DETAILS_PATCH_DEBOUNCE_MS);
+  }
+
+  function updateRaw(next: string): void {
+    setRaw(next);
+    schedulePatch(next);
+  }
+
+  function chipTap(chip: Chip): void {
+    if (draft !== undefined) {
+      updateRaw(serializeDraft(toggleDraft(draft, chip)));
+      return;
+    }
+    onPatch(
+      entry.id,
+      chip.patch.variant !== undefined
+        ? variantTogglePatch(entry, chip.patch.variant)
+        : amountReplacePatch(entry, chip, isChipActive(entry, chip)),
+    );
+  }
+
+  function applyCustom(text: string): void {
+    // Merging through the draft splits typed comma lists into modifiers.
+    const merged = parseDetails(`${serializeDraft(draftFromEntry(entry))}, ${text}`);
+    const patch = draftPatch(entry, merged);
+    if (Object.keys(patch).length > 0) {
+      onPatch(entry.id, patch);
+    }
+  }
+
+  const isActive = (chip: Chip) =>
+    draft !== undefined ? isDraftActive(draft, chip) : isChipActive(entry, chip);
+  const entryFlags = splitVariants(entry.flags);
+
+  return (
+    <div className="drawer-details">
+      <div className="drawer-item">
+        {entry.icon !== null && <span className="drawer-item-icon">{entry.icon}</span>}
+        <span className="drawer-item-name">
+          {entry.name}
+          {entry.variant !== null && <span className="entry-variant"> {entry.variant}</span>}
+        </span>
+        <span className="drawer-item-quantity">{formatQuantities(entry.quantities)}</span>
+      </div>
+
+      {raw !== undefined ? (
+        <div className="details-editor">
+          <input
+            type="text"
+            value={raw}
+            maxLength={200}
+            aria-label={t.quickAdd.detailsField}
+            // biome-ignore lint/a11y/noAutofocus: the field only appears on an explicit tap.
+            autoFocus
+            onChange={(event) => updateRaw(event.target.value)}
+          />
+          <button
+            type="button"
+            aria-label={t.quickAdd.closeDetails}
+            onClick={() => {
+              flush.current();
+              setRaw(undefined);
+            }}
+          >
+            ✓
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="details-toggle"
+          onClick={() => setRaw(serializeDraft(draftFromEntry(entry)))}
+        >
+          {t.quickAdd.editDetails}
+        </button>
+      )}
+
+      <ChipRow chips={groups.counts} isActive={isActive} onTap={chipTap} />
+      {groups.sizes.length > 0 && (
+        <ChipRow chips={groups.sizes} isActive={isActive} onTap={chipTap} />
+      )}
+      <ChipRow chips={groups.varieties} isActive={isActive} onTap={chipTap}>
+        {raw === undefined && <CustomVariantChip onApply={applyCustom} />}
+      </ChipRow>
+      <div className="chip-group chip-flags">
+        {ENTRY_FLAGS.map((flag) => (
+          <button
+            key={flag}
+            type="button"
+            className={entryFlags.includes(flag) ? 'chip chip-flag active' : 'chip chip-flag'}
+            onClick={() => onPatch(entry.id, flagsTogglePatch(entry, flag))}
+          >
+            {flag}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
  * The quick-add drawer: typing opens it over the list with suggestion tiles;
  * picking one (or submitting free text) adds the entry immediately and shows
  * its details, whose chips adjust the entry in place. The input stays ready
@@ -136,7 +273,7 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [details, setDetails] = useState<DetailsTarget>();
+  const [details, setDetails] = useState<{ entryId: string; suggestion: Suggestion | undefined }>();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const requestSeq = useRef(0);
 
@@ -225,7 +362,6 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
   }
 
   const showDetails = open && detailsEntry !== undefined;
-  const groups = showDetails ? buildChipGroups(details?.suggestion) : undefined;
 
   return (
     <>
@@ -238,30 +374,13 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
         />
       )}
       <div className="quick-add-area">
-        {showDetails && detailsEntry !== undefined && groups !== undefined && (
-          <div className="drawer-details">
-            <div className="drawer-item">
-              {detailsEntry.icon !== null && (
-                <span className="drawer-item-icon">{detailsEntry.icon}</span>
-              )}
-              <span className="drawer-item-name">
-                {detailsEntry.name}
-                {detailsEntry.variant !== null && (
-                  <span className="entry-variant"> {detailsEntry.variant}</span>
-                )}
-              </span>
-              <span className="drawer-item-quantity">
-                {formatQuantities(detailsEntry.quantities)}
-              </span>
-            </div>
-            <ChipRow chips={groups.counts} entry={detailsEntry} onPatch={onPatch} />
-            {groups.sizes.length > 0 && (
-              <ChipRow chips={groups.sizes} entry={detailsEntry} onPatch={onPatch} />
-            )}
-            <ChipRow chips={groups.varieties} entry={detailsEntry} onPatch={onPatch}>
-              <CustomVariantChip entry={detailsEntry} onPatch={onPatch} />
-            </ChipRow>
-          </div>
+        {showDetails && detailsEntry !== undefined && (
+          <DetailsView
+            key={detailsEntry.id}
+            entry={detailsEntry}
+            suggestion={details?.suggestion}
+            onPatch={onPatch}
+          />
         )}
         {open && !showDetails && suggestions.length > 0 && (
           <ul className="suggestion-tiles">
@@ -270,9 +389,6 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
                 <button type="button" onClick={() => void pick(suggestion)}>
                   <span className="tile-icon">{suggestion.icon}</span>
                   <span className="tile-name">{suggestion.name}</span>
-                  {suggestion.lastVariant != null && (
-                    <span className="tile-meta">{suggestion.lastVariant}</span>
-                  )}
                 </button>
               </li>
             ))}

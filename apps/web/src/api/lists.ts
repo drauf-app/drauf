@@ -17,6 +17,8 @@ export interface PatchEntryInput {
   unit?: string;
   count?: number;
   variant?: string;
+  /** Comma list of fixed shopping flags; '' clears them. */
+  flags?: string;
   note?: string;
   categoryId?: string;
 }

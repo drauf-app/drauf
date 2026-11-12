@@ -256,6 +256,8 @@ export const listEntries = pgTable(
     /** Merge key (with variant): lowercased, whitespace-collapsed name. */
     nameNormalized: text('name_normalized').notNull(),
     variant: text('variant'),
+    /** Comma list of fixed shopping flags (Angebot, Dringend, …). */
+    flags: text('flags'),
     note: text('note'),
     categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
     /** JSON object of per-field last-write times (epoch ms) for sync LWW. */

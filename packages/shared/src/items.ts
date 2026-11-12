@@ -129,6 +129,9 @@ export function parseSize(size: string): ParsedSize | undefined {
   return { quantity, unit };
 }
 
+/** Fixed special flags an entry can carry while shopping (badges, not modifiers). */
+export const ENTRY_FLAGS = ['Angebot', 'Dringend', "Wenn's passt"] as const;
+
 /**
  * An entry's variant holds one or more modifiers as a comma-separated list
  * ("Bio, Festkochend, Annabelle"). Splits it for chips and learning.
