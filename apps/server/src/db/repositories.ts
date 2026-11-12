@@ -406,12 +406,14 @@ export async function listOpenEntryNames(
     return [];
   }
   const { db, t } = unwrap(database);
-  return db
-    .select({ listId: t.listEntries.listId, name: t.listEntries.name })
-    .from(t.listEntries)
-    .where(and(inArray(t.listEntries.listId, listIds), isNull(t.listEntries.checkedAt)))
-    // The id breaks createdAt ties (same-millisecond adds) deterministically.
-    .orderBy(asc(t.listEntries.createdAt), asc(t.listEntries.id));
+  return (
+    db
+      .select({ listId: t.listEntries.listId, name: t.listEntries.name })
+      .from(t.listEntries)
+      .where(and(inArray(t.listEntries.listId, listIds), isNull(t.listEntries.checkedAt)))
+      // The id breaks createdAt ties (same-millisecond adds) deterministically.
+      .orderBy(asc(t.listEntries.createdAt), asc(t.listEntries.id))
+  );
 }
 
 export async function createListEntry(
