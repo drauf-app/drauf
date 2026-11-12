@@ -1,3 +1,4 @@
+import type { CatalogIndex } from '@drauf/catalog';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
@@ -96,6 +97,7 @@ export function entryRoutes(
   database: Database,
   guards: AuthGuards,
   hub: SyncHub,
+  catalog: CatalogIndex,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
@@ -143,10 +145,14 @@ export function entryRoutes(
         ) {
           return reply.code(400).send({ error: 'invalid_category' });
         }
-        const { entry, merged } = await addItemToList(database, request.params.id, auth.id, {
-          ...request.body,
-          categoryId: categoryId ?? null,
-        });
+        const { entry, merged } = await addItemToList(
+          database,
+          request.params.id,
+          auth.id,
+          { ...request.body, categoryId: categoryId ?? null },
+          'manual',
+          catalog,
+        );
         const view = await getEntryView(database, entry);
         hub.publish(listTopic(request.params.id), {
           type: merged ? 'entry.updated' : 'entry.created',

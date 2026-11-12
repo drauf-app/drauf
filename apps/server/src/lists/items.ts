@@ -1,3 +1,4 @@
+import type { CatalogIndex } from '@drauf/catalog';
 import { normalizeItemName } from '@drauf/shared';
 import type { Database } from '../db/index.js';
 import {
@@ -5,7 +6,9 @@ import {
   createListEntry,
   deletePortionsForEntry,
   findMergeableEntry,
+  getCatalogUsage,
   getListHouseholdId,
+  listCategories,
   listEntriesForList,
   listPortionsForEntries,
   recordCatalogUsage,
@@ -62,9 +65,35 @@ export interface AddItemResult {
 }
 
 /**
+ * Guesses the category for an uncategorized item (K3): the household's own
+ * learned choice wins, then a catalogue match (exact name/synonym or German
+ * compound head, e.g. "Zwiebelsuppe" → Suppe) resolved to the household's
+ * category.
+ */
+async function guessCategoryId(
+  database: Database,
+  householdId: string,
+  name: string,
+  nameNormalized: string,
+  catalog: CatalogIndex | undefined,
+): Promise<string | null> {
+  const usage = await getCatalogUsage(database, householdId, nameNormalized);
+  if (usage !== undefined && usage.categoryId !== null) {
+    return usage.categoryId;
+  }
+  const item = catalog?.match(name);
+  if (item === undefined) {
+    return null;
+  }
+  const categories = await listCategories(database, householdId);
+  return categories.find((category) => category.key === item.categoryKey)?.id ?? null;
+}
+
+/**
  * Adds an item to a list: merges into the unchecked entry with the same
  * normalized name and variant if one exists, otherwise creates a new entry.
  * The quantity is always recorded as a separate portion with its origin.
+ * Items without a category get one guessed from history or the catalogue.
  */
 export async function addItemToList(
   database: Database,
@@ -72,12 +101,17 @@ export async function addItemToList(
   userId: string | null,
   input: AddItemInput,
   origin: PortionOrigin = 'manual',
+  catalog?: CatalogIndex,
 ): Promise<AddItemResult> {
   const nameNormalized = normalizeItemName(input.name);
   const variant = normalizeOptional(input.variant);
   const note = normalizeOptional(input.note);
 
-  const categoryId = input.categoryId ?? null;
+  const householdId = await getListHouseholdId(database, listId);
+  let categoryId = input.categoryId ?? null;
+  if (categoryId === null && householdId !== undefined) {
+    categoryId = await guessCategoryId(database, householdId, input.name, nameNormalized, catalog);
+  }
   const existing = await findMergeableEntry(database, listId, nameNormalized, variant);
   let entry: ListEntry;
   let merged: boolean;
@@ -115,7 +149,6 @@ export async function addItemToList(
 
   // Every add path (REST, sync replay, import) feeds the household's
   // shopping history, which powers quick-add suggestions (K4).
-  const householdId = await getListHouseholdId(database, listId);
   if (householdId !== undefined) {
     await recordCatalogUsage(database, householdId, {
       name: entry.name,

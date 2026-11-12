@@ -1,3 +1,4 @@
+import type { CatalogIndex } from '@drauf/catalog';
 import { matchProvider, type ProviderContext, type RecipeProvider } from '@drauf/providers';
 import { parseItemLine } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
@@ -132,6 +133,7 @@ export function importRoutes(
   hub: SyncHub,
   providers: RecipeProvider[],
   context: ProviderContext,
+  catalog: CatalogIndex,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
@@ -238,6 +240,7 @@ export function importRoutes(
               auth.id,
               { ...item, categoryId: item.categoryId ?? null },
               'recipe',
+              catalog,
             );
             const view = await getEntryView(database, entry);
             hub.publish(listTopic(listInput.id), {

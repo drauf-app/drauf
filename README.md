@@ -80,7 +80,10 @@ The item catalogue lives in `packages/catalog` (CC BY-SA 4.0) as plain JSON
 data files — contributions need no coding. `GET /api/catalog/suggest?q=…`
 powers quick-add: the household's own shopping history ranks first, base
 catalogue matches (names and synonyms) follow, each with its category and the
-size/variety chips.
+size/variety chips. Items added without a category get one guessed on the
+server — the household's learned choice first, then a catalogue match, exact
+or by the German compound head ("Zwiebelsuppe" is a Suppe, "Würzspinat" a
+Spinat); correcting a category once is remembered and wins from then on.
 
 Recipe providers live in `packages/providers` (one folder per provider;
 Cookidoo is the first). They run server-side only, fetch public addresses

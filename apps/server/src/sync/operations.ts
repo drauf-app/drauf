@@ -1,3 +1,4 @@
+import type { CatalogIndex } from '@drauf/catalog';
 import type { Database } from '../db/index.js';
 import {
   deleteListEntry,
@@ -98,6 +99,7 @@ interface Context {
   hub: SyncHub;
   userId: string;
   effectiveTime: number;
+  catalog: CatalogIndex | undefined;
 }
 
 function requireString(value: unknown, maxLength: number): string {
@@ -146,14 +148,21 @@ async function applyAdd(ctx: Context, data: Record<string, unknown>): Promise<Sy
   const unit = optionalString(data.unit, 32);
   const variant = optionalString(data.variant, 64);
   const note = optionalString(data.note, 500);
-  const { entry, merged } = await addItemToList(ctx.database, listId, ctx.userId, {
-    name,
-    ...(quantity === undefined ? {} : { quantity }),
-    ...(unit == null ? {} : { unit }),
-    ...(variant == null ? {} : { variant }),
-    ...(note == null ? {} : { note }),
-    categoryId,
-  });
+  const { entry, merged } = await addItemToList(
+    ctx.database,
+    listId,
+    ctx.userId,
+    {
+      name,
+      ...(quantity === undefined ? {} : { quantity }),
+      ...(unit == null ? {} : { unit }),
+      ...(variant == null ? {} : { variant }),
+      ...(note == null ? {} : { note }),
+      categoryId,
+    },
+    'manual',
+    ctx.catalog,
+  );
   await publishEntry(ctx, merged ? 'entry.updated' : 'entry.created', entry);
   return { id: '', status: 'applied', entryId: entry.id };
 }
@@ -295,6 +304,7 @@ export async function applyOperations(
   hub: SyncHub,
   userId: string,
   operations: SyncOperation[],
+  catalog?: CatalogIndex,
 ): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
   for (const operation of operations) {
@@ -307,6 +317,7 @@ export async function applyOperations(
       database,
       hub,
       userId,
+      catalog,
       effectiveTime: Math.min(Number.isNaN(clientTime) ? Date.now() : clientTime, Date.now()),
     };
     let result: SyncResult;

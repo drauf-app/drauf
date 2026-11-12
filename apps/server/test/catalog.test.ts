@@ -191,3 +191,109 @@ describe('catalog suggestions', () => {
     expect(suggestions).toHaveLength(1);
   });
 });
+
+describe('category guessing on add', () => {
+  let ctx: TestApp;
+  let christian: { id: string; token: string };
+  let listId: string;
+  let categoryIdByKey: Map<string, string>;
+
+  function as(user: { token: string }) {
+    return { authorization: `Bearer ${user.token}` };
+  }
+
+  async function addItem(payload: object): Promise<{ id: string; categoryId: string | null }> {
+    const response = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+      payload,
+    });
+    expect([200, 201]).toContain(response.statusCode);
+    return response.json();
+  }
+
+  beforeEach(async () => {
+    ctx = await createTestApp({}, { catalog: fakeCatalog });
+    const result = await createLocalUser(ctx.database, {
+      username: 'christian',
+      password: PASSWORD,
+      displayName: 'Christian',
+      isAdmin: false,
+    });
+    if (!result.ok) throw new Error('fixture user not created');
+    const login = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'christian', password: PASSWORD },
+    });
+    christian = {
+      id: result.user.id,
+      token: (login.json() as { accessToken: string }).accessToken,
+    };
+    const list = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Weekly shop' },
+    });
+    listId = (list.json() as { id: string }).id;
+    const categories = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/categories',
+      headers: as(christian),
+    });
+    categoryIdByKey = new Map(
+      (categories.json() as Array<{ id: string; key: string | null }>)
+        .filter((category) => category.key !== null)
+        .map((category) => [category.key as string, category.id]),
+    );
+  });
+
+  afterEach(async () => {
+    await ctx.close();
+  });
+
+  it('assigns the catalogue category on an exact match', async () => {
+    const entry = await addItem({ name: 'Milch' });
+    expect(entry.categoryId).toBe(categoryIdByKey.get('dairy-chilled'));
+  });
+
+  it('assigns the category of the compound head noun', async () => {
+    // German compounds end with the head: Würznudeln are a kind of Nudeln.
+    const entry = await addItem({ name: 'Würznudeln' });
+    expect(entry.categoryId).toBe(categoryIdByKey.get('pasta-rice-canned'));
+  });
+
+  it('matches synonyms too', async () => {
+    const entry = await addItem({ name: 'Pasta' });
+    expect(entry.categoryId).toBe(categoryIdByKey.get('pasta-rice-canned'));
+  });
+
+  it('prefers the household’s learned category over the catalogue', async () => {
+    const first = await addItem({ name: 'Milch' });
+    const corrected = categoryIdByKey.get('other') as string;
+    const patch = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${first.id}`,
+      headers: as(christian),
+      payload: { categoryId: corrected },
+    });
+    expect(patch.statusCode).toBe(200);
+
+    // A different variant forces a new entry instead of a merge.
+    const again = await addItem({ name: 'Milch', variant: 'laktosefrei' });
+    expect(again.categoryId).toBe(corrected);
+  });
+
+  it('leaves unknown items uncategorized', async () => {
+    const entry = await addItem({ name: 'Xyzzy' });
+    expect(entry.categoryId).toBeNull();
+  });
+
+  it('never overrides an explicitly chosen category', async () => {
+    const chosen = categoryIdByKey.get('household') as string;
+    const entry = await addItem({ name: 'Milch', variant: 'explizit', categoryId: chosen });
+    expect(entry.categoryId).toBe(chosen);
+  });
+});
