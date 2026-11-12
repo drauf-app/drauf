@@ -20,10 +20,13 @@ function list(id: string, name: string, archived = false): List {
 }
 
 describe('ListsPage', () => {
-  it('shows active lists and tucks archived ones away', async () => {
+  it('shows active lists with their item summary and tucks archived ones away', async () => {
     stubFetch((url, init) =>
       url === '/api/lists' && (init?.method ?? 'GET') === 'GET'
-        ? fakeResponse(200, [list('l1', 'Wocheneinkauf'), list('l2', 'Geschenke', true)])
+        ? fakeResponse(200, [
+            { ...list('l1', 'Wocheneinkauf'), openCount: 3, previewIcons: ['🍝', '🥛'] },
+            list('l2', 'Geschenke', true),
+          ])
         : undefined,
     );
     render(
@@ -33,6 +36,10 @@ describe('ListsPage', () => {
     );
 
     expect(await screen.findByText('Wocheneinkauf')).toBeDefined();
+    expect(screen.getByText('3 Artikel')).toBeDefined();
+    expect(screen.getByText(/🍝 🥛/)).toBeDefined();
+    // Lists without the summary (e.g. fresh ones) read as empty.
+    expect(screen.getByText('Leer')).toBeDefined();
     expect(screen.getByText('Archivierte Listen')).toBeDefined();
   });
 

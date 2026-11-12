@@ -1,3 +1,4 @@
+import type { CatalogIndex } from '@drauf/catalog';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
@@ -10,6 +11,7 @@ import {
   isUserInListHousehold,
   listListMemberUsers,
   listListsForUser,
+  listOpenEntryNames,
   removeListMember,
   updateList,
 } from '../db/repositories.js';
@@ -89,17 +91,36 @@ function requireAuthUser(reply: FastifyReply, authUser: AuthUser | undefined): A
   return authUser;
 }
 
+const PREVIEW_ICONS = 4;
+
 export function listRoutes(
   database: Database,
   guards: AuthGuards,
   hub: SyncHub,
+  catalog: CatalogIndex,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
 
+    /** Overview rows carry what is on each list: open count + icon preview. */
     app.get('/', async (request, reply) => {
       const auth = requireAuthUser(reply, request.authUser);
-      return listListsForUser(database, auth.id);
+      const lists = await listListsForUser(database, auth.id);
+      const open = await listOpenEntryNames(
+        database,
+        lists.map((list) => list.id),
+      );
+      return lists.map((list) => {
+        const names = open.filter((entry) => entry.listId === list.id);
+        const previewIcons: string[] = [];
+        for (const entry of names) {
+          const icon = catalog.match(entry.name)?.icon;
+          if (icon !== undefined && previewIcons.length < PREVIEW_ICONS) {
+            previewIcons.push(icon);
+          }
+        }
+        return { ...list, openCount: names.length, previewIcons };
+      });
     });
 
     app.post<{ Body: CreateInput }>(
@@ -108,7 +129,7 @@ export function listRoutes(
       async (request, reply) => {
         const auth = requireAuthUser(reply, request.authUser);
         const list = await createListForUser(database, auth.id, request.body);
-        return reply.code(201).send(list);
+        return reply.code(201).send({ ...list, openCount: 0, previewIcons: [] });
       },
     );
 

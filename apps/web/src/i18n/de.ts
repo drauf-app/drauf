@@ -40,6 +40,9 @@ export const de = {
     empty: 'Noch keine Liste. Leg unten die erste an!',
     newListName: 'Name der neuen Liste',
     create: 'Anlegen',
+    oneItem: '1 Artikel',
+    manyItems: 'Artikel',
+    emptyList: 'Leer',
     archivedSection: 'Archivierte Listen',
   },
   list: {
