@@ -51,6 +51,10 @@ the server looks for a built web app in `WEB_DIR` (default `../web/dist`,
 which matches both the repo layout and the Docker image) and serves it with a
 strict Content-Security-Policy and an SPA fallback. During development the
 Vite dev server serves the app instead and proxies `/api` to the local server.
+Changes reach other members live over the sync WebSocket; while offline, adds
+and check-offs are queued locally and replayed through the sync protocol (see
+`docs/sync.md`) when connectivity returns, and a service worker keeps the app
+shell loadable without a network.
 
 The server requires `AUTH_SECRET` (at least 32 characters, e.g. from
 `openssl rand -base64 32`) for signing access tokens. The first account is

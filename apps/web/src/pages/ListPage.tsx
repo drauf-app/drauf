@@ -1,3 +1,4 @@
+import { normalizeItemName } from '@drauf/shared';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
@@ -14,12 +15,64 @@ import {
 } from '../api/lists';
 import { fetchStores } from '../api/stores';
 import type { Category, EntryView, ListDetail, StoreWithOrder, Suggestion } from '../api/types';
-import { useAuth } from '../auth/store';
+import { ApiError, useAuth } from '../auth/store';
 import { ChipBar } from '../components/ChipBar';
 import { QuickAdd } from '../components/QuickAdd';
 import { useT } from '../i18n';
 import { buildChipGroups, type Chip, type ChipGroups } from '../lib/chips';
-import { formatQuantities, groupEntries, recentEntries, upsertEntry } from '../lib/entries';
+import {
+  applyListEvent,
+  formatQuantities,
+  groupEntries,
+  recentEntries,
+  upsertEntry,
+} from '../lib/entries';
+import { enqueueOp, flushQueue, newLocalEntryId, newOpId, pendingOps } from '../lib/offline';
+import { type SyncEvent, useSync } from '../lib/sync';
+
+/** Thrown Response/ApiError = the server answered; anything else = offline. */
+function isOfflineError(err: unknown): boolean {
+  return !(err instanceof ApiError);
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+/** Placeholder entry shown until the queued offline add reaches the server. */
+function localEntryView(listId: string, input: AddEntryInput): EntryView {
+  return {
+    id: newLocalEntryId(),
+    listId,
+    name: input.name.trim().replace(/\s+/g, ' '),
+    nameNormalized: normalizeItemName(input.name),
+    variant: input.variant ?? null,
+    note: input.note ?? null,
+    categoryId: input.categoryId ?? null,
+    fieldTimes: null,
+    checkedAt: null,
+    checkedById: null,
+    createdAt: nowIso(),
+    quantities:
+      input.quantity === undefined ? [] : [{ unit: input.unit ?? null, quantity: input.quantity }],
+    portions: [],
+  };
+}
+
+/** Mirrors a queued entry.setFields locally while offline. */
+function patchEntryLocally(
+  entry: EntryView,
+  patch: { quantity?: number; unit?: string; variant?: string; categoryId?: string },
+): EntryView {
+  return {
+    ...entry,
+    ...(patch.variant === undefined ? {} : { variant: patch.variant }),
+    ...(patch.categoryId === undefined ? {} : { categoryId: patch.categoryId }),
+    ...(patch.quantity === undefined
+      ? {}
+      : { quantities: [{ unit: patch.unit ?? null, quantity: patch.quantity }] }),
+  };
+}
 
 interface ChipTarget {
   entryId: string;
@@ -123,14 +176,52 @@ export function ListPage() {
     reload().catch(() => {
       if (!cancelled) setNotFound(true);
     });
-    // Without live sync yet, a refetch on focus keeps shared lists current.
-    const onFocus = () => void reload().catch(() => {});
+    // Replay offline work, then refetch so local placeholders are replaced
+    // by the server's merged entries.
+    const flushAndReload = () => {
+      const hadWork = pendingOps().length > 0;
+      void flushQueue().then((drained) => {
+        if (drained && hadWork && !cancelled) {
+          void reload().catch(() => {});
+        }
+      });
+    };
+    flushAndReload();
+    const onFocus = () => {
+      void reload().catch(() => {});
+      flushAndReload();
+    };
     window.addEventListener('focus', onFocus);
+    window.addEventListener('online', flushAndReload);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('online', flushAndReload);
     };
   }, [reload]);
+
+  // Remembered for the recipe import's list preselection.
+  useEffect(() => {
+    try {
+      localStorage.setItem('drauf.last-list', listId);
+    } catch {
+      // Preselection is a convenience only.
+    }
+  }, [listId]);
+
+  useSync({ lists: [listId] }, (_topic, event: SyncEvent) => {
+    if (event.type === 'list.deleted' || event.type === 'evicted') {
+      void navigate('/', { replace: true });
+      return;
+    }
+    if (event.type === 'list.updated') {
+      setList((previous) =>
+        previous === undefined ? previous : { ...previous, ...(event.data as Partial<ListDetail>) },
+      );
+      return;
+    }
+    setEntries((previous) => (previous === undefined ? previous : applyListEvent(previous, event)));
+  });
 
   // Any state-changing call that fails shows one retryable error line.
   function run(action: () => Promise<void>): void {
@@ -148,44 +239,111 @@ export function ListPage() {
       const view = await addEntry(listId, input);
       applyView(view);
       setChipTarget({ entryId: view.id, groups: buildChipGroups(suggestion) });
-    } catch {
-      setActionFailed(true);
+    } catch (err) {
+      if (!isOfflineError(err)) {
+        setActionFailed(true);
+        return;
+      }
+      // Offline (L10): keep a placeholder and queue the add for replay.
+      const local = localEntryView(listId, input);
+      applyView(local);
+      enqueueOp({
+        id: newOpId(),
+        type: 'entry.add',
+        time: nowIso(),
+        localEntryId: local.id,
+        data: { listId, ...input },
+      });
+      setChipTarget({ entryId: local.id, groups: buildChipGroups(suggestion) });
     }
+  }
+
+  /** Field edit with offline fallback: queue entry.setFields and apply locally. */
+  function setFields(
+    entryId: string,
+    fields: { quantity?: number; unit?: string; variant?: string; categoryId?: string },
+  ): void {
+    setActionFailed(false);
+    void (async () => {
+      try {
+        applyView(await patchEntry(listId, entryId, fields));
+      } catch (err) {
+        if (!isOfflineError(err)) {
+          setActionFailed(true);
+          return;
+        }
+        enqueueOp({
+          id: newOpId(),
+          type: 'entry.setFields',
+          time: nowIso(),
+          data: { listId, entryId, fields },
+        });
+        setEntries((previous) =>
+          (previous ?? []).map((item) =>
+            item.id === entryId ? patchEntryLocally(item, fields) : item,
+          ),
+        );
+      }
+    })();
   }
 
   function handleChip(chip: Chip): void {
-    const target = chipTarget;
-    if (target === undefined) {
-      return;
+    if (chipTarget !== undefined) {
+      setFields(chipTarget.entryId, chip.patch);
     }
-    run(async () => {
-      applyView(await patchEntry(listId, target.entryId, chip.patch));
-    });
   }
 
   function handleToggle(entry: EntryView): void {
-    run(async () => {
-      applyView(await checkEntry(listId, entry.id, entry.checkedAt === null));
-    });
+    const check = entry.checkedAt === null;
+    setActionFailed(false);
+    void (async () => {
+      try {
+        applyView(await checkEntry(listId, entry.id, check));
+      } catch (err) {
+        if (!isOfflineError(err)) {
+          setActionFailed(true);
+          return;
+        }
+        enqueueOp({
+          id: newOpId(),
+          type: check ? 'entry.check' : 'entry.uncheck',
+          time: nowIso(),
+          data: { listId, entryId: entry.id },
+        });
+        applyView({ ...entry, checkedAt: check ? nowIso() : null });
+      }
+    })();
     if (chipTarget?.entryId === entry.id) {
       setChipTarget(undefined);
     }
   }
 
   function handleDelete(entry: EntryView): void {
-    run(async () => {
-      await deleteEntry(listId, entry.id);
+    setActionFailed(false);
+    void (async () => {
+      try {
+        await deleteEntry(listId, entry.id);
+      } catch (err) {
+        if (!isOfflineError(err)) {
+          setActionFailed(true);
+          return;
+        }
+        enqueueOp({
+          id: newOpId(),
+          type: 'entry.delete',
+          time: nowIso(),
+          data: { listId, entryId: entry.id },
+        });
+      }
       setEntries((previous) => (previous ?? []).filter((item) => item.id !== entry.id));
-    });
+    })();
     if (chipTarget?.entryId === entry.id) {
       setChipTarget(undefined);
     }
   }
 
   function handleSetCategory(entry: EntryView, categoryId: string): void {
-    run(async () => {
-      applyView(await patchEntry(listId, entry.id, { categoryId }));
-    });
+    setFields(entry.id, { categoryId });
   }
 
   function handleRename(event: FormEvent): void {

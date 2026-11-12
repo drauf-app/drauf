@@ -11,6 +11,8 @@ import {
 import type { HouseholdMember, MealSlot, PlanEntry } from '../api/types';
 import { ApiError } from '../auth/store';
 import { type Messages, useT } from '../i18n';
+import { applyPlanEvent } from '../lib/plan-events';
+import { type SyncEvent, useSync } from '../lib/sync';
 import { formatDay, formatWeek, weekDays } from '../lib/week';
 
 function isUrl(value: string): boolean {
@@ -204,6 +206,19 @@ export function PlanPage() {
       cancelled = true;
     };
   }, []);
+
+  useSync({ plan: true }, (_topic, event: SyncEvent) => {
+    setEntries((previous) =>
+      previous === undefined
+        ? previous
+        : applyPlanEvent({ entries: previous, slots: [] }, event).entries,
+    );
+    setSlots((previous) =>
+      previous === undefined
+        ? previous
+        : applyPlanEvent({ entries: [], slots: previous }, event).slots,
+    );
+  });
 
   useEffect(() => {
     let cancelled = false;
