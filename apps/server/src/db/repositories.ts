@@ -362,6 +362,23 @@ export interface ListMemberUser {
   displayName: string;
 }
 
+export async function listHouseholdMemberUsers(
+  database: Database,
+  householdId: string,
+): Promise<ListMemberUser[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select({
+      userId: t.householdMembers.userId,
+      username: t.users.username,
+      displayName: t.users.displayName,
+    })
+    .from(t.householdMembers)
+    .innerJoin(t.users, eq(t.householdMembers.userId, t.users.id))
+    .where(eq(t.householdMembers.householdId, householdId))
+    .orderBy(asc(t.householdMembers.createdAt));
+}
+
 export async function listListMemberUsers(
   database: Database,
   listId: string,

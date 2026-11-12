@@ -6,12 +6,28 @@ export interface CategoryGroup {
   entries: EntryView[];
 }
 
+/** Household order, or the selected store's aisle order with the rest after. */
+function orderedCategories(categories: Category[], storeOrder: string[] | undefined): Category[] {
+  const byHousehold = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+  if (storeOrder === undefined || storeOrder.length === 0) {
+    return byHousehold;
+  }
+  const position = new Map(storeOrder.map((id, index) => [id, index]));
+  const inStore = byHousehold.filter((category) => position.has(category.id));
+  inStore.sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+  return [...inStore, ...byHousehold.filter((category) => !position.has(category.id))];
+}
+
 /**
- * Groups unchecked entries by category in the household's category order;
- * entries without a category come last. Within a group insertion order
- * (createdAt) is kept.
+ * Groups unchecked entries by category — in the household's category order,
+ * or re-sorted for the selected store (L7); entries without a category come
+ * last. Within a group insertion order (createdAt) is kept.
  */
-export function groupEntries(entries: EntryView[], categories: Category[]): CategoryGroup[] {
+export function groupEntries(
+  entries: EntryView[],
+  categories: Category[],
+  storeOrder?: string[],
+): CategoryGroup[] {
   const open = entries.filter((entry) => entry.checkedAt === null);
   const byCategory = new Map<string | null, EntryView[]>();
   for (const entry of open) {
@@ -23,7 +39,7 @@ export function groupEntries(entries: EntryView[], categories: Category[]): Cate
     }
   }
   const groups: CategoryGroup[] = [];
-  for (const category of [...categories].sort((a, b) => a.sortOrder - b.sortOrder)) {
+  for (const category of orderedCategories(categories, storeOrder)) {
     const grouped = byCategory.get(category.id);
     if (grouped !== undefined) {
       groups.push({ category, entries: grouped });

@@ -6,6 +6,7 @@ import { ListPage } from './pages/ListPage';
 import { ListsPage } from './pages/ListsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlanPage } from './pages/PlanPage';
+import { StoresPage } from './pages/StoresPage';
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
             <Route index element={<ListsPage />} />
             <Route path="/lists/:id" element={<ListPage />} />
             <Route path="/plan" element={<PlanPage />} />
+            <Route path="/stores" element={<StoresPage />} />
           </Route>
         </Route>
       </Routes>

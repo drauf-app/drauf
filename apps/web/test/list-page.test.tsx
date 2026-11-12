@@ -87,6 +87,9 @@ function stubListApi(options: StubOptions = {}): RecordedRequest[] {
     if (url === '/api/categories' && method === 'GET') {
       return fakeResponse(200, CATEGORIES);
     }
+    if (url === '/api/stores' && method === 'GET') {
+      return fakeResponse(200, []);
+    }
     if (url.startsWith('/api/catalog/suggest?') && method === 'GET') {
       return fakeResponse(200, [SUGGESTION]);
     }

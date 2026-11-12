@@ -11,6 +11,7 @@ export const de = {
   nav: {
     lists: 'Listen',
     plan: 'Wochenplan',
+    stores: 'Läden',
   },
   login: {
     title: 'Anmelden',
@@ -55,6 +56,20 @@ export const de = {
     deleteConfirm: 'Diese Liste und alle ihre Einträge löschen?',
     notFound: 'Liste nicht gefunden.',
     backToLists: 'Zurück zu den Listen',
+    storePicker: 'Laden',
+    householdOrder: 'Standard-Reihenfolge',
+  },
+  stores: {
+    title: 'Läden',
+    intro: 'Jeder Laden sortiert die Kategorien in seiner eigenen Gang-Reihenfolge.',
+    empty: 'Noch kein Laden. Leg unten den ersten an!',
+    newStoreName: 'Name des neuen Ladens',
+    create: 'Anlegen',
+    rename: 'Umbenennen',
+    delete: 'Löschen',
+    deleteConfirm: 'Diesen Laden und seine Kategorie-Reihenfolge löschen?',
+    moveUp: 'Nach oben',
+    moveDown: 'Nach unten',
   },
   quickAdd: {
     placeholder: 'Was brauchst du?',
@@ -63,6 +78,17 @@ export const de = {
   },
   plan: {
     title: 'Wochenplan',
-    placeholder: 'Der Wochenplan erscheint hier in Kürze.',
+    previousWeek: 'Vorherige Woche',
+    nextWeek: 'Nächste Woche',
+    thisWeek: 'Heute',
+    addEntry: 'Eintrag hinzufügen',
+    entryPlaceholder: 'Gericht oder Link',
+    cook: 'Wer kocht?',
+    noCook: 'Niemand',
+    moveDay: 'Tag',
+    moveSlot: 'Mahlzeit',
+    delete: 'Eintrag löschen',
+    slotOccupied: 'In diesem Feld steht schon etwas.',
+    openLink: 'Rezept öffnen',
   },
 } as const;

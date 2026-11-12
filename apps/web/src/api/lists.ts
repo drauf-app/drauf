@@ -33,7 +33,7 @@ export function fetchList(listId: string): Promise<ListDetail> {
 
 export function patchList(
   listId: string,
-  patch: { name?: string; archived?: boolean },
+  patch: { name?: string; archived?: boolean; defaultStoreId?: string | null },
 ): Promise<List> {
   return apiJson<List>(`/api/lists/${encodeURIComponent(listId)}`, {
     method: 'PATCH',

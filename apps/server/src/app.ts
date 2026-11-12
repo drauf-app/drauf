@@ -13,6 +13,7 @@ import { authRoutes } from './routes/auth.js';
 import { catalogRoutes } from './routes/catalog.js';
 import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
+import { householdRoutes } from './routes/households.js';
 import { importRoutes } from './routes/import.js';
 import { listRoutes } from './routes/lists.js';
 import { oidcRoutes } from './routes/oidc.js';
@@ -65,6 +66,7 @@ export async function buildApp(
   await app.register(authRoutes(database, config, guards), { prefix: '/api/auth' });
   await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
   await app.register(userRoutes(database, guards), { prefix: '/api/users' });
+  await app.register(householdRoutes(database, guards), { prefix: '/api/households' });
   await app.register(listRoutes(database, guards, hub), { prefix: '/api/lists' });
   await app.register(entryRoutes(database, guards, hub), { prefix: '/api/lists' });
   await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });

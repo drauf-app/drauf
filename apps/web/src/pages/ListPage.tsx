@@ -12,7 +12,8 @@ import {
   patchEntry,
   patchList,
 } from '../api/lists';
-import type { Category, EntryView, ListDetail, Suggestion } from '../api/types';
+import { fetchStores } from '../api/stores';
+import type { Category, EntryView, ListDetail, StoreWithOrder, Suggestion } from '../api/types';
 import { useAuth } from '../auth/store';
 import { ChipBar } from '../components/ChipBar';
 import { QuickAdd } from '../components/QuickAdd';
@@ -98,20 +99,23 @@ export function ListPage() {
   const [list, setList] = useState<ListDetail>();
   const [entries, setEntries] = useState<EntryView[]>();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [stores, setStores] = useState<StoreWithOrder[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [actionFailed, setActionFailed] = useState(false);
   const [chipTarget, setChipTarget] = useState<ChipTarget>();
   const [renaming, setRenaming] = useState<string>();
 
   const reload = useCallback(async () => {
-    const [listResult, entriesResult, categoriesResult] = await Promise.all([
+    const [listResult, entriesResult, categoriesResult, storesResult] = await Promise.all([
       fetchList(listId),
       fetchEntries(listId),
       fetchCategories(),
+      fetchStores(),
     ]);
     setList(listResult);
     setEntries(entriesResult);
     setCategories(categoriesResult);
+    setStores(storesResult);
   }, [listId]);
 
   useEffect(() => {
@@ -208,6 +212,15 @@ export function ListPage() {
     });
   }
 
+  function handleStoreChange(storeId: string): void {
+    run(async () => {
+      const updated = await patchList(listId, {
+        defaultStoreId: storeId === '' ? null : storeId,
+      });
+      setList((previous) => (previous === undefined ? previous : { ...previous, ...updated }));
+    });
+  }
+
   function handleDeleteList(): void {
     if (!window.confirm(t.list.deleteConfirm)) {
       return;
@@ -230,7 +243,8 @@ export function ListPage() {
     return <p className="placeholder">{t.common.loading}</p>;
   }
 
-  const groups = groupEntries(entries, categories);
+  const selectedStore = stores.find((store) => store.id === list.defaultStoreId);
+  const groups = groupEntries(entries, categories, selectedStore?.categoryOrder);
   const recent = recentEntries(entries);
 
   return (
@@ -254,6 +268,21 @@ export function ListPage() {
             />
             <button type="submit">{t.common.save}</button>
           </form>
+        )}
+        {stores.length > 0 && (
+          <select
+            className="store-picker"
+            aria-label={t.list.storePicker}
+            value={list.defaultStoreId ?? ''}
+            onChange={(event) => handleStoreChange(event.target.value)}
+          >
+            <option value="">{t.list.householdOrder}</option>
+            {stores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))}
+          </select>
         )}
         <div className="list-actions">
           <button type="button" onClick={() => setRenaming(list.name)}>

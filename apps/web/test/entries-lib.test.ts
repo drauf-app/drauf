@@ -58,6 +58,23 @@ describe('groupEntries', () => {
       'ohne',
     ]);
   });
+
+  it('re-sorts groups by the selected store order, rest after', () => {
+    const categories = [
+      category('c1', 'Obst & Gemüse', 0),
+      category('c2', 'Getränke', 9),
+      category('c3', 'Haushalt', 11),
+    ];
+    const entries = [
+      entry('apfel', { categoryId: 'c1' }),
+      entry('wasser', { categoryId: 'c2' }),
+      entry('lappen', { categoryId: 'c3' }),
+    ];
+    // The store sorts drinks first; household categories not in the store
+    // order (c3) follow in household order.
+    const groups = groupEntries(entries, categories, ['c2', 'c1']);
+    expect(groups.map((group) => group.category?.id)).toEqual(['c2', 'c1', 'c3']);
+  });
 });
 
 describe('recentEntries', () => {
