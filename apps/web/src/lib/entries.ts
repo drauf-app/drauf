@@ -81,3 +81,23 @@ export function upsertEntry(entries: EntryView[], view: EntryView): EntryView[] 
   next[index] = view;
   return next;
 }
+
+/** Applies one live sync event from the list topic to local entry state. */
+export function applyListEvent(
+  entries: EntryView[],
+  event: { type: string; data: unknown },
+): EntryView[] {
+  switch (event.type) {
+    case 'entry.created':
+    case 'entry.updated':
+    case 'entry.checked':
+    case 'entry.unchecked':
+      return upsertEntry(entries, event.data as EntryView);
+    case 'entry.deleted': {
+      const { id } = event.data as { id: string };
+      return entries.filter((entry) => entry.id !== id);
+    }
+    default:
+      return entries;
+  }
+}

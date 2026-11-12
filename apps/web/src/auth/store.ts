@@ -150,6 +150,19 @@ async function adoptSession(pair: TokenPair & { user: PublicUser }): Promise<voi
   setState({ status: 'signedIn', user: pair.user });
 }
 
+/** Current access token (if any) plus a refresh fallback, e.g. for WebSocket auth. */
+export async function ensureAccessToken(): Promise<string | undefined> {
+  if (accessToken !== undefined) {
+    return accessToken;
+  }
+  try {
+    await refreshSession();
+  } catch {
+    return undefined;
+  }
+  return accessToken;
+}
+
 /** A short device label for the server's refresh-token list. */
 export function deviceName(): string {
   const match = /iPhone|iPad|Android|Macintosh|Windows|Linux/.exec(navigator.userAgent);

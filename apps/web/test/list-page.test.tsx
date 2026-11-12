@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import type { Category, EntryView, ListDetail, Suggestion } from '../src/api/types';
+import { pendingOps } from '../src/lib/offline';
 import { ListPage } from '../src/pages/ListPage';
 import { fakeResponse, type RecordedRequest, stubFetch } from './fake-fetch';
 
@@ -93,17 +94,18 @@ function stubListApi(options: StubOptions = {}): RecordedRequest[] {
     if (url.startsWith('/api/catalog/suggest?') && method === 'GET') {
       return fakeResponse(200, [SUGGESTION]);
     }
+    // Mutations without a configured handler fail like a network error.
     if (url === '/api/lists/l1/entries' && method === 'POST') {
       const view = options.onEntryPost?.(String(init?.body));
-      return view === undefined ? fakeResponse(500, {}) : fakeResponse(201, view);
+      return view === undefined ? undefined : fakeResponse(201, view);
     }
     if (url.endsWith('/check') && method === 'POST') {
       const view = options.onCheck?.(url);
-      return view === undefined ? fakeResponse(500, {}) : fakeResponse(200, view);
+      return view === undefined ? undefined : fakeResponse(200, view);
     }
     if (url.startsWith('/api/lists/l1/entries/') && method === 'PATCH') {
       const view = options.onEntryPatch?.(url, String(init?.body));
-      return view === undefined ? fakeResponse(500, {}) : fakeResponse(200, view);
+      return view === undefined ? undefined : fakeResponse(200, view);
     }
     return undefined;
   });
@@ -184,6 +186,23 @@ describe('ListPage', () => {
 
     expect(posted).toHaveLength(1);
     expect(JSON.parse(posted[0] ?? '{}')).toEqual({ name: 'Hack', quantity: 500, unit: 'g' });
+  });
+
+  it('keeps an offline add as a local placeholder and queues the operation', async () => {
+    // No POST route: the request fails like a network error.
+    stubListApi();
+    renderListPage();
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText('Was brauchst du?'), '2 Eier');
+    await user.click(screen.getByRole('button', { name: 'Drauf!' }));
+
+    expect(await screen.findByText('Eier')).toBeDefined();
+    expect(pendingOps()).toHaveLength(1);
+    expect(pendingOps()[0]).toMatchObject({
+      type: 'entry.add',
+      data: { listId: 'l1', name: 'Eier', quantity: 2 },
+    });
   });
 
   it('moves a checked entry into the recent section', async () => {
