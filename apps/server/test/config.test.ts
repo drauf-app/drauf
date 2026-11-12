@@ -16,6 +16,7 @@ describe('loadConfig', () => {
       publicUrl: undefined,
       oidc: undefined,
       disabledProviders: [],
+      webDir: '../web/dist',
     });
   });
 

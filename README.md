@@ -39,11 +39,18 @@ Requires Node 24+ and pnpm 12.
 
 ```bash
 pnpm install
-pnpm build        # compile all packages
+pnpm build        # compile all packages and bundle the web app
 pnpm dev          # start the server with live reload
+pnpm --filter @drauf/web dev   # start the web app dev server (proxies to :3000)
 pnpm test         # build, then run all tests
 pnpm lint         # Biome lint + format check
 ```
+
+The web app (`apps/web`, React + Vite) is a PWA served by the server itself:
+the server looks for a built web app in `WEB_DIR` (default `../web/dist`,
+which matches both the repo layout and the Docker image) and serves it with a
+strict Content-Security-Policy and an SPA fallback. During development the
+Vite dev server serves the app instead and proxies `/api` to the local server.
 
 The server requires `AUTH_SECRET` (at least 32 characters, e.g. from
 `openssl rand -base64 32`) for signing access tokens. The first account is
