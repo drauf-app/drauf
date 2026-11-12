@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadConfig } from '../src/config.js';
+import { loadConfig, loadDatabaseConfig } from '../src/config.js';
 import { TEST_AUTH_SECRET } from './helpers.js';
 
 const BASE_ENV = { AUTH_SECRET: TEST_AUTH_SECRET };
@@ -38,6 +38,14 @@ describe('loadConfig', () => {
 
   it('requires AUTH_SECRET', () => {
     expect(() => loadConfig({})).toThrow();
+  });
+
+  it('loads the database config alone without AUTH_SECRET (CLI tools)', () => {
+    expect(loadDatabaseConfig({})).toEqual({ dialect: 'sqlite', file: 'data/drauf.db' });
+    expect(loadDatabaseConfig({ DATABASE_URL: 'postgres://u:p@db/drauf' })).toEqual({
+      dialect: 'postgres',
+      url: 'postgres://u:p@db/drauf',
+    });
   });
 
   it('rejects a short AUTH_SECRET', () => {

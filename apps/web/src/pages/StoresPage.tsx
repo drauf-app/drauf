@@ -1,4 +1,10 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import {
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { fetchCategories } from '../api/lists';
 import {
   createStore,
@@ -9,6 +15,7 @@ import {
 } from '../api/stores';
 import type { Category, StoreWithOrder } from '../api/types';
 import { useT } from '../i18n';
+import { dropTargetIndex, moveItem } from '../lib/reorder';
 
 /** The store's aisle order, falling back to the household order. */
 function orderedCategories(store: StoreWithOrder, categories: Category[]): Category[] {
@@ -33,10 +40,29 @@ interface StoreCardProps {
 function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCardProps) {
   const t = useT();
   const [renaming, setRenaming] = useState<string>();
+  const [drag, setDrag] = useState<{ from: number; to: number }>();
+  const listRef = useRef<HTMLOListElement>(null);
+  // Row midpoints captured at drag start: the preview reorders the DOM, so
+  // live positions would drift under the pointer.
+  const midpoints = useRef<number[]>([]);
   const ordered = orderedCategories(store, categories);
 
   function run(action: () => Promise<void>): void {
     action().catch(onError);
+  }
+
+  function saveOrder(from: number, to: number): void {
+    if (from === to) {
+      return;
+    }
+    const ids = moveItem(
+      ordered.map((category) => category.id),
+      from,
+      to,
+    );
+    run(async () => {
+      onChanged(await setStoreCategoryOrder(store.id, ids));
+    });
   }
 
   function move(index: number, delta: number): void {
@@ -44,15 +70,39 @@ function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCa
     if (target < 0 || target >= ordered.length) {
       return;
     }
-    const ids = ordered.map((category) => category.id);
-    const [moved] = ids.splice(index, 1);
-    if (moved === undefined) {
+    saveOrder(index, target);
+  }
+
+  function startDrag(index: number, event: ReactPointerEvent<HTMLButtonElement>): void {
+    const list = listRef.current;
+    if (list === null) {
       return;
     }
-    ids.splice(target, 0, moved);
-    run(async () => {
-      onChanged(await setStoreCategoryOrder(store.id, ids));
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    midpoints.current = [...list.querySelectorAll('li')].map((row) => {
+      const rect = row.getBoundingClientRect();
+      return rect.top + rect.height / 2;
     });
+    setDrag({ from: index, to: index });
+  }
+
+  function updateDrag(event: ReactPointerEvent<HTMLButtonElement>): void {
+    if (drag === undefined) {
+      return;
+    }
+    const to = dropTargetIndex(midpoints.current, drag.from, event.clientY);
+    if (to !== drag.to) {
+      setDrag({ from: drag.from, to });
+    }
+  }
+
+  function endDrag(): void {
+    if (drag === undefined) {
+      return;
+    }
+    setDrag(undefined);
+    saveOrder(drag.from, drag.to);
   }
 
   function handleRename(event: FormEvent): void {
@@ -103,28 +153,45 @@ function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCa
           </button>
         </div>
       </div>
-      <ol className="category-order">
-        {ordered.map((category, index) => (
-          <li key={category.id}>
-            <span className="category-order-name">{category.name}</span>
-            <button
-              type="button"
-              aria-label={`${t.stores.moveUp}: ${category.name}`}
-              disabled={index === 0}
-              onClick={() => move(index, -1)}
+      <ol className="category-order" ref={listRef}>
+        {(drag === undefined ? ordered : moveItem(ordered, drag.from, drag.to)).map(
+          (category, index) => (
+            <li
+              key={category.id}
+              className={drag !== undefined && index === drag.to ? 'dragging' : undefined}
             >
-              ↑
-            </button>
-            <button
-              type="button"
-              aria-label={`${t.stores.moveDown}: ${category.name}`}
-              disabled={index === ordered.length - 1}
-              onClick={() => move(index, 1)}
-            >
-              ↓
-            </button>
-          </li>
-        ))}
+              <button
+                type="button"
+                className="drag-handle"
+                tabIndex={-1}
+                aria-hidden="true"
+                onPointerDown={(event) => startDrag(index, event)}
+                onPointerMove={updateDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={() => setDrag(undefined)}
+              >
+                ⠿
+              </button>
+              <span className="category-order-name">{category.name}</span>
+              <button
+                type="button"
+                aria-label={`${t.stores.moveUp}: ${category.name}`}
+                disabled={index === 0}
+                onClick={() => move(index, -1)}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                aria-label={`${t.stores.moveDown}: ${category.name}`}
+                disabled={index === ordered.length - 1}
+                onClick={() => move(index, 1)}
+              >
+                ↓
+              </button>
+            </li>
+          ),
+        )}
       </ol>
     </div>
   );

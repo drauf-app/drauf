@@ -107,6 +107,21 @@ describe('apiFetch', () => {
     expect(requests.filter((request) => request.url === '/api/auth/refresh')).toHaveLength(1);
   });
 
+  it('sends no JSON content type on body-less requests', async () => {
+    // Fastify rejects an empty body when the content type claims JSON.
+    const requests = stubFetch((url) =>
+      url === '/api/lists/l1' ? fakeResponse(204, {}) : undefined,
+    );
+
+    await apiFetch('/api/lists/l1', { method: 'DELETE' });
+    await apiFetch('/api/lists/l1', { method: 'PATCH', body: '{"name":"x"}' });
+
+    const headers = requests.map(
+      (request) => ((request.init?.headers ?? {}) as Record<string, string>)['content-type'],
+    );
+    expect(headers).toEqual([undefined, 'application/json']);
+  });
+
   it('throws a typed ApiError with the server error code', async () => {
     stubFetch((url) =>
       url === '/api/lists/nope' ? fakeResponse(404, { error: 'not_found' }) : undefined,

@@ -802,3 +802,20 @@ button:disabled {
 .import-plan-target select {
   flex: 1;
 }
+
+.drag-handle {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: grab;
+  /* Pointer-based dragging: the browser must not treat it as a scroll. */
+  touch-action: none;
+  padding: 0.2rem 0.4rem;
+  font-size: 1rem;
+}
+
+.category-order li.dragging {
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}

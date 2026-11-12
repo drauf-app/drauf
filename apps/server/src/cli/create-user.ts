@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { loadConfig } from '../config.js';
+import { loadDatabaseConfig } from '../config.js';
 import { connectDatabase, runMigrations } from '../db/index.js';
 import { seedDefaultHousehold } from '../db/seed.js';
 import { createLocalUser } from '../users/service.js';
@@ -66,8 +66,7 @@ if (username === undefined) {
 
 const password = process.stdin.isTTY ? await readPasswordFromTty() : await readPasswordFromPipe();
 
-const config = loadConfig();
-const database = connectDatabase(config.database);
+const database = connectDatabase(loadDatabaseConfig());
 try {
   await runMigrations(database);
   await seedDefaultHousehold(database);

@@ -129,6 +129,24 @@ function resolveDatabase(url: string | undefined, dataDir: string): DatabaseConf
   throw new Error('DATABASE_URL must start with postgres://, postgresql:// or sqlite://');
 }
 
+/**
+ * Database-only configuration for CLI tools (e.g. create-user): they must
+ * work without AUTH_SECRET and the other server settings.
+ */
+export function loadDatabaseConfig(data: NodeJS.ProcessEnv = process.env): DatabaseConfig {
+  const env = envSchema<Pick<Env, 'DATABASE_URL' | 'DATA_DIR'>>({
+    schema: {
+      type: 'object',
+      properties: {
+        DATABASE_URL: { type: 'string' },
+        DATA_DIR: { type: 'string', default: './data' },
+      },
+    } as const,
+    data,
+  });
+  return resolveDatabase(env.DATABASE_URL, env.DATA_DIR);
+}
+
 /** Reads and validates configuration from environment variables (the only config source). */
 export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
   const env = envSchema<Env>({ schema, data });
