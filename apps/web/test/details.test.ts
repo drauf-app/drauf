@@ -37,6 +37,10 @@ describe('parseDetails', () => {
   it('keeps number-like words as modifiers once count and size are taken', () => {
     expect(parseDetails('3, 4, 3-lagig')).toEqual({ count: 3, modifiers: ['4', '3-lagig'] });
   });
+
+  it('recognises a count written after the size', () => {
+    expect(parseDetails('500 g, 3')).toEqual({ quantity: 500, unit: 'g', count: 3, modifiers: [] });
+  });
 });
 
 describe('serializeDraft and draftFromEntry', () => {
