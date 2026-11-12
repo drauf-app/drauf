@@ -188,19 +188,16 @@ describe('ListPage', () => {
     expect(await screen.findByRole('button', { name: /Nudeln/ })).toBeDefined();
   });
 
-  it('applies a custom variant through the + chip', async () => {
+  it('applies custom modifiers through the + chip and toggles them as multi-select', async () => {
     const patched: string[] = [];
+    let variant: string | null = null;
     stubListApi({
       onEntryPost: () =>
         entryView({ id: 'e5', name: 'Chips', nameNormalized: 'chips', categoryId: null }),
       onEntryPatch: (_url, body) => {
         patched.push(body);
-        return entryView({
-          id: 'e5',
-          name: 'Chips',
-          nameNormalized: 'chips',
-          variant: 'Paprika',
-        });
+        variant = (JSON.parse(body) as { variant: string }).variant || null;
+        return entryView({ id: 'e5', name: 'Chips', nameNormalized: 'chips', variant });
       },
     });
     renderListPage();
@@ -210,13 +207,22 @@ describe('ListPage', () => {
     await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
 
     await user.click(await screen.findByRole('button', { name: 'Eigene Variante' }));
-    await user.type(screen.getByLabelText('Eigene Variante'), 'Paprika');
+    await user.type(screen.getByLabelText('Eigene Variante'), 'Lays, Paprika');
     await user.click(screen.getByRole('button', { name: 'Variante übernehmen' }));
 
-    expect(JSON.parse(patched[0] ?? '{}')).toEqual({ variant: 'Paprika' });
+    // A typed comma list lands as several modifiers at once.
+    expect(JSON.parse(patched[0] ?? '{}')).toEqual({ variant: 'Lays, Paprika' });
     expect(
-      await screen.findByText('Paprika', { selector: '.entry-name .entry-variant' }),
+      await screen.findByText('Lays, Paprika', { selector: '.entry-name .entry-variant' }),
     ).toBeDefined();
+
+    // The catalogue variety joins the list instead of replacing it …
+    await user.click(screen.getByRole('button', { name: 'Spaghetti' }));
+    expect(JSON.parse(patched[1] ?? '{}')).toEqual({ variant: 'Lays, Paprika, Spaghetti' });
+
+    // … and tapping an active modifier removes only that one.
+    await user.click(await screen.findByRole('button', { name: 'Spaghetti' }));
+    expect(JSON.parse(patched[2] ?? '{}')).toEqual({ variant: 'Lays, Paprika' });
   });
 
   it('adds parsed free text on submit', async () => {
