@@ -70,6 +70,21 @@ describe('PlanPage', () => {
     expect(screen.getAllByText('Abendessen')).toHaveLength(7);
   });
 
+  it('shows the source label as a clickable link next to the title', async () => {
+    stubPlanApi([
+      planEntry({ text: 'Tomatensuppe', link: 'https://cookidoo.de/recipes/recipe/de-DE/r1' }),
+    ]);
+    render(
+      <MemoryRouter>
+        <PlanPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Tomatensuppe')).toBeDefined();
+    const source = screen.getByRole('link', { name: '(Cookidoo)' });
+    expect(source.getAttribute('href')).toBe('https://cookidoo.de/recipes/recipe/de-DE/r1');
+  });
+
   it('creates an entry with text and cook in an empty slot', async () => {
     const posted: string[] = [];
     stubPlanApi([], (body) => {

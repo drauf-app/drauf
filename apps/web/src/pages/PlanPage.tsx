@@ -13,6 +13,7 @@ import type { HouseholdMember, MealSlot, PlanEntry } from '../api/types';
 import { ApiError } from '../auth/store';
 import { type Messages, useT } from '../i18n';
 import { applyPlanEvent } from '../lib/plan-events';
+import { sourceLabel } from '../lib/source';
 import { type SyncEvent, useSync } from '../lib/sync';
 import { formatDay, formatWeek, weekDays } from '../lib/week';
 
@@ -311,10 +312,7 @@ export function PlanPage() {
                       onClick={() => setEditor({ date: day, slotId: slot.id })}
                     >
                       <span className="plan-entry-text">
-                        {entry.text ?? entry.link ?? ''}
-                        {entry.link !== null && entry.text !== null && (
-                          <span className="plan-entry-link"> 🔗</span>
-                        )}
+                        {entry.text ?? (entry.link === null ? '' : sourceLabel(entry.link))}
                       </span>
                       {entry.cookId !== null && (
                         <span className="plan-cook">{cookNames.get(entry.cookId) ?? ''}</span>
@@ -332,13 +330,13 @@ export function PlanPage() {
                   )}
                   {entry?.link != null && !editing && (
                     <a
-                      className="plan-open-link"
+                      className="plan-source"
                       href={entry.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label={t.plan.openLink}
+                      title={t.plan.openLink}
                     >
-                      ↗
+                      ({sourceLabel(entry.link)})
                     </a>
                   )}
                 </div>

@@ -269,3 +269,130 @@ describe('meal plan routes', () => {
     });
   });
 });
+
+describe('plan link preview (W4)', () => {
+  const PASSWORD = 'correct-horse-battery';
+  let ctx: TestApp;
+  let token: string;
+  let slotId: string;
+
+  function fakeProvider(fetchImpl: () => Promise<never> | Promise<object>) {
+    return {
+      id: 'fake',
+      matches: (input: string) => (input.includes('fake.example') ? input : null),
+      fetch: fetchImpl as never,
+    };
+  }
+
+  async function setup(provider: object): Promise<void> {
+    ctx = await createTestApp(
+      {},
+      {
+        providers: [provider as never],
+        providerContext: { fetchText: async () => '' },
+      },
+    );
+    const result = await createLocalUser(ctx.database, {
+      username: 'christian',
+      password: PASSWORD,
+      displayName: 'Christian',
+      isAdmin: false,
+    });
+    if (!result.ok) throw new Error('fixture user not created');
+    const login = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'christian', password: PASSWORD },
+    });
+    token = (login.json() as { accessToken: string }).accessToken;
+    const slots = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/plan/slots',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    slotId = (slots.json() as Array<{ id: string }>)[0]?.id ?? '';
+  }
+
+  afterEach(async () => {
+    await ctx.close();
+  });
+
+  async function createWithLink(link: string) {
+    return ctx.app.inject({
+      method: 'POST',
+      url: '/api/plan/entries',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { date: '2026-11-20', slotId, link },
+    });
+  }
+
+  it('fills title and image from the provider when only a link is given', async () => {
+    await setup(
+      fakeProvider(async () => ({
+        title: 'Tomatensuppe',
+        imageUrl: 'https://img.example/suppe.jpg',
+        servings: 4,
+        ingredients: [],
+      })),
+    );
+    const response = await createWithLink('https://fake.example/r/1');
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({
+      text: 'Tomatensuppe',
+      link: 'https://fake.example/r/1',
+      imageUrl: 'https://img.example/suppe.jpg',
+    });
+  });
+
+  it('keeps the bare link when the provider fails (fail open)', async () => {
+    await setup(
+      fakeProvider(async () => {
+        throw new Error('scrape failed');
+      }),
+    );
+    const response = await createWithLink('https://fake.example/r/2');
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({ text: null, link: 'https://fake.example/r/2' });
+  });
+
+  it('leaves non-provider links untouched', async () => {
+    await setup(
+      fakeProvider(async () => ({
+        title: 'nope',
+        imageUrl: null,
+        servings: null,
+        ingredients: [],
+      })),
+    );
+    const response = await createWithLink('https://elsewhere.example/r/3');
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({ text: null });
+  });
+
+  it('enriches on PATCH when a link replaces the text', async () => {
+    await setup(
+      fakeProvider(async () => ({
+        title: 'Curry',
+        imageUrl: null,
+        servings: null,
+        ingredients: [],
+      })),
+    );
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/plan/entries',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { date: '2026-11-21', slotId, text: 'Platzhalter' },
+    });
+    const entry = created.json() as { id: string };
+
+    const patched = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/plan/entries/${entry.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { text: '', link: 'https://fake.example/r/4' },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json()).toMatchObject({ text: 'Curry', link: 'https://fake.example/r/4' });
+  });
+});

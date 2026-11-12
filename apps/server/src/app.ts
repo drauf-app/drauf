@@ -64,21 +64,6 @@ export async function buildApp(
       : undefined;
 
   const catalogIndex = buildCatalogIndex(options.catalog ?? loadCatalog());
-
-  await app.register(authRoutes(database, config, guards), { prefix: '/api/auth' });
-  await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
-  await app.register(userRoutes(database, guards), { prefix: '/api/users' });
-  await app.register(householdRoutes(database, guards), { prefix: '/api/households' });
-  await app.register(listRoutes(database, guards, hub), { prefix: '/api/lists' });
-  await app.register(entryRoutes(database, guards, hub, catalogIndex), { prefix: '/api/lists' });
-  await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
-  await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
-  await app.register(planRoutes(database, guards, hub), { prefix: '/api/plan' });
-  await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
-  await app.register(syncRoutes(database, config, guards, hub, catalogIndex), {
-    prefix: '/api/sync',
-  });
-
   const providers = (options.providers ?? allProviders).filter(
     (provider) => !config.disabledProviders.includes(provider.id),
   );
@@ -93,6 +78,23 @@ export async function buildApp(
       return result.body.toString('utf8');
     },
   };
+
+  await app.register(authRoutes(database, config, guards), { prefix: '/api/auth' });
+  await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
+  await app.register(userRoutes(database, guards), { prefix: '/api/users' });
+  await app.register(householdRoutes(database, guards), { prefix: '/api/households' });
+  await app.register(listRoutes(database, guards, hub), { prefix: '/api/lists' });
+  await app.register(entryRoutes(database, guards, hub, catalogIndex), { prefix: '/api/lists' });
+  await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
+  await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
+  await app.register(planRoutes(database, guards, hub, providers, providerContext), {
+    prefix: '/api/plan',
+  });
+  await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
+  await app.register(syncRoutes(database, config, guards, hub, catalogIndex), {
+    prefix: '/api/sync',
+  });
+
   await app.register(
     importRoutes(database, guards, hub, providers, providerContext, catalogIndex),
     {
