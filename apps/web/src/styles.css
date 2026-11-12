@@ -819,3 +819,171 @@ button:disabled {
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
+
+/* Printable meal plan */
+
+.print-page {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.print-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem 1rem;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.print-controls label {
+  gap: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.print-controls select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.print-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  border-bottom: 2px solid var(--text);
+  margin-bottom: 0.8rem;
+}
+
+.print-header h1 {
+  margin: 0 0 0.3rem;
+}
+
+.print-range {
+  color: var(--text-muted);
+}
+
+.print-day {
+  break-inside: avoid;
+  margin-bottom: 0.9rem;
+}
+
+.print-day h2 {
+  font-size: 1rem;
+  margin: 0 0 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.print-slot {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  padding: 0.25rem 0;
+}
+
+.print-slot-name {
+  width: 8rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.print-slot .print-entry {
+  flex: 1;
+  min-height: 1.2em;
+  border-bottom: 1px dotted var(--border);
+}
+
+.print-cook {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.print-calendar {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  table-layout: fixed;
+}
+
+.print-calendar th,
+.print-calendar td {
+  border: 1px solid var(--border);
+  padding: 0.4rem;
+  font-size: 0.8rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.print-calendar thead th {
+  background: var(--bg);
+}
+
+.print-calendar tbody th {
+  width: 6rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.print-calendar td {
+  height: 3.2rem;
+}
+
+.print-calendar .print-entry {
+  display: block;
+}
+
+.plan-print-link {
+  margin-left: auto;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+@media print {
+  .print-controls {
+    display: none;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .print-page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .print-header {
+    border-color: #000000;
+  }
+
+  .print-range,
+  .print-slot-name,
+  .print-cook,
+  .print-calendar tbody th {
+    color: #444444;
+  }
+
+  .print-day h2,
+  .print-slot .print-entry {
+    border-color: #999999;
+  }
+
+  .print-calendar th,
+  .print-calendar td {
+    border-color: #666666;
+  }
+
+  .print-calendar thead th {
+    background: #f0f0f0;
+  }
+}

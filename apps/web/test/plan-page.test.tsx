@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import type { HouseholdInfo, MealSlot, PlanEntry } from '../src/api/types';
 import { weekDays } from '../src/lib/week';
@@ -56,7 +57,11 @@ function stubPlanApi(entries: PlanEntry[], onPost?: (body: string) => PlanEntry)
 describe('PlanPage', () => {
   it('renders seven days with the slots in order and shows the cook', async () => {
     stubPlanApi([planEntry({})]);
-    render(<PlanPage />);
+    render(
+      <MemoryRouter>
+        <PlanPage />
+      </MemoryRouter>,
+    );
 
     expect(await screen.findByText('Pasta')).toBeDefined();
     expect(screen.getByText('Christian')).toBeDefined();
@@ -71,7 +76,11 @@ describe('PlanPage', () => {
       posted.push(body);
       return planEntry({ id: 'p9', text: 'Flammkuchen', cookId: 'u1', slotId: 's2' });
     });
-    render(<PlanPage />);
+    render(
+      <MemoryRouter>
+        <PlanPage />
+      </MemoryRouter>,
+    );
     const user = userEvent.setup();
 
     const addButtons = await screen.findAllByRole('button', { name: /Eintrag hinzufügen/ });

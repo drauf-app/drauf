@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isoDate, mondayOf, weekDays } from '../src/lib/week';
+import { daysFrom, isoDate, mondayOf, weekDays } from '../src/lib/week';
 
 describe('week helpers', () => {
   it('finds the Monday of a mid-week date', () => {
@@ -24,5 +24,26 @@ describe('week helpers', () => {
     const days = weekDays(3, new Date(2026, 10, 12));
     expect(days[0]).toBe('2026-11-30');
     expect(days[1]).toBe('2026-12-01');
+  });
+});
+
+describe('daysFrom', () => {
+  it('starts at the most recent occurrence of the start day', () => {
+    // 2026-11-12 is a Thursday; the household week starts Friday (5).
+    const days = daysFrom(5, 0, 8, new Date(2026, 10, 12));
+    expect(days[0]).toBe('2026-11-06');
+    expect(days).toHaveLength(8);
+    // "Friday to Friday": the 8th day is the next Friday.
+    expect(days[7]).toBe('2026-11-13');
+  });
+
+  it('keeps the start day when today is that day', () => {
+    // 2026-11-13 is a Friday.
+    expect(daysFrom(5, 0, 7, new Date(2026, 10, 13))[0]).toBe('2026-11-13');
+  });
+
+  it('shifts by whole weeks', () => {
+    expect(daysFrom(5, 1, 7, new Date(2026, 10, 12))[0]).toBe('2026-11-13');
+    expect(daysFrom(5, -1, 7, new Date(2026, 10, 12))[0]).toBe('2026-10-30');
   });
 });
