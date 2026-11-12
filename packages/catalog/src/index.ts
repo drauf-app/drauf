@@ -67,6 +67,20 @@ export interface CatalogIndex {
   byName: Map<string, CatalogItem>;
   /** Prefix search over names and synonyms; results are unique items. */
   search(query: string, limit: number): CatalogItem[];
+  /**
+   * Exact or compound match for category guessing: German compounds put the
+   * head noun last ("Zwiebelsuppe" is a Suppe), so the longest catalogue name
+   * that the input's last word ends with decides.
+   */
+  match(name: string): CatalogItem | undefined;
+}
+
+/** Shortest alias that may match as a proper compound suffix ("öl" is too risky). */
+const MIN_SUFFIX_LENGTH = 4;
+
+/** Plural-tolerant key variants: "zwiebeln" also matches the singular word. */
+function keyVariants(key: string): string[] {
+  return key.endsWith('n') && key.length > MIN_SUFFIX_LENGTH ? [key, key.slice(0, -1)] : [key];
 }
 
 /** Builds the in-memory search index the server keeps for its lifetime. */
@@ -84,8 +98,40 @@ export function buildCatalogIndex(items: CatalogItem[]): CatalogIndex {
     }
   }
   keys.sort();
+  // Longest candidates first, so "olivenöl" wins over "öl" for compounds.
+  const suffixCandidates: Array<[string, CatalogItem]> = [];
+  for (const [key, item] of byName) {
+    for (const variant of keyVariants(key)) {
+      suffixCandidates.push([variant, item]);
+    }
+  }
+  suffixCandidates.sort((a, b) => b[0].length - a[0].length);
   return {
     byName,
+    match(name) {
+      const normalized = normalizeItemName(name);
+      if (normalized === '') {
+        return undefined;
+      }
+      const exact = byName.get(normalized);
+      if (exact !== undefined) {
+        return exact;
+      }
+      const lastWord = normalized.split(' ').at(-1) ?? '';
+      for (const [key, item] of suffixCandidates) {
+        if (key === lastWord) {
+          return item; // "TK Spinat", or a singular of a plural catalogue name
+        }
+        if (
+          key.length >= MIN_SUFFIX_LENGTH &&
+          lastWord.length > key.length &&
+          lastWord.endsWith(key)
+        ) {
+          return item; // compound head: "Würzspinat" → Spinat
+        }
+      }
+      return undefined;
+    },
     search(query, limit) {
       const prefix = normalizeItemName(query);
       if (prefix === '') {

@@ -1,3 +1,4 @@
+import type { CatalogIndex } from '@drauf/catalog';
 import type { FastifyPluginAsync } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
@@ -51,6 +52,7 @@ export function syncRoutes(
   config: Config,
   guards: AuthGuards,
   hub: SyncHub,
+  catalog: CatalogIndex,
 ): FastifyPluginAsync {
   return async (app) => {
     app.post<{ Body: OperationsInput }>(
@@ -61,7 +63,13 @@ export function syncRoutes(
         if (auth === undefined) {
           return reply.code(401).send({ error: 'unauthorized' });
         }
-        const results = await applyOperations(database, hub, auth.id, request.body.operations);
+        const results = await applyOperations(
+          database,
+          hub,
+          auth.id,
+          request.body.operations,
+          catalog,
+        );
         return { results };
       },
     );

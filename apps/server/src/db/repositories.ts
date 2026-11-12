@@ -889,6 +889,25 @@ export async function recordCatalogUsage(
   }
 }
 
+/** The household's history row for one normalized item name, if any. */
+export async function getCatalogUsage(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+): Promise<CatalogUsage | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.catalogUsage)
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
+  return rows[0];
+}
+
 /** Remembers the category chosen for an item, when a history row exists. */
 export async function setCatalogUsageCategory(
   database: Database,

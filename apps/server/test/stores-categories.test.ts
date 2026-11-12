@@ -174,10 +174,11 @@ describe('categories and stores', () => {
           payload,
         });
 
-      await add({ name: 'Milch' });
-      const merged = await add({ name: 'Milch', categoryId: first?.id });
+      // A name the catalogue cannot guess, so the first entry starts bare.
+      await add({ name: 'Zaubertrank' });
+      const merged = await add({ name: 'Zaubertrank', categoryId: first?.id });
       expect((merged.json() as { categoryId: string }).categoryId).toBe(first?.id);
-      const again = await add({ name: 'Milch', categoryId: second?.id });
+      const again = await add({ name: 'Zaubertrank', categoryId: second?.id });
       expect((again.json() as { categoryId: string }).categoryId).toBe(first?.id);
     });
   });
