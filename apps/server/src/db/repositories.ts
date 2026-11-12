@@ -841,6 +841,29 @@ export async function getListHouseholdId(
 }
 
 /** Bumps the household's shopping history for an item (K4 learning). */
+/** How many recently used variants are kept per item for the custom chips. */
+const MAX_LEARNED_VARIANTS = 6;
+
+/** Parses the stored JSON list of recently used variants. */
+export function parseVariants(raw: string | null): string[] {
+  if (raw === null) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushVariant(raw: string | null, variant: string): string {
+  const next = [variant, ...parseVariants(raw).filter((value) => value !== variant)];
+  return JSON.stringify(next.slice(0, MAX_LEARNED_VARIANTS));
+}
+
 export async function recordCatalogUsage(
   database: Database,
   householdId: string,
@@ -870,6 +893,7 @@ export async function recordCatalogUsage(
       lastQuantity: input.quantity,
       lastUnit: input.unit,
       lastVariant: input.variant,
+      variants: input.variant === null ? null : JSON.stringify([input.variant]),
       updatedAt: now,
     });
   } else {
@@ -883,6 +907,11 @@ export async function recordCatalogUsage(
         lastQuantity: input.quantity,
         lastUnit: input.unit,
         lastVariant: input.variant,
+        // Used variants accumulate; adds without one keep the learned list.
+        variants:
+          input.variant === null
+            ? existing.variants
+            : pushVariant(existing.variants, input.variant),
         updatedAt: now,
       })
       .where(key);
@@ -906,6 +935,29 @@ export async function getCatalogUsage(
       ),
     );
   return rows[0];
+}
+
+/** Remembers a variant applied after the add (chips, edits), if a row exists. */
+export async function recordCatalogVariant(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+  variant: string,
+): Promise<void> {
+  const existing = await getCatalogUsage(database, householdId, nameNormalized);
+  if (existing === undefined) {
+    return;
+  }
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.catalogUsage)
+    .set({ lastVariant: variant, variants: pushVariant(existing.variants, variant) })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
 }
 
 /** Remembers the category chosen for an item, when a history row exists. */

@@ -46,7 +46,14 @@ export function buildChipGroups(suggestion: Suggestion | undefined): ChipGroups 
     });
   }
 
-  const varieties: Chip[] = (suggestion?.varieties ?? []).map((variety) => ({
+  // The household's own recent variants come first, catalogue varieties after.
+  const varietyLabels: string[] = [];
+  for (const label of [...(suggestion?.recentVariants ?? []), ...(suggestion?.varieties ?? [])]) {
+    if (!varietyLabels.includes(label)) {
+      varietyLabels.push(label);
+    }
+  }
+  const varieties: Chip[] = varietyLabels.map((variety) => ({
     label: variety,
     patch: { variant: variety },
     highlighted: variety === lastVariant,

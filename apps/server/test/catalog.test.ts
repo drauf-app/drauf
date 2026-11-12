@@ -312,3 +312,77 @@ describe('category guessing on add', () => {
     expect(entry.categoryId).toBe(chosen);
   });
 });
+
+describe('recent variants in suggestions', () => {
+  let ctx: TestApp;
+  let christian: { id: string; token: string };
+  let listId: string;
+
+  function as(user: { token: string }) {
+    return { authorization: `Bearer ${user.token}` };
+  }
+
+  beforeEach(async () => {
+    ctx = await createTestApp({}, { catalog: fakeCatalog });
+    const result = await createLocalUser(ctx.database, {
+      username: 'christian',
+      password: PASSWORD,
+      displayName: 'Christian',
+      isAdmin: false,
+    });
+    if (!result.ok) throw new Error('fixture user not created');
+    const login = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'christian', password: PASSWORD },
+    });
+    christian = {
+      id: result.user.id,
+      token: (login.json() as { accessToken: string }).accessToken,
+    };
+    const list = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Weekly shop' },
+    });
+    listId = (list.json() as { id: string }).id;
+  });
+
+  afterEach(async () => {
+    await ctx.close();
+  });
+
+  it('learns variants applied after the add and serves them most-recent-first', async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+      payload: { name: 'Chips' },
+    });
+    const entry = created.json() as { id: string };
+
+    // A custom chip applies a variant via PATCH; the household learns it.
+    for (const variant of ['Lays', 'Paprika']) {
+      const patched = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/lists/${listId}/entries/${entry.id}`,
+        headers: as(christian),
+        payload: { variant },
+      });
+      expect(patched.statusCode).toBe(200);
+    }
+
+    const response = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/catalog/suggest?q=chips',
+      headers: as(christian),
+    });
+    const [suggestion] = response.json() as Array<{
+      recentVariants: string[];
+      lastVariant: string | null;
+    }>;
+    expect(suggestion?.recentVariants).toEqual(['Paprika', 'Lays']);
+    expect(suggestion?.lastVariant).toBe('Paprika');
+  });
+});

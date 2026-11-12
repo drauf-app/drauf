@@ -25,7 +25,9 @@ import {
   listListsForUser,
   listPortionsForEntries,
   listRefreshTokensByUser,
+  parseVariants,
   recordCatalogUsage,
+  recordCatalogVariant,
   searchCatalogUsage,
   setCatalogUsageCategory,
   setEntryChecked,
@@ -264,6 +266,25 @@ function suite(getDb: () => Database) {
 
     // Wildcards in the prefix never act as LIKE patterns.
     expect(await searchCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, '%', 10)).toEqual([]);
+  });
+
+  it('accumulates used variants most-recent-first without duplicates', async () => {
+    const database = getDb();
+    const base = {
+      name: 'Paprika',
+      nameNormalized: 'paprika',
+      quantity: null,
+      unit: null,
+      categoryId: null,
+    };
+    await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, { ...base, variant: 'rot' });
+    await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, { ...base, variant: 'gelb' });
+    await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, { ...base, variant: null });
+    await recordCatalogVariant(database, DEFAULT_HOUSEHOLD_ID, 'paprika', 'rot');
+
+    const [row] = await searchCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, 'pap', 10);
+    expect(parseVariants(row?.variants ?? null)).toEqual(['rot', 'gelb']);
+    expect(row?.lastVariant).toBe('rot');
   });
 }
 

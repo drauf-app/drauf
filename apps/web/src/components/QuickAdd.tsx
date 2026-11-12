@@ -1,5 +1,5 @@
 import { parseItemLine } from '@drauf/shared';
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, type ReactNode, useRef, useState } from 'react';
 import type { AddEntryInput, PatchEntryInput } from '../api/lists';
 import { fetchSuggestions } from '../api/lists';
 import type { EntryView, Suggestion } from '../api/types';
@@ -26,10 +26,12 @@ function ChipRow({
   chips,
   entry,
   onPatch,
+  children,
 }: {
   chips: Chip[];
   entry: EntryView;
   onPatch: QuickAddProps['onPatch'];
+  children?: ReactNode;
 }) {
   return (
     <div className="chip-group">
@@ -49,7 +51,62 @@ function ChipRow({
           </button>
         );
       })}
+      {children}
     </div>
+  );
+}
+
+/** The "+" chip: an inline input that applies a custom variant (K2). */
+function CustomVariantChip({
+  entry,
+  onPatch,
+}: {
+  entry: EntryView;
+  onPatch: QuickAddProps['onPatch'];
+}) {
+  const t = useT();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        className="chip chip-add"
+        aria-label={t.quickAdd.customVariant}
+        onClick={() => setEditing(true)}
+      >
+        +
+      </button>
+    );
+  }
+  return (
+    <form
+      className="chip-input"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const variant = value.trim();
+        if (variant !== '') {
+          onPatch(entry.id, { variant });
+        }
+        setEditing(false);
+        setValue('');
+      }}
+    >
+      <input
+        type="text"
+        value={value}
+        maxLength={64}
+        placeholder={t.quickAdd.customVariant}
+        aria-label={t.quickAdd.customVariant}
+        // biome-ignore lint/a11y/noAutofocus: the input only appears on an explicit tap.
+        autoFocus
+        onChange={(event) => setValue(event.target.value)}
+      />
+      <button type="submit" aria-label={t.quickAdd.applyVariant}>
+        ✓
+      </button>
+    </form>
   );
 }
 
@@ -186,9 +243,9 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
             {groups.sizes.length > 0 && (
               <ChipRow chips={groups.sizes} entry={detailsEntry} onPatch={onPatch} />
             )}
-            {groups.varieties.length > 0 && (
-              <ChipRow chips={groups.varieties} entry={detailsEntry} onPatch={onPatch} />
-            )}
+            <ChipRow chips={groups.varieties} entry={detailsEntry} onPatch={onPatch}>
+              <CustomVariantChip entry={detailsEntry} onPatch={onPatch} />
+            </ChipRow>
           </div>
         )}
         {open && !showDetails && suggestions.length > 0 && (

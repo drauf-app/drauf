@@ -71,6 +71,13 @@
       "when": 1794436335604,
       "tag": "0009_great_sharon_ventura",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794503111281,
+      "tag": "0010_fancy_earthquake",
+      "breakpoints": true
     }
   ]
 }

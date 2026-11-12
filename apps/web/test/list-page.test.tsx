@@ -188,6 +188,37 @@ describe('ListPage', () => {
     expect(await screen.findByRole('button', { name: /Nudeln/ })).toBeDefined();
   });
 
+  it('applies a custom variant through the + chip', async () => {
+    const patched: string[] = [];
+    stubListApi({
+      onEntryPost: () =>
+        entryView({ id: 'e5', name: 'Chips', nameNormalized: 'chips', categoryId: null }),
+      onEntryPatch: (_url, body) => {
+        patched.push(body);
+        return entryView({
+          id: 'e5',
+          name: 'Chips',
+          nameNormalized: 'chips',
+          variant: 'Paprika',
+        });
+      },
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText('Was brauchst du?'), 'chips');
+    await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
+
+    await user.click(await screen.findByRole('button', { name: 'Eigene Variante' }));
+    await user.type(screen.getByLabelText('Eigene Variante'), 'Paprika');
+    await user.click(screen.getByRole('button', { name: 'Variante übernehmen' }));
+
+    expect(JSON.parse(patched[0] ?? '{}')).toEqual({ variant: 'Paprika' });
+    expect(
+      await screen.findByText('Paprika', { selector: '.entry-name .entry-variant' }),
+    ).toBeDefined();
+  });
+
   it('adds parsed free text on submit', async () => {
     const posted: string[] = [];
     stubListApi({

@@ -236,6 +236,8 @@ export const catalogUsage = pgTable(
     lastQuantity: doublePrecision('last_quantity'),
     lastUnit: text('last_unit'),
     lastVariant: text('last_variant'),
+    /** JSON array of recently used variants, most recent first (K2 custom chips). */
+    variants: text('variants'),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.householdId, t.nameNormalized] })],

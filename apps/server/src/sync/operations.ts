@@ -3,9 +3,11 @@ import type { Database } from '../db/index.js';
 import {
   deleteListEntry,
   getListEntry,
+  getListHouseholdId,
   isCategoryLinkedToList,
   isOperationApplied,
   markOperationApplied,
+  recordCatalogVariant,
   setEntryChecked,
   updateListEntry,
 } from '../db/repositories.js';
@@ -234,6 +236,13 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
   }
   patch.fieldTimes = stampFieldTimes(entry.fieldTimes, stamped, ctx.effectiveTime);
   await updateListEntry(ctx.database, entry.id, patch);
+  if (typeof patch.variant === 'string') {
+    // Custom chips learn from every applied variant, also on offline replay.
+    const householdId = await getListHouseholdId(ctx.database, entry.listId);
+    if (householdId !== undefined) {
+      await recordCatalogVariant(ctx.database, householdId, entry.nameNormalized, patch.variant);
+    }
+  }
   await publishEntry(ctx, 'entry.updated', { ...entry, ...patch });
   return { id: '', status: 'applied', entryId: entry.id };
 }

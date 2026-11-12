@@ -137,6 +137,14 @@ describe('buildChipGroups', () => {
     expect(groups.counts.find((chip) => chip.highlighted)?.label).toBe('2');
   });
 
+  it('puts the household\u2019s recent variants before catalogue varieties, deduped', () => {
+    const groups = buildChipGroups({
+      ...suggestion,
+      recentVariants: ['Paprika', 'Penne'],
+    });
+    expect(groups.varieties.map((chip) => chip.label)).toEqual(['Paprika', 'Penne', 'Spaghetti']);
+  });
+
   it('offers only counts for free-text adds', () => {
     const groups = buildChipGroups(undefined);
     expect(groups.counts).toHaveLength(4);

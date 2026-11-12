@@ -84,6 +84,8 @@ export interface Suggestion {
   categoryId: string | null;
   sizes: string[];
   varieties: string[];
+  /** This household's recently used variants, most recent first. */
+  recentVariants?: string[];
   count?: number;
   lastQuantity?: number | null;
   lastUnit?: string | null;
