@@ -1,0 +1,203 @@
+:root {
+  color-scheme: light dark;
+  --accent: #1f7a4d;
+  --accent-contrast: #ffffff;
+  --bg: #f6f7f6;
+  --surface: #ffffff;
+  --text: #1c1f1d;
+  --text-muted: #5c6660;
+  --border: #d9dedb;
+  --error: #b3261e;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141716;
+    --surface: #1e2320;
+    --text: #e8ebe9;
+    --text-muted: #9aa49e;
+    --border: #343b37;
+    --error: #ff8a80;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 1.4rem;
+}
+
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  padding-top: calc(0.6rem + env(safe-area-inset-top, 0px));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.2rem;
+}
+
+.app-header nav {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.app-header nav a {
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.app-header nav a.active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.user-name {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.screen-center {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.login-card h1 {
+  margin: 0 0 0.25rem;
+  text-align: center;
+}
+
+.login-card h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+input {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button {
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+button.secondary {
+  width: 100%;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-divider {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 1rem 0;
+}
+
+.error {
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+.placeholder {
+  color: var(--text-muted);
+}

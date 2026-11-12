@@ -1,0 +1,10 @@
+{
+  "name": "Drauf",
+  "short_name": "Drauf",
+  "description": "Einkaufslisten und Wochenplan für den Haushalt",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f7a4d",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

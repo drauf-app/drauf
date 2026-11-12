@@ -34,6 +34,8 @@ export interface Config {
   oidc: OidcConfig | undefined;
   /** Provider ids (e.g. "cookidoo") whose recipe import is turned off. */
   disabledProviders: string[];
+  /** Directory with the built web app; served when it exists. */
+  webDir: string;
 }
 
 interface Env {
@@ -53,6 +55,7 @@ interface Env {
   OIDC_ADMIN_GROUP?: string;
   OIDC_APP_REDIRECTS?: string;
   IMPORT_DISABLED_PROVIDERS?: string;
+  WEB_DIR: string;
 }
 
 const schema = {
@@ -75,6 +78,7 @@ const schema = {
     OIDC_ADMIN_GROUP: { type: 'string' },
     OIDC_APP_REDIRECTS: { type: 'string' },
     IMPORT_DISABLED_PROVIDERS: { type: 'string' },
+    WEB_DIR: { type: 'string', default: '../web/dist' },
   },
 } as const;
 
@@ -141,5 +145,6 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
       .split(',')
       .map((entry) => entry.trim())
       .filter((entry) => entry !== ''),
+    webDir: env.WEB_DIR,
   };
 }

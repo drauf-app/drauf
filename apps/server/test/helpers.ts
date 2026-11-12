@@ -17,6 +17,7 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     publicUrl: undefined,
     oidc: undefined,
     disabledProviders: [],
+    webDir: './test-no-web-dist',
     ...overrides,
   };
 }

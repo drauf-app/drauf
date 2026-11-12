@@ -21,6 +21,7 @@ import { storeRoutes } from './routes/stores.js';
 import { syncRoutes } from './routes/sync.js';
 import { userRoutes } from './routes/users.js';
 import { SyncHub } from './sync/hub.js';
+import { registerWebApp } from './web.js';
 
 export interface BuildAppOptions {
   /** Test seam: replaces the built-in recipe providers. */
@@ -90,6 +91,10 @@ export async function buildApp(
   await app.register(importRoutes(database, guards, hub, providers, providerContext), {
     prefix: '/api/import',
   });
+
+  if (await registerWebApp(app, config.webDir)) {
+    app.log.info({ webDir: config.webDir }, 'serving the web app');
+  }
 
   return app;
 }
