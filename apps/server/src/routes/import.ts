@@ -242,7 +242,7 @@ export function importRoutes(
               'recipe',
               catalog,
             );
-            const view = await getEntryView(database, entry);
+            const view = await getEntryView(database, entry, catalog);
             hub.publish(listTopic(listInput.id), {
               type: merged ? 'entry.updated' : 'entry.created',
               data: view,

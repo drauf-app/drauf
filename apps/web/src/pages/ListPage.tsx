@@ -15,13 +15,11 @@ import {
   patchList,
 } from '../api/lists';
 import { fetchStores } from '../api/stores';
-import type { Category, EntryView, ListDetail, StoreWithOrder, Suggestion } from '../api/types';
+import type { Category, EntryView, ListDetail, StoreWithOrder } from '../api/types';
 import { ApiError, useAuth } from '../auth/store';
-import { ChipBar } from '../components/ChipBar';
 import { EntryEditForm } from '../components/EntryEditForm';
 import { QuickAdd } from '../components/QuickAdd';
 import { useT } from '../i18n';
-import { buildChipGroups, type Chip, type ChipGroups } from '../lib/chips';
 import {
   applyListEvent,
   formatQuantities,
@@ -58,6 +56,7 @@ function localEntryView(listId: string, input: AddEntryInput): EntryView {
     quantities:
       input.quantity === undefined ? [] : [{ unit: input.unit ?? null, quantity: input.quantity }],
     portions: [],
+    icon: null,
   };
 }
 
@@ -76,11 +75,6 @@ function patchEntryLocally(entry: EntryView, patch: PatchEntryInput): EntryView 
         ? { quantities: [] } // unit without quantity clears all portions
         : {}),
   };
-}
-
-interface ChipTarget {
-  entryId: string;
-  groups: ChipGroups;
 }
 
 interface EntryRowProps {
@@ -134,6 +128,52 @@ function EntryRow({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
   );
 }
 
+/** Tile variant of an entry: tap checks off, corner buttons edit/delete. */
+function EntryTile({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
+  const t = useT();
+  const checked = entry.checkedAt !== null;
+  const quantities = formatQuantities(entry.quantities);
+  const meta = [quantities, entry.variant ?? ''].filter((part) => part !== '').join(' · ');
+  return (
+    <li className={checked ? 'tile checked' : 'tile'}>
+      <button
+        type="button"
+        className="tile-main"
+        aria-label={
+          checked ? `${t.list.uncheckEntry}: ${entry.name}` : `${t.list.checkEntry}: ${entry.name}`
+        }
+        onClick={() => onToggle(entry)}
+      >
+        <span className="tile-icon" aria-hidden="true">
+          {checked ? '✓' : (entry.icon ?? '')}
+        </span>
+        <span className="tile-name">{entry.name}</span>
+        {meta !== '' && <span className="tile-meta">{meta}</span>}
+      </button>
+      <span className="tile-actions">
+        <button
+          type="button"
+          aria-label={`${t.list.editEntry}: ${entry.name}`}
+          onClick={() => onEdit(entry)}
+        >
+          ✎
+        </button>
+        <button type="button" aria-label={t.list.deleteEntry} onClick={() => onDelete(entry)}>
+          ×
+        </button>
+      </span>
+    </li>
+  );
+}
+
+function loadListView(): 'rows' | 'tiles' {
+  try {
+    return localStorage.getItem('drauf.list-view') === 'tiles' ? 'tiles' : 'rows';
+  } catch {
+    return 'rows';
+  }
+}
+
 export function ListPage() {
   const t = useT();
   const auth = useAuth();
@@ -147,9 +187,18 @@ export function ListPage() {
   const [stores, setStores] = useState<StoreWithOrder[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [actionFailed, setActionFailed] = useState(false);
-  const [chipTarget, setChipTarget] = useState<ChipTarget>();
   const [renaming, setRenaming] = useState<string>();
   const [editingId, setEditingId] = useState<string>();
+  const [listView, setListView] = useState<'rows' | 'tiles'>(loadListView);
+
+  function switchView(view: 'rows' | 'tiles'): void {
+    setListView(view);
+    try {
+      localStorage.setItem('drauf.list-view', view);
+    } catch {
+      // The choice then lasts only for this visit.
+    }
+  }
 
   const reload = useCallback(async () => {
     const [listResult, entriesResult, categoriesResult, storesResult] = await Promise.all([
@@ -226,16 +275,16 @@ export function ListPage() {
     setEntries((previous) => upsertEntry(previous ?? [], view));
   }
 
-  async function handleAdd(input: AddEntryInput, suggestion?: Suggestion): Promise<void> {
+  async function handleAdd(input: AddEntryInput): Promise<EntryView | undefined> {
     setActionFailed(false);
     try {
       const view = await addEntry(listId, input);
       applyView(view);
-      setChipTarget({ entryId: view.id, groups: buildChipGroups(suggestion) });
+      return view;
     } catch (err) {
       if (!isOfflineError(err)) {
         setActionFailed(true);
-        return;
+        return undefined;
       }
       // Offline (L10): keep a placeholder and queue the add for replay.
       const local = localEntryView(listId, input);
@@ -247,7 +296,7 @@ export function ListPage() {
         localEntryId: local.id,
         data: { listId, ...input },
       });
-      setChipTarget({ entryId: local.id, groups: buildChipGroups(suggestion) });
+      return local;
     }
   }
 
@@ -277,12 +326,6 @@ export function ListPage() {
     })();
   }
 
-  function handleChip(chip: Chip): void {
-    if (chipTarget !== undefined) {
-      setFields(chipTarget.entryId, chip.patch);
-    }
-  }
-
   function handleToggle(entry: EntryView): void {
     const check = entry.checkedAt === null;
     setActionFailed(false);
@@ -303,9 +346,6 @@ export function ListPage() {
         applyView({ ...entry, checkedAt: check ? nowIso() : null });
       }
     })();
-    if (chipTarget?.entryId === entry.id) {
-      setChipTarget(undefined);
-    }
   }
 
   function handleDelete(entry: EntryView): void {
@@ -327,9 +367,6 @@ export function ListPage() {
       }
       setEntries((previous) => (previous ?? []).filter((item) => item.id !== entry.id));
     })();
-    if (chipTarget?.entryId === entry.id) {
-      setChipTarget(undefined);
-    }
   }
 
   function handleEditSave(entry: EntryView, fields: PatchEntryInput): void {
@@ -409,8 +446,9 @@ export function ListPage() {
         </li>
       );
     }
+    const Renderer = listView === 'tiles' ? EntryTile : EntryRow;
     return (
-      <EntryRow
+      <Renderer
         key={entry.id}
         entry={entry}
         onToggle={handleToggle}
@@ -419,6 +457,8 @@ export function ListPage() {
       />
     );
   }
+
+  const entriesClass = listView === 'tiles' ? 'entries tiles' : 'entries';
 
   return (
     <section className="list-page">
@@ -457,6 +497,26 @@ export function ListPage() {
             ))}
           </select>
         )}
+        <div className="view-toggle">
+          <button
+            type="button"
+            className={listView === 'rows' ? 'active' : undefined}
+            aria-label={t.list.viewRows}
+            aria-pressed={listView === 'rows'}
+            onClick={() => switchView('rows')}
+          >
+            ☰
+          </button>
+          <button
+            type="button"
+            className={listView === 'tiles' ? 'active' : undefined}
+            aria-label={t.list.viewTiles}
+            aria-pressed={listView === 'tiles'}
+            onClick={() => switchView('tiles')}
+          >
+            ▦
+          </button>
+        </div>
         <div className="list-actions">
           <button type="button" onClick={() => setRenaming(list.name)}>
             {t.list.rename}
@@ -478,27 +538,18 @@ export function ListPage() {
       {groups.map((group) => (
         <div key={group.category?.id ?? 'uncategorized'} className="category-group">
           <h2>{group.category?.name ?? t.list.uncategorized}</h2>
-          <ul className="entries">{group.entries.map(renderEntry)}</ul>
+          <ul className={entriesClass}>{group.entries.map(renderEntry)}</ul>
         </div>
       ))}
 
       {recent.length > 0 && (
         <details className="recent">
           <summary>{t.list.recent}</summary>
-          <ul className="entries">{recent.map(renderEntry)}</ul>
+          <ul className={entriesClass}>{recent.map(renderEntry)}</ul>
         </details>
       )}
 
-      <div className="quick-add-area">
-        {chipTarget !== undefined && (
-          <ChipBar
-            groups={chipTarget.groups}
-            onPick={handleChip}
-            onDismiss={() => setChipTarget(undefined)}
-          />
-        )}
-        <QuickAdd onAdd={handleAdd} />
-      </div>
+      <QuickAdd entries={entries} onAdd={handleAdd} onPatch={setFields} />
     </section>
   );
 }

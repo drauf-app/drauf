@@ -54,3 +54,28 @@ export function buildChipGroups(suggestion: Suggestion | undefined): ChipGroups 
 
   return { counts, sizes, varieties };
 }
+
+/** Whether a chip's value is what the entry currently has. */
+export function isChipActive(
+  entry: { variant: string | null; quantities: Array<{ unit: string | null; quantity: number }> },
+  chip: Chip,
+): boolean {
+  if (chip.patch.variant !== undefined) {
+    return entry.variant === chip.patch.variant;
+  }
+  if (chip.patch.quantity !== undefined) {
+    const only = entry.quantities.length === 1 ? entry.quantities[0] : undefined;
+    return (
+      only !== undefined &&
+      only.quantity === chip.patch.quantity &&
+      (only.unit ?? '') === (chip.patch.unit ?? '')
+    );
+  }
+  return false;
+}
+
+/** The patch that takes an active chip's value off the entry again. */
+export function clearingPatch(chip: Chip): PatchEntryInput {
+  // unit '' clears all portions; variant '' clears the variant.
+  return chip.patch.variant !== undefined ? { variant: '' } : { unit: '' };
+}

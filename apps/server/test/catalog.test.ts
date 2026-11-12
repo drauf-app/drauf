@@ -259,6 +259,21 @@ describe('category guessing on add', () => {
     expect(entry.categoryId).toBe(categoryIdByKey.get('dairy-chilled'));
   });
 
+  it('resolves the catalogue icon for entry views', async () => {
+    const created = (await addItem({ name: 'Milch' })) as { icon?: string | null };
+    expect(created.icon).toBe('🥛');
+    const compound = (await addItem({ name: 'Würznudeln' })) as { icon?: string | null };
+    expect(compound.icon).toBe('🍝');
+    const list = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+    });
+    const views = list.json() as Array<{ name: string; icon: string | null }>;
+    expect(views.find((view) => view.name === 'Milch')?.icon).toBe('🥛');
+    expect(views.find((view) => view.name === 'Xyzzy')?.icon ?? null).toBeNull();
+  });
+
   it('assigns the category of the compound head noun', async () => {
     // German compounds end with the head: Würznudeln are a kind of Nudeln.
     const entry = await addItem({ name: 'Würznudeln' });
