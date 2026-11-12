@@ -29,17 +29,18 @@ function orderedCategories(store: StoreWithOrder, categories: Category[]): Categ
   return [...inStore, ...byHousehold.filter((category) => !position.has(category.id))];
 }
 
-interface StoreCardProps {
+interface StoreEditDialogProps {
   store: StoreWithOrder;
   categories: Category[];
   onChanged: (store: StoreWithOrder) => void;
-  onDeleted: (store: StoreWithOrder) => void;
   onError: () => void;
+  onClose: () => void;
 }
 
-function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCardProps) {
+/** Modal editing one store: its name and its category (aisle) order. */
+function StoreEditDialog({ store, categories, onChanged, onError, onClose }: StoreEditDialogProps) {
   const t = useT();
-  const [renaming, setRenaming] = useState<string>();
+  const [name, setName] = useState(store.name);
   const [drag, setDrag] = useState<{ from: number; to: number }>();
   const listRef = useRef<HTMLOListElement>(null);
   // Row midpoints captured at drag start: the preview reorders the DOM, so
@@ -78,7 +79,7 @@ function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCa
   const saveOrderRef = useRef(saveOrder);
   saveOrderRef.current = saveOrder;
   const dragCleanup = useRef<(() => void) | undefined>(undefined);
-  // A drag may outlive the component (navigation mid-drag): drop listeners.
+  // A drag may outlive the dialog (close mid-drag): drop the listeners.
   useEffect(() => () => dragCleanup.current?.(), []);
 
   /**
@@ -137,92 +138,95 @@ function StoreCard({ store, categories, onChanged, onDeleted, onError }: StoreCa
     dragCleanup.current = cleanup;
   }
 
-  function handleRename(event: FormEvent): void {
-    event.preventDefault();
-    const name = renaming?.trim() ?? '';
-    setRenaming(undefined);
-    if (name === '' || name === store.name) {
+  function saveName(): void {
+    const trimmed = name.trim();
+    if (trimmed === '' || trimmed === store.name) {
       return;
     }
     run(async () => {
-      onChanged(await renameStore(store.id, name));
+      onChanged(await renameStore(store.id, trimmed));
     });
   }
 
-  function handleDelete(): void {
-    if (!window.confirm(t.stores.deleteConfirm)) {
-      return;
-    }
-    run(async () => {
-      await deleteStore(store.id);
-      onDeleted(store);
-    });
-  }
+  const closeRef = useRef(() => {});
+  closeRef.current = () => {
+    saveName();
+    onClose();
+  };
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
-    <div className="store-card">
-      <div className="store-head">
-        {renaming === undefined ? (
-          <h2>{store.name}</h2>
-        ) : (
-          <form className="rename-form" onSubmit={handleRename}>
-            <input
-              type="text"
-              value={renaming}
-              maxLength={100}
-              aria-label={t.stores.rename}
-              onChange={(event) => setRenaming(event.target.value)}
-            />
-            <button type="submit">{t.common.save}</button>
-          </form>
-        )}
-        <div className="list-actions">
-          <button type="button" onClick={() => setRenaming(store.name)}>
-            {t.stores.rename}
-          </button>
-          <button type="button" className="danger" onClick={handleDelete}>
-            {t.stores.delete}
+    <>
+      <button
+        type="button"
+        className="modal-backdrop"
+        aria-label={t.quickAdd.close}
+        onClick={() => closeRef.current()}
+      />
+      <div className="modal" role="dialog" aria-modal="true" aria-label={store.name}>
+        <label>
+          {t.stores.name}
+          <input
+            type="text"
+            value={name}
+            maxLength={100}
+            onChange={(event) => setName(event.target.value)}
+            onBlur={saveName}
+          />
+        </label>
+        <h3>{t.stores.orderTitle}</h3>
+        <ol className="category-order" ref={listRef}>
+          {(drag === undefined ? ordered : moveItem(ordered, drag.from, drag.to)).map(
+            (category, index) => (
+              <li
+                key={category.id}
+                className={drag !== undefined && index === drag.to ? 'dragging' : undefined}
+              >
+                <button
+                  type="button"
+                  className="drag-handle"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  onPointerDown={(event) => startDrag(index, event)}
+                >
+                  ⠿
+                </button>
+                <span className="category-order-name">{category.name}</span>
+                <button
+                  type="button"
+                  aria-label={`${t.stores.moveUp}: ${category.name}`}
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${t.stores.moveDown}: ${category.name}`}
+                  disabled={index === ordered.length - 1}
+                  onClick={() => move(index, 1)}
+                >
+                  ↓
+                </button>
+              </li>
+            ),
+          )}
+        </ol>
+        <div className="modal-actions">
+          <button type="button" className="primary" onClick={() => closeRef.current()}>
+            {t.stores.done}
           </button>
         </div>
       </div>
-      <ol className="category-order" ref={listRef}>
-        {(drag === undefined ? ordered : moveItem(ordered, drag.from, drag.to)).map(
-          (category, index) => (
-            <li
-              key={category.id}
-              className={drag !== undefined && index === drag.to ? 'dragging' : undefined}
-            >
-              <button
-                type="button"
-                className="drag-handle"
-                tabIndex={-1}
-                aria-hidden="true"
-                onPointerDown={(event) => startDrag(index, event)}
-              >
-                ⠿
-              </button>
-              <span className="category-order-name">{category.name}</span>
-              <button
-                type="button"
-                aria-label={`${t.stores.moveUp}: ${category.name}`}
-                disabled={index === 0}
-                onClick={() => move(index, -1)}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                aria-label={`${t.stores.moveDown}: ${category.name}`}
-                disabled={index === ordered.length - 1}
-                onClick={() => move(index, 1)}
-              >
-                ↓
-              </button>
-            </li>
-          ),
-        )}
-      </ol>
-    </div>
+    </>
   );
 }
 
@@ -232,6 +236,7 @@ export function StoresPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState(false);
   const [name, setName] = useState('');
+  const [editingId, setEditingId] = useState<string>();
 
   useEffect(() => {
     let cancelled = false;
@@ -249,6 +254,33 @@ export function StoresPage() {
       cancelled = true;
     };
   }, []);
+
+  function run(action: () => Promise<void>): void {
+    setError(false);
+    action().catch(() => setError(true));
+  }
+
+  function replaceStore(changed: StoreWithOrder): void {
+    setStores((previous) =>
+      (previous ?? []).map((item) => (item.id === changed.id ? changed : item)),
+    );
+  }
+
+  function handleReset(store: StoreWithOrder): void {
+    run(async () => {
+      replaceStore(await setStoreCategoryOrder(store.id, []));
+    });
+  }
+
+  function handleDelete(store: StoreWithOrder): void {
+    if (!window.confirm(t.stores.deleteConfirm)) {
+      return;
+    }
+    run(async () => {
+      await deleteStore(store.id);
+      setStores((previous) => (previous ?? []).filter((item) => item.id !== store.id));
+    });
+  }
 
   async function onCreate(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -270,27 +302,48 @@ export function StoresPage() {
     return <p className="placeholder">{error ? t.common.error : t.common.loading}</p>;
   }
 
+  const editingStore = stores.find((store) => store.id === editingId);
+
   return (
     <section>
       <h1>{t.stores.title}</h1>
       <p className="placeholder">{t.stores.intro}</p>
       {stores.length === 0 && <p className="placeholder">{t.stores.empty}</p>}
-      {stores.map((store) => (
-        <StoreCard
-          key={store.id}
-          store={store}
-          categories={categories}
-          onChanged={(changed) =>
-            setStores((previous) =>
-              (previous ?? []).map((item) => (item.id === changed.id ? changed : item)),
-            )
-          }
-          onDeleted={(deleted) =>
-            setStores((previous) => (previous ?? []).filter((item) => item.id !== deleted.id))
-          }
-          onError={() => setError(true)}
-        />
-      ))}
+      <ul className="store-rows">
+        {stores.map((store) => (
+          <li key={store.id} className="store-row">
+            <span className="store-row-text">
+              <span className="store-row-name">{store.name}</span>
+              <span className="store-hint">
+                {store.categoryOrder.length === 0 ? t.stores.defaultOrder : t.stores.customOrder}
+              </span>
+            </span>
+            <button
+              type="button"
+              aria-label={`${t.stores.edit}: ${store.name}`}
+              onClick={() => setEditingId(store.id)}
+            >
+              {t.stores.edit}
+            </button>
+            <button
+              type="button"
+              aria-label={`${t.stores.reset}: ${store.name}`}
+              disabled={store.categoryOrder.length === 0}
+              onClick={() => handleReset(store)}
+            >
+              {t.stores.reset}
+            </button>
+            <button
+              type="button"
+              className="danger"
+              aria-label={`${t.stores.delete}: ${store.name}`}
+              onClick={() => handleDelete(store)}
+            >
+              {t.stores.delete}
+            </button>
+          </li>
+        ))}
+      </ul>
       <form className="create-list" onSubmit={(event) => void onCreate(event)}>
         <input
           type="text"
@@ -305,6 +358,15 @@ export function StoresPage() {
         </button>
       </form>
       {error && <p className="error">{t.common.error}</p>}
+      {editingStore !== undefined && (
+        <StoreEditDialog
+          store={editingStore}
+          categories={categories}
+          onChanged={replaceStore}
+          onError={() => setError(true)}
+          onClose={() => setEditingId(undefined)}
+        />
+      )}
     </section>
   );
 }
