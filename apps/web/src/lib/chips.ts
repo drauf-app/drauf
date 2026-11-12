@@ -1,4 +1,4 @@
-import { parseSize } from '@drauf/shared';
+import { joinVariants, parseSize, splitVariants } from '@drauf/shared';
 import type { PatchEntryInput } from '../api/lists';
 import type { Suggestion } from '../api/types';
 
@@ -53,10 +53,11 @@ export function buildChipGroups(suggestion: Suggestion | undefined): ChipGroups 
       varietyLabels.push(label);
     }
   }
+  const lastModifiers = splitVariants(lastVariant);
   const varieties: Chip[] = varietyLabels.map((variety) => ({
     label: variety,
     patch: { variant: variety },
-    highlighted: variety === lastVariant,
+    highlighted: lastModifiers.includes(variety),
   }));
 
   return { counts, sizes, varieties };
@@ -68,7 +69,8 @@ export function isChipActive(
   chip: Chip,
 ): boolean {
   if (chip.patch.variant !== undefined) {
-    return entry.variant === chip.patch.variant;
+    // Variants are multi-select: active when the modifier is in the list.
+    return splitVariants(entry.variant).includes(chip.patch.variant);
   }
   if (chip.patch.quantity !== undefined) {
     const only = entry.quantities.length === 1 ? entry.quantities[0] : undefined;
@@ -85,4 +87,27 @@ export function isChipActive(
 export function clearingPatch(chip: Chip): PatchEntryInput {
   // unit '' clears all portions; variant '' clears the variant.
   return chip.patch.variant !== undefined ? { variant: '' } : { unit: '' };
+}
+
+/** Toggles one modifier in the entry's comma-separated variant list. */
+export function variantTogglePatch(
+  entry: { variant: string | null },
+  modifier: string,
+): PatchEntryInput {
+  const current = splitVariants(entry.variant);
+  const next = current.includes(modifier)
+    ? current.filter((value) => value !== modifier)
+    : [...current, modifier];
+  return { variant: joinVariants(next) };
+}
+
+/** Merges typed modifiers (possibly a comma list) into the entry's variants. */
+export function addVariantsPatch(entry: { variant: string | null }, text: string): PatchEntryInput {
+  const next = splitVariants(entry.variant);
+  for (const modifier of splitVariants(text)) {
+    if (!next.includes(modifier)) {
+      next.push(modifier);
+    }
+  }
+  return { variant: joinVariants(next) };
 }

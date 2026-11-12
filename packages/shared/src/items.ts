@@ -128,3 +128,22 @@ export function parseSize(size: string): ParsedSize | undefined {
   }
   return { quantity, unit };
 }
+
+/**
+ * An entry's variant holds one or more modifiers as a comma-separated list
+ * ("Bio, Festkochend, Annabelle"). Splits it for chips and learning.
+ */
+export function splitVariants(variant: string | null | undefined): string[] {
+  if (variant == null) {
+    return [];
+  }
+  return variant
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part !== '');
+}
+
+/** Joins modifiers back into the canonical comma-separated variant string. */
+export function joinVariants(variants: string[]): string {
+  return variants.join(', ');
+}

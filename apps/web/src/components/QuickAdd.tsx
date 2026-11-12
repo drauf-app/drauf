@@ -4,7 +4,14 @@ import type { AddEntryInput, PatchEntryInput } from '../api/lists';
 import { fetchSuggestions } from '../api/lists';
 import type { EntryView, Suggestion } from '../api/types';
 import { useT } from '../i18n';
-import { buildChipGroups, type Chip, clearingPatch, isChipActive } from '../lib/chips';
+import {
+  addVariantsPatch,
+  buildChipGroups,
+  type Chip,
+  clearingPatch,
+  isChipActive,
+  variantTogglePatch,
+} from '../lib/chips';
 import { formatQuantities } from '../lib/entries';
 
 const SUGGEST_DEBOUNCE_MS = 150;
@@ -45,7 +52,16 @@ function ChipRow({
             key={chip.label}
             type="button"
             className={classes.join(' ')}
-            onClick={() => onPatch(entry.id, active ? clearingPatch(chip) : chip.patch)}
+            onClick={() =>
+              onPatch(
+                entry.id,
+                chip.patch.variant !== undefined
+                  ? variantTogglePatch(entry, chip.patch.variant)
+                  : active
+                    ? clearingPatch(chip)
+                    : chip.patch,
+              )
+            }
           >
             {chip.label}
           </button>
@@ -87,7 +103,8 @@ function CustomVariantChip({
         event.preventDefault();
         const variant = value.trim();
         if (variant !== '') {
-          onPatch(entry.id, { variant });
+          // Typed text may itself be a comma list; merge into what is set.
+          onPatch(entry.id, addVariantsPatch(entry, variant));
         }
         setEditing(false);
         setValue('');

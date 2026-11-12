@@ -285,6 +285,11 @@ function suite(getDb: () => Database) {
     const [row] = await searchCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, 'pap', 10);
     expect(parseVariants(row?.variants ?? null)).toEqual(['rot', 'gelb']);
     expect(row?.lastVariant).toBe('rot');
+
+    // A comma-separated variant learns each modifier on its own.
+    await recordCatalogVariant(database, DEFAULT_HOUSEHOLD_ID, 'paprika', 'Bio, Festkochend');
+    const [updated] = await searchCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, 'pap', 10);
+    expect(parseVariants(updated?.variants ?? null)).toEqual(['Bio', 'Festkochend', 'rot', 'gelb']);
   });
 }
 

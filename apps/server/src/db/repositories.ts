@@ -1,3 +1,4 @@
+import { splitVariants } from '@drauf/shared';
 import { and, asc, desc, eq, gte, inArray, isNull, like, lt, lte } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { newId } from './ids.js';
@@ -841,8 +842,8 @@ export async function getListHouseholdId(
 }
 
 /** Bumps the household's shopping history for an item (K4 learning). */
-/** How many recently used variants are kept per item for the custom chips. */
-const MAX_LEARNED_VARIANTS = 6;
+/** How many recently used modifiers are kept per item for the custom chips. */
+const MAX_LEARNED_VARIANTS = 8;
 
 /** Parses the stored JSON list of recently used variants. */
 export function parseVariants(raw: string | null): string[] {
@@ -859,8 +860,15 @@ export function parseVariants(raw: string | null): string[] {
   }
 }
 
+/**
+ * A variant can hold several modifiers ("Bio, Festkochend"); each one is
+ * learned on its own, newest first, so chips offer them independently.
+ */
 function pushVariant(raw: string | null, variant: string): string {
-  const next = [variant, ...parseVariants(raw).filter((value) => value !== variant)];
+  let next = parseVariants(raw);
+  for (const modifier of splitVariants(variant).reverse()) {
+    next = [modifier, ...next.filter((value) => value !== modifier)];
+  }
   return JSON.stringify(next.slice(0, MAX_LEARNED_VARIANTS));
 }
 
@@ -893,7 +901,7 @@ export async function recordCatalogUsage(
       lastQuantity: input.quantity,
       lastUnit: input.unit,
       lastVariant: input.variant,
-      variants: input.variant === null ? null : JSON.stringify([input.variant]),
+      variants: input.variant === null ? null : pushVariant(null, input.variant),
       updatedAt: now,
     });
   } else {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Category, EntryView, Suggestion } from '../src/api/types';
-import { buildChipGroups, clearingPatch, isChipActive } from '../src/lib/chips';
+import {
+  addVariantsPatch,
+  buildChipGroups,
+  clearingPatch,
+  isChipActive,
+  variantTogglePatch,
+} from '../src/lib/chips';
 import { formatQuantities, groupEntries, recentEntries } from '../src/lib/entries';
 
 function category(id: string, name: string, sortOrder: number): Category {
@@ -173,5 +179,50 @@ describe('isChipActive and clearingPatch', () => {
     expect(clearingPatch(sizeChip)).toEqual({ unit: '' });
     expect(clearingPatch(countChip)).toEqual({ unit: '' });
     expect(clearingPatch(varietyChip)).toEqual({ variant: '' });
+  });
+
+  it('treats comma-separated variants as multi-select', () => {
+    const potato = entry('kartoffeln', { variant: 'Bio, Festkochend, Annabelle' });
+    expect(
+      isChipActive(potato, { label: 'Bio', patch: { variant: 'Bio' }, highlighted: false }),
+    ).toBe(true);
+    expect(
+      isChipActive(potato, { label: 'Mehlig', patch: { variant: 'Mehlig' }, highlighted: false }),
+    ).toBe(false);
+  });
+});
+
+describe('variant toggling', () => {
+  it('adds and removes single modifiers, keeping the rest', () => {
+    const potato = entry('kartoffeln', { variant: 'Bio, Festkochend' });
+    expect(variantTogglePatch(potato, 'Annabelle')).toEqual({
+      variant: 'Bio, Festkochend, Annabelle',
+    });
+    expect(variantTogglePatch(potato, 'Bio')).toEqual({ variant: 'Festkochend' });
+    expect(variantTogglePatch(entry('leer'), 'Bio')).toEqual({ variant: 'Bio' });
+  });
+
+  it('merges typed comma lists without duplicates', () => {
+    const potato = entry('kartoffeln', { variant: 'Bio' });
+    expect(addVariantsPatch(potato, 'Festkochend, Annabelle, Bio')).toEqual({
+      variant: 'Bio, Festkochend, Annabelle',
+    });
+  });
+
+  it('highlights every modifier of the last-used variant', () => {
+    const groups = buildChipGroups({
+      name: 'Kartoffeln',
+      source: 'history',
+      icon: null,
+      categoryId: null,
+      sizes: [],
+      varieties: ['Mehlig'],
+      recentVariants: ['Bio', 'Festkochend'],
+      lastVariant: 'Bio, Festkochend',
+    });
+    expect(groups.varieties.filter((chip) => chip.highlighted).map((chip) => chip.label)).toEqual([
+      'Bio',
+      'Festkochend',
+    ]);
   });
 });
