@@ -45,6 +45,8 @@ export interface Category {
 export interface QuantityGroup {
   unit: string | null;
   quantity: number;
+  /** Pack count, only when one counted portion makes up the group (2 × 500 g). */
+  count?: number;
 }
 
 export interface EntryPortion {
@@ -52,6 +54,7 @@ export interface EntryPortion {
   entryId: string;
   quantity: number | null;
   unit: string | null;
+  count: number | null;
   origin: 'manual' | 'recipe';
   addedById: string | null;
   createdAt: string;
@@ -89,6 +92,7 @@ export interface Suggestion {
   count?: number;
   lastQuantity?: number | null;
   lastUnit?: string | null;
+  lastCount?: number | null;
   lastVariant?: string | null;
 }
 

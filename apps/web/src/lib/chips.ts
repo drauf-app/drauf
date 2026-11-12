@@ -18,19 +18,22 @@ export interface ChipGroups {
 const COUNTS = [1, 2, 3, 4];
 
 /**
- * Chip bar contents for a just-added entry: count 1-4, the suggestion's
- * sizes ("500 g" → quantity+unit) and varieties. The last chosen values
- * are highlighted.
+ * Chip bar contents for a just-added entry: pack count 1-4, the suggestion's
+ * sizes ("500 g" → quantity+unit) and varieties. Count and size compose
+ * ("2 × 500 g"). The last chosen values are highlighted.
  */
 export function buildChipGroups(suggestion: Suggestion | undefined): ChipGroups {
   const lastQuantity = suggestion?.lastQuantity ?? null;
   const lastUnit = suggestion?.lastUnit ?? null;
+  const lastCount = suggestion?.lastCount ?? null;
   const lastVariant = suggestion?.lastVariant ?? null;
 
   const counts: Chip[] = COUNTS.map((count) => ({
     label: String(count),
-    patch: { quantity: count },
-    highlighted: lastUnit === null && lastQuantity === count,
+    patch: { count },
+    // Entries from before pack counts stored plain unitless quantities.
+    highlighted:
+      lastCount === count || (lastCount === null && lastUnit === null && lastQuantity === count),
   }));
 
   const sizes: Chip[] = [];
@@ -63,30 +66,67 @@ export function buildChipGroups(suggestion: Suggestion | undefined): ChipGroups 
   return { counts, sizes, varieties };
 }
 
+interface AmountEntry {
+  variant: string | null;
+  quantities: Array<{ unit: string | null; quantity: number; count?: number }>;
+}
+
+function onlyGroup(entry: AmountEntry) {
+  return entry.quantities.length === 1 ? entry.quantities[0] : undefined;
+}
+
 /** Whether a chip's value is what the entry currently has. */
-export function isChipActive(
-  entry: { variant: string | null; quantities: Array<{ unit: string | null; quantity: number }> },
-  chip: Chip,
-): boolean {
+export function isChipActive(entry: AmountEntry, chip: Chip): boolean {
   if (chip.patch.variant !== undefined) {
     // Variants are multi-select: active when the modifier is in the list.
     return splitVariants(entry.variant).includes(chip.patch.variant);
   }
-  if (chip.patch.quantity !== undefined) {
-    const only = entry.quantities.length === 1 ? entry.quantities[0] : undefined;
+  const only = onlyGroup(entry);
+  if (only === undefined) {
+    return false;
+  }
+  if (chip.patch.count !== undefined) {
+    // Legacy plain amounts ("4" as an unitless quantity) count as counts.
     return (
-      only !== undefined &&
-      only.quantity === chip.patch.quantity &&
-      (only.unit ?? '') === (chip.patch.unit ?? '')
+      only.count === chip.patch.count ||
+      (only.count === undefined && only.unit === null && only.quantity === chip.patch.count)
     );
+  }
+  if (chip.patch.quantity !== undefined) {
+    return only.quantity === chip.patch.quantity && (only.unit ?? '') === (chip.patch.unit ?? '');
   }
   return false;
 }
 
-/** The patch that takes an active chip's value off the entry again. */
-export function clearingPatch(chip: Chip): PatchEntryInput {
-  // unit '' clears all portions; variant '' clears the variant.
-  return chip.patch.variant !== undefined ? { variant: '' } : { unit: '' };
+/**
+ * Amount chips (count, size) replace the entry's portions and compose with
+ * each other: toggling a count keeps the size and vice versa ("2 × 500 g").
+ */
+export function amountReplacePatch(
+  entry: AmountEntry,
+  chip: Chip,
+  active: boolean,
+): PatchEntryInput {
+  const only = onlyGroup(entry);
+  const size =
+    only !== undefined && only.unit !== null
+      ? { quantity: only.quantity, unit: only.unit }
+      : undefined;
+  if (chip.patch.count !== undefined) {
+    if (active) {
+      return size ?? { unit: '' }; // drop the count, keep the size (or clear all)
+    }
+    return { count: chip.patch.count, ...(size ?? {}) };
+  }
+  const count = only?.count;
+  if (active) {
+    return count === undefined ? { unit: '' } : { count }; // drop the size, keep the count
+  }
+  return {
+    quantity: chip.patch.quantity as number,
+    unit: chip.patch.unit as string,
+    ...(count === undefined ? {} : { count }),
+  };
 }
 
 /** Toggles one modifier in the entry's comma-separated variant list. */

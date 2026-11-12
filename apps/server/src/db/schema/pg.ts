@@ -236,6 +236,7 @@ export const catalogUsage = pgTable(
     lastQuantity: doublePrecision('last_quantity'),
     lastUnit: text('last_unit'),
     lastVariant: text('last_variant'),
+    lastCount: integer('last_count'),
     /** JSON array of recently used variants, most recent first (K2 custom chips). */
     variants: text('variants'),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull(),
@@ -274,6 +275,8 @@ export const entryPortions = pgTable('entry_portions', {
     .references(() => listEntries.id, { onDelete: 'cascade' }),
   quantity: doublePrecision('quantity'),
   unit: text('unit'),
+  /** Pack count: 2 × 500 g keeps both numbers visible while shopping. */
+  count: integer('count'),
   origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
   addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),

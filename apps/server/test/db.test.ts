@@ -208,6 +208,7 @@ function suite(getDb: () => Database) {
       entryId: entry.id,
       quantity: 1.5,
       unit: 'kg',
+      count: null,
       origin: 'manual',
       addedById: user.id,
     });
@@ -235,6 +236,7 @@ function suite(getDb: () => Database) {
       nameNormalized: 'zimtschnecken',
       quantity: 4,
       unit: 'Stück',
+      count: null,
       variant: null,
       categoryId: null,
     };
@@ -275,6 +277,7 @@ function suite(getDb: () => Database) {
       nameNormalized: 'paprika',
       quantity: null,
       unit: null,
+      count: null,
       categoryId: null,
     };
     await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, { ...base, variant: 'rot' });

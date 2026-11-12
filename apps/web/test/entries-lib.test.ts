@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Category, EntryView, Suggestion } from '../src/api/types';
 import {
   addVariantsPatch,
+  amountReplacePatch,
   buildChipGroups,
-  clearingPatch,
   isChipActive,
   variantTogglePatch,
 } from '../src/lib/chips';
@@ -108,6 +108,10 @@ describe('formatQuantities', () => {
   it('formats decimals in German notation', () => {
     expect(formatQuantities([{ unit: 'kg', quantity: 1.5 }])).toBe('1,5 kg');
   });
+
+  it('keeps both numbers for pack counts', () => {
+    expect(formatQuantities([{ unit: 'g', quantity: 500, count: 2 }])).toBe('2 × 500 g');
+  });
 });
 
 describe('buildChipGroups', () => {
@@ -128,7 +132,7 @@ describe('buildChipGroups', () => {
     expect(groups.sizes.map((chip) => chip.label)).toEqual(['500 g', '1 kg']);
     expect(groups.sizes[0]?.patch).toEqual({ quantity: 500, unit: 'g' });
     expect(groups.counts.map((chip) => chip.label)).toEqual(['1', '2', '3', '4']);
-    expect(groups.counts[0]?.patch).toEqual({ quantity: 1 });
+    expect(groups.counts[0]?.patch).toEqual({ count: 1 });
   });
 
   it('highlights the last chosen size and variety', () => {
@@ -175,10 +179,15 @@ describe('isChipActive and clearingPatch', () => {
     expect(isChipActive(entry('leer'), sizeChip)).toBe(false);
   });
 
-  it('clears the matching field kind', () => {
-    expect(clearingPatch(sizeChip)).toEqual({ unit: '' });
-    expect(clearingPatch(countChip)).toEqual({ unit: '' });
-    expect(clearingPatch(varietyChip)).toEqual({ variant: '' });
+  it('recognises counts, including legacy unitless amounts', () => {
+    const packed = entry('hack', { quantities: [{ unit: 'g', quantity: 500, count: 2 }] });
+    expect(isChipActive(packed, { label: '2', patch: { count: 2 }, highlighted: false })).toBe(
+      true,
+    );
+    const legacy = entry('eier', { quantities: [{ unit: null, quantity: 4 }] });
+    expect(isChipActive(legacy, { label: '4', patch: { count: 4 }, highlighted: false })).toBe(
+      true,
+    );
   });
 
   it('treats comma-separated variants as multi-select', () => {
@@ -189,6 +198,39 @@ describe('isChipActive and clearingPatch', () => {
     expect(
       isChipActive(potato, { label: 'Mehlig', patch: { variant: 'Mehlig' }, highlighted: false }),
     ).toBe(false);
+  });
+});
+
+describe('amountReplacePatch', () => {
+  const count2 = { label: '2', patch: { count: 2 }, highlighted: false };
+  const size500 = { label: '500 g', patch: { quantity: 500, unit: 'g' }, highlighted: false };
+
+  it('composes count and size in both directions', () => {
+    const sized = entry('hack', { quantities: [{ unit: 'g', quantity: 500 }] });
+    expect(amountReplacePatch(sized, count2, false)).toEqual({
+      count: 2,
+      quantity: 500,
+      unit: 'g',
+    });
+
+    const counted = entry('hack', { quantities: [{ unit: null, quantity: 2, count: 2 }] });
+    expect(amountReplacePatch(counted, size500, false)).toEqual({
+      quantity: 500,
+      unit: 'g',
+      count: 2,
+    });
+  });
+
+  it('toggling off keeps the other dimension', () => {
+    const packed = entry('hack', { quantities: [{ unit: 'g', quantity: 500, count: 2 }] });
+    expect(amountReplacePatch(packed, count2, true)).toEqual({ quantity: 500, unit: 'g' });
+    expect(amountReplacePatch(packed, size500, true)).toEqual({ count: 2 });
+  });
+
+  it('falls back to clearing everything when nothing else is set', () => {
+    const bare = entry('hack', { quantities: [{ unit: null, quantity: 2 }] });
+    expect(amountReplacePatch(bare, count2, true)).toEqual({ unit: '' });
+    expect(amountReplacePatch(entry('leer'), count2, false)).toEqual({ count: 2 });
   });
 });
 

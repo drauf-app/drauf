@@ -5,6 +5,7 @@ export interface AddEntryInput {
   name: string;
   quantity?: number;
   unit?: string;
+  count?: number;
   variant?: string;
   note?: string;
   categoryId?: string;
@@ -14,6 +15,7 @@ export interface PatchEntryInput {
   name?: string;
   quantity?: number;
   unit?: string;
+  count?: number;
   variant?: string;
   note?: string;
   categoryId?: string;

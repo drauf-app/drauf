@@ -61,12 +61,13 @@ export function recentEntries(entries: EntryView[]): EntryView[] {
 
 const QUANTITY_FORMAT = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
 
-/** "1 Stück + 50 g": summed per unit, different units side by side. */
+/** "2 × 500 g + 1 Stück": packs keep both numbers, the rest sums per unit. */
 export function formatQuantities(quantities: QuantityGroup[]): string {
   return quantities
     .map((group) => {
       const amount = QUANTITY_FORMAT.format(group.quantity);
-      return group.unit === null ? amount : `${amount} ${group.unit}`;
+      const sized = group.unit === null ? amount : `${amount} ${group.unit}`;
+      return group.count === undefined ? sized : `${group.count} × ${sized}`;
     })
     .join(' + ');
 }

@@ -30,6 +30,7 @@ const addBody = {
     name: { type: 'string', minLength: 1, maxLength: 100 },
     quantity: { type: 'number', exclusiveMinimum: 0, maximum: 1_000_000 },
     unit: { type: 'string', maxLength: 32 },
+    count: { type: 'integer', minimum: 1, maximum: 99 },
     variant: { type: 'string', maxLength: 64 },
     note: { type: 'string', maxLength: 500 },
     categoryId: { type: 'string', maxLength: 64 },
@@ -44,6 +45,7 @@ const patchBody = {
     name: { type: 'string', minLength: 1, maxLength: 100 },
     quantity: { type: 'number', exclusiveMinimum: 0, maximum: 1_000_000 },
     unit: { type: 'string', maxLength: 32 },
+    count: { type: 'integer', minimum: 1, maximum: 99 },
     variant: { type: 'string', maxLength: 64 },
     note: { type: 'string', maxLength: 500 },
     categoryId: { type: 'string', maxLength: 64 },
@@ -70,6 +72,7 @@ interface AddInput {
   name: string;
   quantity?: number;
   unit?: string;
+  count?: number;
   variant?: string;
   note?: string;
   categoryId?: string;
@@ -172,7 +175,7 @@ export function entryRoutes(
         if (resolved?.entry === undefined) return reply;
         let entry = resolved.entry;
 
-        const { name, variant, note, quantity, unit, categoryId } = request.body;
+        const { name, variant, note, quantity, unit, count, categoryId } = request.body;
         const patch: Parameters<typeof updateListEntry>[2] = {};
         const editedFields: string[] = [];
         if (categoryId !== undefined) {
@@ -199,8 +202,15 @@ export function entryRoutes(
           patch.note = note.trim() === '' ? null : note.trim();
           editedFields.push('note');
         }
-        if (quantity !== undefined || unit !== undefined) {
-          await replaceEntryQuantity(database, entry, auth.id, quantity ?? null, unit);
+        if (quantity !== undefined || unit !== undefined || count !== undefined) {
+          await replaceEntryQuantity(
+            database,
+            entry,
+            auth.id,
+            quantity ?? null,
+            unit,
+            count ?? null,
+          );
           editedFields.push('quantity');
         }
         if (editedFields.length > 0) {
