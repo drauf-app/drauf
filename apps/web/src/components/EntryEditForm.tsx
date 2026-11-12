@@ -23,6 +23,9 @@ export function EntryEditForm({ entry, categories, onSave, onCancel }: EntryEdit
     firstQuantity === undefined ? '' : String(firstQuantity.quantity),
   );
   const [unit, setUnit] = useState(firstQuantity?.unit ?? '');
+  const [count, setCount] = useState(
+    firstQuantity?.count === undefined ? '' : String(firstQuantity.count),
+  );
   const [variant, setVariant] = useState(entry.variant ?? '');
   const [note, setNote] = useState(entry.note ?? '');
   const [categoryId, setCategoryId] = useState(entry.categoryId ?? '');
@@ -44,17 +47,27 @@ export function EntryEditForm({ entry, categories, onSave, onCancel }: EntryEdit
       fields.categoryId = categoryId;
     }
     const parsedQuantity = Number(quantity.trim().replace(',', '.'));
-    if (quantity.trim() === '') {
-      if (firstQuantity !== undefined) {
-        fields.unit = '';
+    const parsedCount = Number(count.trim());
+    const countValid =
+      count.trim() !== '' && Number.isInteger(parsedCount) && parsedCount >= 1 && parsedCount <= 99;
+    const amountChanged =
+      quantity.trim() !== (firstQuantity === undefined ? '' : String(firstQuantity.quantity)) ||
+      unit.trim() !== (firstQuantity?.unit ?? '') ||
+      count.trim() !== (firstQuantity?.count === undefined ? '' : String(firstQuantity.count));
+    if (amountChanged) {
+      if (quantity.trim() === '' && !countValid) {
+        if (firstQuantity !== undefined) {
+          fields.unit = ''; // clears all portions
+        }
+      } else if (quantity.trim() === '') {
+        fields.count = parsedCount; // a bare pack count ("3")
+      } else if (Number.isFinite(parsedQuantity) && parsedQuantity > 0) {
+        fields.quantity = parsedQuantity;
+        fields.unit = unit.trim();
+        if (countValid) {
+          fields.count = parsedCount;
+        }
       }
-    } else if (
-      Number.isFinite(parsedQuantity) &&
-      parsedQuantity > 0 &&
-      (parsedQuantity !== firstQuantity?.quantity || unit.trim() !== (firstQuantity?.unit ?? ''))
-    ) {
-      fields.quantity = parsedQuantity;
-      fields.unit = unit.trim();
     }
     if (Object.keys(fields).length === 0) {
       onCancel();
@@ -73,6 +86,16 @@ export function EntryEditForm({ entry, categories, onSave, onCancel }: EntryEdit
           maxLength={100}
           required
           onChange={(event) => setName(event.target.value)}
+        />
+      </label>
+      <label>
+        {t.list.edit.count}
+        <input
+          type="text"
+          inputMode="numeric"
+          value={count}
+          maxLength={2}
+          onChange={(event) => setCount(event.target.value)}
         />
       </label>
       <label>

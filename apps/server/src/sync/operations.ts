@@ -104,6 +104,16 @@ interface Context {
   catalog: CatalogIndex | undefined;
 }
 
+function optionalCount(value: unknown): number | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 99) {
+    throw new OperationError('invalid_payload');
+  }
+  return value;
+}
+
 function requireString(value: unknown, maxLength: number): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > maxLength) {
     throw new OperationError('invalid_payload');
@@ -148,6 +158,7 @@ async function applyAdd(ctx: Context, data: Record<string, unknown>): Promise<Sy
     throw new OperationError('invalid_category');
   }
   const unit = optionalString(data.unit, 32);
+  const count = optionalCount(data.count);
   const variant = optionalString(data.variant, 64);
   const note = optionalString(data.note, 500);
   const { entry, merged } = await addItemToList(
@@ -158,6 +169,7 @@ async function applyAdd(ctx: Context, data: Record<string, unknown>): Promise<Sy
       name,
       ...(quantity === undefined ? {} : { quantity }),
       ...(unit == null ? {} : { unit }),
+      ...(count === null ? {} : { count }),
       ...(variant == null ? {} : { variant }),
       ...(note == null ? {} : { note }),
       categoryId,
@@ -215,7 +227,8 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
     stamped.push(field);
   }
 
-  const hasQuantity = input.quantity !== undefined || input.unit !== undefined;
+  const hasQuantity =
+    input.quantity !== undefined || input.unit !== undefined || input.count !== undefined;
   if (hasQuantity) {
     const quantity =
       input.quantity === undefined || input.quantity === null ? null : Number(input.quantity);
@@ -224,7 +237,15 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
     }
     if (wins('quantity')) {
       const unit = optionalString(input.unit, 32);
-      await replaceEntryQuantity(ctx.database, entry, ctx.userId, quantity, unit ?? undefined);
+      const count = optionalCount(input.count);
+      await replaceEntryQuantity(
+        ctx.database,
+        entry,
+        ctx.userId,
+        quantity,
+        unit ?? undefined,
+        count,
+      );
       stamped.push('quantity');
     } else {
       lost = true;

@@ -125,6 +125,7 @@ export interface CatalogUsage {
   lastQuantity: number | null;
   lastUnit: string | null;
   lastVariant: string | null;
+  lastCount: number | null;
   /** JSON array of recently used variants, most recent first. */
   variants: string | null;
   updatedAt: Date;
@@ -152,6 +153,8 @@ export interface EntryPortion {
   entryId: string;
   quantity: number | null;
   unit: string | null;
+  /** Pack count ("2 × 500 g"); null when none was chosen. */
+  count: number | null;
   origin: PortionOrigin;
   addedById: string | null;
   createdAt: Date;

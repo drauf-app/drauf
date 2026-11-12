@@ -6,9 +6,9 @@ import type { EntryView, Suggestion } from '../api/types';
 import { useT } from '../i18n';
 import {
   addVariantsPatch,
+  amountReplacePatch,
   buildChipGroups,
   type Chip,
-  clearingPatch,
   isChipActive,
   variantTogglePatch,
 } from '../lib/chips';
@@ -57,9 +57,7 @@ function ChipRow({
                 entry.id,
                 chip.patch.variant !== undefined
                   ? variantTogglePatch(entry, chip.patch.variant)
-                  : active
-                    ? clearingPatch(chip)
-                    : chip.patch,
+                  : amountReplacePatch(entry, chip, active),
               )
             }
           >

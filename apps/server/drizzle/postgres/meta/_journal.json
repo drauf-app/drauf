@@ -78,6 +78,13 @@
       "when": 1794503111281,
       "tag": "0010_fancy_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794505137542,
+      "tag": "0011_supreme_kronos",
+      "breakpoints": true
     }
   ]
 }

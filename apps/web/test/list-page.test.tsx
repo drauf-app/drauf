@@ -148,13 +148,21 @@ describe('ListPage', () => {
       },
       onEntryPatch: (_url, body) => {
         patched.push(body);
-        const fields = JSON.parse(body) as { quantity?: number; unit?: string };
+        const fields = JSON.parse(body) as { quantity?: number; unit?: string; count?: number };
         current = {
           ...current,
           quantities:
-            fields.quantity === undefined
+            fields.quantity === undefined && fields.count === undefined
               ? []
-              : [{ unit: fields.unit ?? null, quantity: fields.quantity }],
+              : [
+                  {
+                    unit: fields.unit === '' || fields.unit === undefined ? null : fields.unit,
+                    quantity: fields.quantity ?? fields.count ?? 0,
+                    ...(fields.quantity !== undefined && fields.count !== undefined
+                      ? { count: fields.count }
+                      : {}),
+                  },
+                ],
         };
         return current;
       },
@@ -177,11 +185,15 @@ describe('ListPage', () => {
     await user.click(sizeChip);
     expect(JSON.parse(patched[0] ?? '{}')).toEqual({ quantity: 500, unit: 'g' });
 
-    // The chip is now active; tapping it again clears the amount.
+    // A count composes with the size instead of replacing it (2 × 500 g).
     const activeChip = await screen.findByRole('button', { name: '500 g' });
     expect(activeChip.className).toContain('active');
-    await user.click(activeChip);
-    expect(JSON.parse(patched[1] ?? '{}')).toEqual({ unit: '' });
+    await user.click(screen.getByRole('button', { name: '2' }));
+    expect(JSON.parse(patched[1] ?? '{}')).toEqual({ count: 2, quantity: 500, unit: 'g' });
+
+    // Tapping the active size keeps the count; tapping the count clears it.
+    await user.click(await screen.findByRole('button', { name: '500 g' }));
+    expect(JSON.parse(patched[2] ?? '{}')).toEqual({ count: 2 });
 
     // Typing the next article returns to suggestions.
     await user.type(screen.getByLabelText('Nächster Artikel …'), 'mi');

@@ -233,6 +233,7 @@ export const catalogUsage = sqliteTable(
     lastQuantity: real('last_quantity'),
     lastUnit: text('last_unit'),
     lastVariant: text('last_variant'),
+    lastCount: integer('last_count'),
     /** JSON array of recently used variants, most recent first (K2 custom chips). */
     variants: text('variants'),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
@@ -271,6 +272,8 @@ export const entryPortions = sqliteTable('entry_portions', {
     .references(() => listEntries.id, { onDelete: 'cascade' }),
   quantity: real('quantity'),
   unit: text('unit'),
+  /** Pack count: 2 × 500 g keeps both numbers visible while shopping. */
+  count: integer('count'),
   origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
   addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),

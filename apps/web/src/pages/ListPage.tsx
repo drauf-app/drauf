@@ -60,20 +60,34 @@ function localEntryView(listId: string, input: AddEntryInput): EntryView {
   };
 }
 
+/** Local mirror of the server's portion replacement for offline amount edits. */
+function localQuantities(patch: PatchEntryInput): EntryView['quantities'] {
+  const quantity = patch.quantity ?? null;
+  const count = patch.count ?? null;
+  const unit = patch.unit === '' || patch.unit === undefined ? null : patch.unit;
+  if (quantity !== null) {
+    return count !== null && count > 1
+      ? [{ unit, quantity, count }]
+      : [{ unit, quantity: (count ?? 1) * quantity }];
+  }
+  if (count !== null) {
+    return [{ unit: null, quantity: count }];
+  }
+  return [];
+}
+
 /** Mirrors a queued entry.setFields locally while offline ('' clears a field). */
 function patchEntryLocally(entry: EntryView, patch: PatchEntryInput): EntryView {
   const cleared = (value: string | undefined) => (value === '' ? null : value);
+  const hasAmount =
+    patch.quantity !== undefined || patch.unit !== undefined || patch.count !== undefined;
   return {
     ...entry,
     ...(patch.name === undefined || patch.name === '' ? {} : { name: patch.name }),
     ...(patch.variant === undefined ? {} : { variant: cleared(patch.variant) ?? null }),
     ...(patch.note === undefined ? {} : { note: cleared(patch.note) ?? null }),
     ...(patch.categoryId === undefined ? {} : { categoryId: cleared(patch.categoryId) ?? null }),
-    ...(patch.quantity !== undefined
-      ? { quantities: [{ unit: cleared(patch.unit) ?? null, quantity: patch.quantity }] }
-      : patch.unit !== undefined
-        ? { quantities: [] } // unit without quantity clears all portions
-        : {}),
+    ...(hasAmount ? { quantities: localQuantities(patch) } : {}),
   };
 }
 

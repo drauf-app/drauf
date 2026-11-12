@@ -33,6 +33,7 @@ export interface Suggestion {
   recentVariants: string[];
   count?: number;
   lastQuantity?: number | null;
+  lastCount?: number | null;
   lastUnit?: string | null;
   lastVariant?: string | null;
 }
@@ -94,6 +95,7 @@ export function catalogRoutes(
             recentVariants: parseVariants(row.variants),
             count: row.count,
             lastQuantity: row.lastQuantity,
+            lastCount: row.lastCount,
             lastUnit: row.lastUnit,
             lastVariant: row.lastVariant,
           });

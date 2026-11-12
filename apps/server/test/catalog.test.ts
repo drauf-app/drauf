@@ -386,3 +386,114 @@ describe('recent variants in suggestions', () => {
     expect(suggestion?.lastVariant).toBe('Paprika');
   });
 });
+
+describe('pack counts (2 × 500 g)', () => {
+  let ctx: TestApp;
+  let christian: { id: string; token: string };
+  let listId: string;
+
+  function as(user: { token: string }) {
+    return { authorization: `Bearer ${user.token}` };
+  }
+
+  interface View {
+    id: string;
+    quantities: Array<{ unit: string | null; quantity: number; count?: number }>;
+  }
+
+  async function addItem(payload: object): Promise<View> {
+    const response = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+      payload,
+    });
+    expect([200, 201]).toContain(response.statusCode);
+    return response.json();
+  }
+
+  beforeEach(async () => {
+    ctx = await createTestApp({}, { catalog: fakeCatalog });
+    const result = await createLocalUser(ctx.database, {
+      username: 'christian',
+      password: PASSWORD,
+      displayName: 'Christian',
+      isAdmin: false,
+    });
+    if (!result.ok) throw new Error('fixture user not created');
+    const login = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'christian', password: PASSWORD },
+    });
+    christian = {
+      id: result.user.id,
+      token: (login.json() as { accessToken: string }).accessToken,
+    };
+    const list = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Weekly shop' },
+    });
+    listId = (list.json() as { id: string }).id;
+  });
+
+  afterEach(async () => {
+    await ctx.close();
+  });
+
+  it('keeps both numbers for a single counted portion', async () => {
+    const view = await addItem({ name: 'Hack', quantity: 500, unit: 'g', count: 2 });
+    expect(view.quantities).toEqual([{ unit: 'g', quantity: 500, count: 2 }]);
+  });
+
+  it('sums count × quantity once portions merge', async () => {
+    await addItem({ name: 'Hack', quantity: 500, unit: 'g', count: 2 });
+    const merged = await addItem({ name: 'Hack', quantity: 300, unit: 'g' });
+    expect(merged.quantities).toEqual([{ unit: 'g', quantity: 1300 }]);
+  });
+
+  it('renders a bare pack count as a plain number', async () => {
+    const view = await addItem({ name: 'Brezeln', count: 3 });
+    expect(view.quantities).toEqual([{ unit: null, quantity: 3 }]);
+  });
+
+  it('replaces and clears the count via PATCH', async () => {
+    const created = await addItem({ name: 'Hack', quantity: 500, unit: 'g' });
+    const patched = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { quantity: 500, unit: 'g', count: 2 },
+    });
+    expect((patched.json() as View).quantities).toEqual([{ unit: 'g', quantity: 500, count: 2 }]);
+
+    const cleared = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { quantity: 500, unit: 'g' },
+    });
+    expect((cleared.json() as View).quantities).toEqual([{ unit: 'g', quantity: 500 }]);
+  });
+
+  it('rejects invalid counts and remembers the last one for suggestions', async () => {
+    const invalid = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+      payload: { name: 'Hack', count: 0 },
+    });
+    expect(invalid.statusCode).toBe(400);
+
+    await addItem({ name: 'Hack', quantity: 500, unit: 'g', count: 2 });
+    const response = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/catalog/suggest?q=hack',
+      headers: as(christian),
+    });
+    const [suggestion] = response.json() as Array<{ lastCount: number | null }>;
+    expect(suggestion?.lastCount).toBe(2);
+  });
+});

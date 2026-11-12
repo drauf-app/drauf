@@ -26,6 +26,8 @@ function normalizeOptional(value: string | undefined): string | null {
 export interface QuantityGroup {
   unit: string | null;
   quantity: number;
+  /** Pack count, only when one counted portion makes up the group (2 × 500 g). */
+  count?: number;
 }
 
 export interface EntryView extends ListEntry {
@@ -42,16 +44,30 @@ export function buildEntryView(
   portions: EntryPortion[],
   catalog?: CatalogIndex,
 ): EntryView {
-  const groups = new Map<string | null, number>();
+  const groups = new Map<string | null, { sum: number; portions: EntryPortion[] }>();
   for (const portion of portions) {
-    if (portion.quantity === null) {
+    // A bare pack count ("3") contributes like an unitless quantity of 3.
+    const effective =
+      portion.quantity === null ? portion.count : (portion.count ?? 1) * portion.quantity;
+    if (effective === null) {
       continue;
     }
-    const key = portion.unit;
-    groups.set(key, (groups.get(key) ?? 0) + portion.quantity);
+    const key = portion.quantity === null ? null : portion.unit;
+    const group = groups.get(key) ?? { sum: 0, portions: [] };
+    group.sum += effective;
+    group.portions.push(portion);
+    groups.set(key, group);
   }
-  // No unit conversion in v1: each distinct unit is its own group.
-  const quantities = [...groups.entries()].map(([unit, quantity]) => ({ unit, quantity }));
+  // No unit conversion in v1: each distinct unit is its own group. A group
+  // made of one counted portion keeps both numbers visible (2 × 500 g);
+  // merged groups sum count × quantity as before.
+  const quantities: QuantityGroup[] = [...groups.entries()].map(([unit, group]) => {
+    const only = group.portions.length === 1 ? group.portions[0] : undefined;
+    if (only !== undefined && only.quantity !== null && only.count !== null && only.count > 1) {
+      return { unit, quantity: only.quantity, count: only.count };
+    }
+    return { unit, quantity: group.sum };
+  });
   return { ...entry, quantities, portions, icon: catalog?.match(entry.name)?.icon ?? null };
 }
 
@@ -59,6 +75,7 @@ export interface AddItemInput {
   name: string;
   quantity?: number;
   unit?: string;
+  count?: number;
   variant?: string;
   note?: string;
   /** Validated against the list's households by the caller. */
@@ -149,6 +166,7 @@ export async function addItemToList(
     entryId: entry.id,
     quantity: input.quantity ?? null,
     unit: normalizeOptional(input.unit),
+    count: input.count ?? null,
     origin,
     addedById: userId,
   });
@@ -161,6 +179,7 @@ export async function addItemToList(
       nameNormalized: entry.nameNormalized,
       quantity: input.quantity ?? null,
       unit: normalizeOptional(input.unit),
+      count: input.count ?? null,
       variant,
       categoryId: entry.categoryId,
     });
@@ -198,19 +217,21 @@ export async function getEntryView(
   return buildEntryView(entry, await listPortionsForEntries(database, [entry.id]), catalog);
 }
 
-/** An explicit quantity edit replaces all portions with one manual portion. */
+/** An explicit amount edit replaces all portions with one manual portion. */
 export async function replaceEntryQuantity(
   database: Database,
   entry: ListEntry,
   userId: string | null,
   quantity: number | null,
   unit: string | undefined,
+  count: number | null = null,
 ): Promise<void> {
   await deletePortionsForEntry(database, entry.id);
   await createEntryPortion(database, {
     entryId: entry.id,
     quantity,
     unit: normalizeOptional(unit),
+    count,
     origin: 'manual',
     addedById: userId,
   });

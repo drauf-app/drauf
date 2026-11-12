@@ -50,6 +50,7 @@ export const de = {
     editEntry: 'Bearbeiten',
     edit: {
       name: 'Name',
+      count: 'Anzahl',
       quantity: 'Menge',
       unit: 'Einheit',
       variant: 'Variante',

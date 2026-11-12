@@ -497,6 +497,7 @@ export async function createEntryPortion(
     entryId: string;
     quantity: number | null;
     unit: string | null;
+    count: number | null;
     origin: PortionOrigin;
     addedById: string | null;
   },
@@ -880,6 +881,7 @@ export async function recordCatalogUsage(
     nameNormalized: string;
     quantity: number | null;
     unit: string | null;
+    count: number | null;
     variant: string | null;
     categoryId: string | null;
   },
@@ -900,6 +902,7 @@ export async function recordCatalogUsage(
       categoryId: input.categoryId,
       lastQuantity: input.quantity,
       lastUnit: input.unit,
+      lastCount: input.count,
       lastVariant: input.variant,
       variants: input.variant === null ? null : pushVariant(null, input.variant),
       updatedAt: now,
@@ -914,6 +917,7 @@ export async function recordCatalogUsage(
         categoryId: input.categoryId ?? existing.categoryId,
         lastQuantity: input.quantity,
         lastUnit: input.unit,
+        lastCount: input.count,
         lastVariant: input.variant,
         // Used variants accumulate; adds without one keep the learned list.
         variants:
