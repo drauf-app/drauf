@@ -111,5 +111,18 @@ export const de = {
     delete: 'Eintrag löschen',
     slotOccupied: 'In diesem Feld steht schon etwas.',
     openLink: 'Rezept öffnen',
+    print: {
+      title: 'Wochenplan',
+      action: 'Drucken',
+      back: 'Zurück zum Plan',
+      template: 'Vorlage',
+      templateWeek: 'Wochenliste',
+      templateCalendar: 'Kalender',
+      startOfWeek: 'Wochenstart',
+      daysCount: 'Tage',
+      previous: 'Vorherige Woche',
+      next: 'Nächste Woche',
+      today: 'Heute',
+    },
   },
 } as const;

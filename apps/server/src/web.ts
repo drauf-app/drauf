@@ -3,11 +3,13 @@ import { resolve, sep } from 'node:path';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance } from 'fastify';
 
-// No third-party assets, no inline scripts or styles: everything is bundled.
+// No third-party assets, no inline scripts: everything is bundled. Inline
+// styles are allowed — dynamic values (list colours, print orientation) need
+// them, and style injection without script execution is a minor risk.
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "connect-src 'self'",
   "manifest-src 'self'",

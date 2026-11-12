@@ -7,6 +7,7 @@ import { ListPage } from './pages/ListPage';
 import { ListsPage } from './pages/ListsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlanPage } from './pages/PlanPage';
+import { PlanPrintPage } from './pages/PlanPrintPage';
 import { StoresPage } from './pages/StoresPage';
 
 export function App() {
@@ -23,6 +24,8 @@ export function App() {
             <Route path="/stores" element={<StoresPage />} />
             <Route path="/import" element={<ImportPage />} />
           </Route>
+          {/* No app chrome: this page is meant for the printer. */}
+          <Route path="/plan/print" element={<PlanPrintPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -28,6 +28,26 @@ export function weekDays(offsetWeeks: number, today: Date = new Date()): string[
   });
 }
 
+/**
+ * `count` ISO dates starting from the most recent `startDay` (getDay():
+ * Sunday = 0 … Saturday = 6), shifted by whole weeks — e.g. a household
+ * week running Friday to Friday uses startDay 5 with 8 days.
+ */
+export function daysFrom(
+  startDay: number,
+  offsetWeeks: number,
+  count: number,
+  today: Date = new Date(),
+): string[] {
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  start.setDate(start.getDate() - ((start.getDay() - startDay + 7) % 7) + offsetWeeks * 7);
+  return Array.from({ length: count }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return isoDate(day);
+  });
+}
+
 const DAY_FORMAT = new Intl.DateTimeFormat('de-DE', { weekday: 'long' });
 const DATE_FORMAT = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'numeric' });
 const RANGE_FORMAT = new Intl.DateTimeFormat('de-DE', {

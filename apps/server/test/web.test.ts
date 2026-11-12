@@ -26,6 +26,11 @@ describe('web app serving', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('Drauf');
     expect(response.headers['content-security-policy']).toContain("default-src 'self'");
+    expect(response.headers['content-security-policy']).toContain("script-src 'self';");
+    // Inline styles are needed for dynamic values (list colours, print layout).
+    expect(response.headers['content-security-policy']).toContain(
+      "style-src 'self' 'unsafe-inline'",
+    );
     expect(response.headers['content-security-policy']).toContain("frame-ancestors 'none'");
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['cache-control']).toBe('no-cache');
