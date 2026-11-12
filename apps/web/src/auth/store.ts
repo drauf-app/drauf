@@ -123,7 +123,9 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     fetch(path, {
       ...init,
       headers: {
-        ...JSON_HEADERS,
+        // Only requests with a body are JSON; Fastify rejects an empty body
+        // when the content type claims JSON (e.g. DELETE, check/uncheck).
+        ...(init.body == null ? {} : JSON_HEADERS),
         ...(init.headers ?? {}),
         ...(accessToken === undefined ? {} : { authorization: `Bearer ${accessToken}` }),
       },
