@@ -501,3 +501,201 @@ button:disabled {
   background: none;
   color: var(--text-muted);
 }
+
+/* Store picker + stores page */
+
+.store-picker {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.store-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  margin: 0.8rem 0;
+}
+
+.store-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+}
+
+.store-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.category-order {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.category-order li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.category-order li:last-child {
+  border-bottom: none;
+}
+
+.category-order-name {
+  flex: 1;
+}
+
+.category-order button {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Weekly plan */
+
+.plan-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.plan-header h1 {
+  margin: 0;
+}
+
+.plan-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.plan-nav button {
+  padding: 0.25rem 0.7rem;
+}
+
+.plan-week {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.plan-day {
+  margin-bottom: 1rem;
+}
+
+.plan-day h2 {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 0.3rem;
+}
+
+.plan-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.plan-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.6rem;
+}
+
+.plan-slot-name {
+  width: 6rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.plan-entry {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: none;
+  background: none;
+  padding: 0.3rem 0;
+  text-align: left;
+  min-width: 0;
+}
+
+.plan-entry-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-cook {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.plan-add {
+  flex: 1;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--text-muted);
+  padding: 0.2rem;
+}
+
+.plan-open-link {
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.2rem 0.4rem;
+}
+
+.plan-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+}
+
+.plan-move {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.plan-move select {
+  flex: 1;
+}
+
+.plan-editor select {
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.plan-editor-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.plan-editor-actions .danger {
+  color: var(--error);
+  margin-left: auto;
+}

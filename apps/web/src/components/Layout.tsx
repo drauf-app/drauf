@@ -21,6 +21,7 @@ export function Layout() {
             {t.nav.lists}
           </NavLink>
           <NavLink to="/plan">{t.nav.plan}</NavLink>
+          <NavLink to="/stores">{t.nav.stores}</NavLink>
         </nav>
         <div className="user-menu">
           <span className="user-name">{auth.user?.displayName}</span>

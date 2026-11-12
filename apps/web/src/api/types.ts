@@ -87,3 +87,45 @@ export interface Suggestion {
   lastUnit?: string | null;
   lastVariant?: string | null;
 }
+
+export interface StoreWithOrder {
+  id: string;
+  householdId: string;
+  name: string;
+  createdAt: string;
+  /** Category ids in this store's aisle order; empty = household order. */
+  categoryOrder: string[];
+}
+
+export interface MealSlot {
+  id: string;
+  householdId: string;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface PlanEntry {
+  id: string;
+  householdId: string;
+  /** ISO calendar date (YYYY-MM-DD). */
+  date: string;
+  slotId: string;
+  text: string | null;
+  link: string | null;
+  imageUrl: string | null;
+  cookId: string | null;
+  createdAt: string;
+}
+
+export interface HouseholdMember {
+  userId: string;
+  username: string;
+  displayName: string;
+}
+
+export interface HouseholdInfo {
+  id: string;
+  name: string;
+  members: HouseholdMember[];
+}
