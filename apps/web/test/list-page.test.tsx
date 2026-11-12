@@ -481,3 +481,38 @@ describe('flags and the details editor', () => {
     });
   });
 });
+
+describe('deleting through the editor', () => {
+  it('removes the entry via the edit form', async () => {
+    const deleted: string[] = [];
+    stubFetch((url, init) => {
+      const method = init?.method ?? 'GET';
+      if (url === '/api/lists/l1' && method === 'GET') {
+        return fakeResponse(200, LIST);
+      }
+      if (url === '/api/lists/l1/entries' && method === 'GET') {
+        return fakeResponse(200, [entryView({})]);
+      }
+      if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/stores') return fakeResponse(200, []);
+      if (url === '/api/lists/l1/entries/e1' && method === 'DELETE') {
+        deleted.push(url);
+        return fakeResponse(204, {});
+      }
+      return undefined;
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    // No delete on the row itself anymore — it lives in the editor.
+    await screen.findByText('Milch');
+    expect(screen.queryByRole('button', { name: 'Eintrag löschen' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Bearbeiten: Milch' }));
+    await user.click(await screen.findByRole('button', { name: 'Eintrag löschen' }));
+
+    expect(deleted).toHaveLength(1);
+    expect(screen.queryByText('Milch')).toBeNull();
+    expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+});
