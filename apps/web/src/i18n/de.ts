@@ -4,6 +4,9 @@ export const de = {
   common: {
     loading: 'Lädt …',
     logout: 'Abmelden',
+    cancel: 'Abbrechen',
+    save: 'Speichern',
+    error: 'Das hat nicht geklappt. Bitte erneut versuchen.',
   },
   nav: {
     lists: 'Listen',
@@ -32,7 +35,31 @@ export const de = {
   },
   lists: {
     title: 'Listen',
-    placeholder: 'Deine Einkaufslisten erscheinen hier in Kürze.',
+    empty: 'Noch keine Liste. Leg unten die erste an!',
+    newListName: 'Name der neuen Liste',
+    create: 'Anlegen',
+    archivedSection: 'Archivierte Listen',
+  },
+  list: {
+    empty: 'Diese Liste ist leer. Tipp unten ein, was du brauchst!',
+    recent: 'Zuletzt gekauft',
+    uncategorized: 'Ohne Kategorie',
+    setCategory: 'Kategorie wählen',
+    deleteEntry: 'Eintrag löschen',
+    checkEntry: 'Abhaken',
+    uncheckEntry: 'Zurück auf die Liste',
+    rename: 'Umbenennen',
+    archive: 'Archivieren',
+    unarchive: 'Wieder aktivieren',
+    delete: 'Liste löschen',
+    deleteConfirm: 'Diese Liste und alle ihre Einträge löschen?',
+    notFound: 'Liste nicht gefunden.',
+    backToLists: 'Zurück zu den Listen',
+  },
+  quickAdd: {
+    placeholder: 'Was brauchst du?',
+    add: 'Drauf!',
+    dismissChips: 'Chips ausblenden',
   },
   plan: {
     title: 'Wochenplan',
