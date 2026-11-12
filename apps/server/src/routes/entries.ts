@@ -127,7 +127,7 @@ export function entryRoutes(
         const auth = requireAuthUser(reply, request.authUser);
         const resolved = await resolve(reply, auth.id, request.params.id);
         if (resolved === undefined) return reply;
-        return getEntryViews(database, request.params.id);
+        return getEntryViews(database, request.params.id, catalog);
       },
     );
 
@@ -153,7 +153,7 @@ export function entryRoutes(
           'manual',
           catalog,
         );
-        const view = await getEntryView(database, entry);
+        const view = await getEntryView(database, entry, catalog);
         hub.publish(listTopic(request.params.id), {
           type: merged ? 'entry.updated' : 'entry.created',
           data: view,
@@ -220,7 +220,7 @@ export function entryRoutes(
             );
           }
         }
-        const view = await getEntryView(database, entry);
+        const view = await getEntryView(database, entry, catalog);
         hub.publish(listTopic(entry.listId), { type: 'entry.updated', data: view });
         return view;
       },
@@ -239,7 +239,7 @@ export function entryRoutes(
           if (resolved?.entry === undefined) return reply;
           const state = makeState(auth);
           await setEntryChecked(database, resolved.entry.id, state);
-          const view = await getEntryView(database, { ...resolved.entry, ...state });
+          const view = await getEntryView(database, { ...resolved.entry, ...state }, catalog);
           hub.publish(listTopic(resolved.entry.listId), {
             type: action === 'check' ? 'entry.checked' : 'entry.unchecked',
             data: view,

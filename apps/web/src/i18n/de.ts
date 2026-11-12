@@ -64,6 +64,8 @@ export const de = {
     unarchive: 'Wieder aktivieren',
     delete: 'Liste löschen',
     deleteConfirm: 'Diese Liste und alle ihre Einträge löschen?',
+    viewRows: 'Als Liste anzeigen',
+    viewTiles: 'Als Kacheln anzeigen',
     notFound: 'Liste nicht gefunden.',
     backToLists: 'Zurück zu den Listen',
     storePicker: 'Laden',
@@ -83,8 +85,9 @@ export const de = {
   },
   quickAdd: {
     placeholder: 'Was brauchst du?',
+    nextArticle: 'Nächster Artikel …',
     add: 'Drauf!',
-    dismissChips: 'Chips ausblenden',
+    close: 'Schließen',
   },
   import: {
     title: 'Rezept-Import',

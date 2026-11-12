@@ -33,9 +33,15 @@ export interface EntryView extends ListEntry {
   quantities: QuantityGroup[];
   /** Every partial quantity with its origin, so merges stay traceable. */
   portions: EntryPortion[];
+  /** Catalogue icon for tile views; resolved by name, null when unknown. */
+  icon: string | null;
 }
 
-export function buildEntryView(entry: ListEntry, portions: EntryPortion[]): EntryView {
+export function buildEntryView(
+  entry: ListEntry,
+  portions: EntryPortion[],
+  catalog?: CatalogIndex,
+): EntryView {
   const groups = new Map<string | null, number>();
   for (const portion of portions) {
     if (portion.quantity === null) {
@@ -46,7 +52,7 @@ export function buildEntryView(entry: ListEntry, portions: EntryPortion[]): Entr
   }
   // No unit conversion in v1: each distinct unit is its own group.
   const quantities = [...groups.entries()].map(([unit, quantity]) => ({ unit, quantity }));
-  return { ...entry, quantities, portions };
+  return { ...entry, quantities, portions, icon: catalog?.match(entry.name)?.icon ?? null };
 }
 
 export interface AddItemInput {
@@ -162,7 +168,11 @@ export async function addItemToList(
   return { entry, merged };
 }
 
-export async function getEntryViews(database: Database, listId: string): Promise<EntryView[]> {
+export async function getEntryViews(
+  database: Database,
+  listId: string,
+  catalog?: CatalogIndex,
+): Promise<EntryView[]> {
   const entries = await listEntriesForList(database, listId);
   const portions = await listPortionsForEntries(
     database,
@@ -177,11 +187,15 @@ export async function getEntryViews(database: Database, listId: string): Promise
       group.push(portion);
     }
   }
-  return entries.map((entry) => buildEntryView(entry, byEntry.get(entry.id) ?? []));
+  return entries.map((entry) => buildEntryView(entry, byEntry.get(entry.id) ?? [], catalog));
 }
 
-export async function getEntryView(database: Database, entry: ListEntry): Promise<EntryView> {
-  return buildEntryView(entry, await listPortionsForEntries(database, [entry.id]));
+export async function getEntryView(
+  database: Database,
+  entry: ListEntry,
+  catalog?: CatalogIndex,
+): Promise<EntryView> {
+  return buildEntryView(entry, await listPortionsForEntries(database, [entry.id]), catalog);
 }
 
 /** An explicit quantity edit replaces all portions with one manual portion. */

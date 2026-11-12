@@ -72,6 +72,8 @@ export interface EntryView {
   /** Summed per unit; different units stay side by side (no conversion). */
   quantities: QuantityGroup[];
   portions: EntryPortion[];
+  /** Catalogue icon for tile views; null when the item is unknown. */
+  icon: string | null;
 }
 
 /** One quick-add suggestion; history entries come first. */

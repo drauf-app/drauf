@@ -53,6 +53,7 @@ function entryView(overrides: Partial<EntryView>): EntryView {
     createdAt: '2026-11-12T00:00:00.000Z',
     quantities: [],
     portions: [],
+    icon: null,
     ...overrides,
   };
 }
@@ -131,23 +132,31 @@ describe('ListPage', () => {
     expect(screen.getByRole('heading', { name: 'Wocheneinkauf' })).toBeDefined();
   });
 
-  it('adds a tapped suggestion and patches it via a size chip', async () => {
+  it('adds a tapped suggestion bare and adjusts it via drawer chips', async () => {
     const posted: string[] = [];
     const patched: string[] = [];
+    let current = entryView({
+      id: 'e2',
+      name: 'Nudeln',
+      nameNormalized: 'nudeln',
+      categoryId: 'c6',
+    });
     stubListApi({
       onEntryPost: (body) => {
         posted.push(body);
-        return entryView({ id: 'e2', name: 'Nudeln', nameNormalized: 'nudeln', categoryId: 'c6' });
+        return current;
       },
       onEntryPatch: (_url, body) => {
         patched.push(body);
-        return entryView({
-          id: 'e2',
-          name: 'Nudeln',
-          nameNormalized: 'nudeln',
-          categoryId: 'c6',
-          quantities: [{ unit: 'g', quantity: 500 }],
-        });
+        const fields = JSON.parse(body) as { quantity?: number; unit?: string };
+        current = {
+          ...current,
+          quantities:
+            fields.quantity === undefined
+              ? []
+              : [{ unit: fields.unit ?? null, quantity: fields.quantity }],
+        };
+        return current;
       },
     });
     renderListPage();
@@ -156,18 +165,27 @@ describe('ListPage', () => {
     await user.type(await screen.findByLabelText('Was brauchst du?'), 'nud');
     await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
 
+    // Added immediately and bare: no amount, no variety.
     expect(posted).toHaveLength(1);
     expect(JSON.parse(posted[0] ?? '{}')).toEqual({ name: 'Nudeln', categoryId: 'c6' });
-    expect(await screen.findByText('Nudeln')).toBeDefined();
 
-    // The chip bar for the new entry: the last size is highlighted.
+    // The drawer shows the details view with the last-used size highlighted.
+    expect(await screen.findByLabelText('Nächster Artikel …')).toBeDefined();
     const sizeChip = await screen.findByRole('button', { name: '500 g' });
     expect(sizeChip.className).toContain('highlighted');
-    await user.click(sizeChip);
 
-    expect(patched).toHaveLength(1);
+    await user.click(sizeChip);
     expect(JSON.parse(patched[0] ?? '{}')).toEqual({ quantity: 500, unit: 'g' });
-    expect(await screen.findByText('500 g', { selector: '.entry-quantity' })).toBeDefined();
+
+    // The chip is now active; tapping it again clears the amount.
+    const activeChip = await screen.findByRole('button', { name: '500 g' });
+    expect(activeChip.className).toContain('active');
+    await user.click(activeChip);
+    expect(JSON.parse(patched[1] ?? '{}')).toEqual({ unit: '' });
+
+    // Typing the next article returns to suggestions.
+    await user.type(screen.getByLabelText('Nächster Artikel …'), 'mi');
+    expect(await screen.findByRole('button', { name: /Nudeln/ })).toBeDefined();
   });
 
   it('adds parsed free text on submit', async () => {
@@ -197,7 +215,7 @@ describe('ListPage', () => {
     await user.type(await screen.findByLabelText('Was brauchst du?'), '2 Eier');
     await user.click(screen.getByRole('button', { name: 'Drauf!' }));
 
-    expect(await screen.findByText('Eier')).toBeDefined();
+    expect(await screen.findByText('Eier', { selector: '.entry-name' })).toBeDefined();
     expect(pendingOps()).toHaveLength(1);
     expect(pendingOps()[0]).toMatchObject({
       type: 'entry.add',
@@ -291,5 +309,35 @@ describe('entry editing', () => {
 
     expect(patched).toHaveLength(0);
     expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+});
+
+describe('tile view', () => {
+  it('switches to tiles, persists the choice and checks off on tap', async () => {
+    stubListApi({
+      entries: [entryView({ icon: '🥛' })],
+      onCheck: () => entryView({ icon: '🥛', checkedAt: '2026-11-12T10:00:00.000Z' }),
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    await screen.findByText('Milch');
+    await user.click(screen.getByRole('button', { name: 'Als Kacheln anzeigen' }));
+
+    expect(localStorage.getItem('drauf.list-view')).toBe('tiles');
+    expect(document.querySelector('.entries.tiles')).not.toBeNull();
+    expect(screen.getByText('🥛')).toBeDefined();
+
+    await user.click(screen.getByRole('button', { name: 'Abhaken: Milch' }));
+    expect(await screen.findByText('Zuletzt gekauft')).toBeDefined();
+  });
+
+  it('starts in tile view when previously chosen', async () => {
+    localStorage.setItem('drauf.list-view', 'tiles');
+    stubListApi();
+    renderListPage();
+
+    await screen.findByText('Milch');
+    expect(document.querySelector('.entries.tiles')).not.toBeNull();
   });
 });

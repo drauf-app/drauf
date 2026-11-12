@@ -130,7 +130,7 @@ async function requireEntry(ctx: Context, data: Record<string, unknown>): Promis
 async function publishEntry(ctx: Context, type: string, entry: ListEntry): Promise<void> {
   ctx.hub.publish(listTopic(entry.listId), {
     type,
-    data: await getEntryView(ctx.database, entry),
+    data: await getEntryView(ctx.database, entry, ctx.catalog),
   });
 }
 

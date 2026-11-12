@@ -18,6 +18,7 @@ function entry(id: string, overrides: Partial<EntryView> = {}): EntryView {
     createdAt: '',
     quantities: [],
     portions: [],
+    icon: null,
     ...overrides,
   };
 }

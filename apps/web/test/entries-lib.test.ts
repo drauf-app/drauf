@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Category, EntryView, Suggestion } from '../src/api/types';
-import { buildChipGroups } from '../src/lib/chips';
+import { buildChipGroups, clearingPatch, isChipActive } from '../src/lib/chips';
 import { formatQuantities, groupEntries, recentEntries } from '../src/lib/entries';
 
 function category(id: string, name: string, sortOrder: number): Category {
@@ -29,6 +29,7 @@ function entry(id: string, overrides: Partial<EntryView> = {}): EntryView {
     createdAt: '2026-11-12T00:00:00.000Z',
     quantities: [],
     portions: [],
+    icon: null,
     ...overrides,
   };
 }
@@ -141,5 +142,28 @@ describe('buildChipGroups', () => {
     expect(groups.counts).toHaveLength(4);
     expect(groups.sizes).toEqual([]);
     expect(groups.varieties).toEqual([]);
+  });
+});
+
+describe('isChipActive and clearingPatch', () => {
+  const sizeChip = { label: '500 g', patch: { quantity: 500, unit: 'g' }, highlighted: false };
+  const countChip = { label: '2', patch: { quantity: 2 }, highlighted: false };
+  const varietyChip = { label: 'Penne', patch: { variant: 'Penne' }, highlighted: false };
+
+  it('matches the entry state per chip kind', () => {
+    const withSize = entry('nudeln', { quantities: [{ unit: 'g', quantity: 500 }] });
+    expect(isChipActive(withSize, sizeChip)).toBe(true);
+    expect(isChipActive(withSize, countChip)).toBe(false);
+    const withCount = entry('eier', { quantities: [{ unit: null, quantity: 2 }] });
+    expect(isChipActive(withCount, countChip)).toBe(true);
+    const withVariant = entry('nudeln', { variant: 'Penne' });
+    expect(isChipActive(withVariant, varietyChip)).toBe(true);
+    expect(isChipActive(entry('leer'), sizeChip)).toBe(false);
+  });
+
+  it('clears the matching field kind', () => {
+    expect(clearingPatch(sizeChip)).toEqual({ unit: '' });
+    expect(clearingPatch(countChip)).toEqual({ unit: '' });
+    expect(clearingPatch(varietyChip)).toEqual({ variant: '' });
   });
 });
