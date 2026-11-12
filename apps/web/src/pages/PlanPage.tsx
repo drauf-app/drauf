@@ -278,7 +278,7 @@ export function PlanPage() {
           </button>
           <span className="plan-week">{formatWeek(days)}</span>
           <Link className="plan-print-link" to="/plan/print">
-            {t.plan.print.action}
+            🖨 {t.plan.print.action}
           </Link>
         </div>
       </header>
