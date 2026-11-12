@@ -88,6 +88,8 @@ export const de = {
     nextArticle: 'Nächster Artikel …',
     add: 'Drauf!',
     close: 'Schließen',
+    customVariant: 'Eigene Variante',
+    applyVariant: 'Variante übernehmen',
   },
   import: {
     title: 'Rezept-Import',

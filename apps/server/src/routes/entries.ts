@@ -7,6 +7,7 @@ import {
   getListEntry,
   getListHouseholdId,
   isCategoryLinkedToList,
+  recordCatalogVariant,
   setCatalogUsageCategory,
   setEntryChecked,
   updateListEntry,
@@ -208,16 +209,28 @@ export function entryRoutes(
           await updateListEntry(database, entry.id, patch);
           entry = { ...entry, ...patch };
         }
-        if (patch.categoryId !== undefined) {
-          // "Kategorie erfragt": remember the chosen category for next time (K3).
+        const appliedVariant = typeof patch.variant === 'string' ? patch.variant : undefined;
+        if (patch.categoryId !== undefined || appliedVariant !== undefined) {
           const householdId = await getListHouseholdId(database, entry.listId);
           if (householdId !== undefined) {
-            await setCatalogUsageCategory(
-              database,
-              householdId,
-              entry.nameNormalized,
-              patch.categoryId,
-            );
+            if (patch.categoryId !== undefined) {
+              // "Kategorie erfragt": remember the chosen category for next time (K3).
+              await setCatalogUsageCategory(
+                database,
+                householdId,
+                entry.nameNormalized,
+                patch.categoryId,
+              );
+            }
+            if (appliedVariant !== undefined) {
+              // Custom chips learn from every applied variant (K2/K4).
+              await recordCatalogVariant(
+                database,
+                householdId,
+                entry.nameNormalized,
+                appliedVariant,
+              );
+            }
           }
         }
         const view = await getEntryView(database, entry, catalog);

@@ -1201,3 +1201,27 @@ button:disabled {
   font-size: 0.85rem;
   padding: 0.15rem 0.3rem;
 }
+
+.chip-add {
+  color: var(--text-muted);
+  min-width: 2rem;
+}
+
+.chip-input {
+  flex-direction: row;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.chip-input input {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  width: 10rem;
+}
+
+.chip-input button {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}

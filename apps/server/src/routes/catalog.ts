@@ -3,7 +3,7 @@ import { normalizeItemName } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
-import { listCategories, searchCatalogUsage } from '../db/repositories.js';
+import { listCategories, parseVariants, searchCatalogUsage } from '../db/repositories.js';
 import { getHouseholdForMember } from '../households/service.js';
 
 const suggestQuery = {
@@ -29,6 +29,8 @@ export interface Suggestion {
   categoryId: string | null;
   sizes: string[];
   varieties: string[];
+  /** This household's recently used variants, most recent first. */
+  recentVariants: string[];
   count?: number;
   lastQuantity?: number | null;
   lastUnit?: string | null;
@@ -89,6 +91,7 @@ export function catalogRoutes(
               (catalogItem === undefined ? null : resolveKey(catalogItem.categoryKey)),
             sizes: catalogItem?.sizes ?? [],
             varieties: catalogItem?.varieties ?? [],
+            recentVariants: parseVariants(row.variants),
             count: row.count,
             lastQuantity: row.lastQuantity,
             lastUnit: row.lastUnit,
@@ -110,6 +113,7 @@ export function catalogRoutes(
             categoryId: resolveKey(item.categoryKey),
             sizes: item.sizes,
             varieties: item.varieties,
+            recentVariants: [],
           });
         }
 
