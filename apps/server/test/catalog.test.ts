@@ -570,3 +570,79 @@ describe('entry flags', () => {
     expect(response.json()).toEqual({ error: 'invalid_flags' });
   });
 });
+
+describe('list overview summaries', () => {
+  let ctx: TestApp;
+  let christian: { id: string; token: string };
+
+  function as(user: { token: string }) {
+    return { authorization: `Bearer ${user.token}` };
+  }
+
+  beforeEach(async () => {
+    ctx = await createTestApp({}, { catalog: fakeCatalog });
+    const result = await createLocalUser(ctx.database, {
+      username: 'christian',
+      password: PASSWORD,
+      displayName: 'Christian',
+      isAdmin: false,
+    });
+    if (!result.ok) throw new Error('fixture user not created');
+    const login = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'christian', password: PASSWORD },
+    });
+    christian = {
+      id: result.user.id,
+      token: (login.json() as { accessToken: string }).accessToken,
+    };
+  });
+
+  afterEach(async () => {
+    await ctx.close();
+  });
+
+  it('carries open count and preview icons, skipping checked entries', async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Weekly shop' },
+    });
+    const list = created.json() as { id: string; openCount: number; previewIcons: string[] };
+    expect(list.openCount).toBe(0);
+    expect(list.previewIcons).toEqual([]);
+
+    for (const name of ['Nudeln', 'Milch', 'Zaubertrank']) {
+      await ctx.app.inject({
+        method: 'POST',
+        url: `/api/lists/${list.id}/entries`,
+        headers: as(christian),
+        payload: { name },
+      });
+    }
+    const entries = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/lists/${list.id}/entries`,
+      headers: as(christian),
+    });
+    const trank = (entries.json() as Array<{ id: string; name: string }>).find(
+      (entry) => entry.name === 'Zaubertrank',
+    );
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${list.id}/entries/${trank?.id}/check`,
+      headers: as(christian),
+    });
+
+    const overview = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/lists',
+      headers: as(christian),
+    });
+    const [row] = overview.json() as Array<{ openCount: number; previewIcons: string[] }>;
+    expect(row?.openCount).toBe(2);
+    expect(row?.previewIcons).toEqual(['🍝', '🥛']);
+  });
+});

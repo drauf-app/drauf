@@ -23,26 +23,35 @@ function store(overrides: Partial<StoreWithOrder> = {}): StoreWithOrder {
 }
 
 describe('StoresPage', () => {
-  it('shows categories in the store order with the rest after', async () => {
+  it('shows compact rows with an order hint and disables reset on default order', async () => {
     stubFetch((url) => {
-      if (url === '/api/stores') return fakeResponse(200, [store({ categoryOrder: ['c2'] })]);
+      if (url === '/api/stores')
+        return fakeResponse(200, [
+          store(),
+          store({ id: 's2', name: 'Biomarkt', categoryOrder: ['c2'] }),
+        ]);
       if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
       return undefined;
     });
     render(<StoresPage />);
 
     await screen.findByText('Supermarkt Ost');
-    const names = screen
-      .getAllByRole('listitem')
-      .map((item) => item.querySelector('.category-order-name')?.textContent);
-    expect(names).toEqual(['Getränke', 'Obst', 'Haushalt']);
+    expect(screen.getByText('Standard-Reihenfolge')).toBeDefined();
+    expect(screen.getByText('eigene Reihenfolge')).toBeDefined();
+    const resetDefault = screen.getByRole('button', {
+      name: 'Zurücksetzen: Supermarkt Ost',
+    }) as HTMLButtonElement;
+    expect(resetDefault.disabled).toBe(true);
+    // The category lists stay out of the overview until a dialog opens.
+    expect(screen.queryByText('Obst')).toBeNull();
   });
 
-  it('moves a category down and PUTs the full order', async () => {
+  it('edits the order in a dialog and PUTs the full order', async () => {
     const puts: string[] = [];
     stubFetch((url, init) => {
       const method = init?.method ?? 'GET';
-      if (url === '/api/stores' && method === 'GET') return fakeResponse(200, [store()]);
+      if (url === '/api/stores' && method === 'GET')
+        return fakeResponse(200, [store({ categoryOrder: ['c2'] })]);
       if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
       if (url === '/api/stores/s1/category-order' && method === 'PUT') {
         puts.push(String(init?.body));
@@ -53,10 +62,63 @@ describe('StoresPage', () => {
     render(<StoresPage />);
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Nach unten: Obst' }));
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten: Supermarkt Ost' }));
+    const dialog = await screen.findByRole('dialog');
+    const names = [...dialog.querySelectorAll('.category-order-name')].map(
+      (node) => node.textContent,
+    );
+    expect(names).toEqual(['Getränke', 'Obst', 'Haushalt']);
 
+    await user.click(screen.getByRole('button', { name: 'Nach unten: Getränke' }));
     expect(puts).toHaveLength(1);
-    expect(JSON.parse(puts[0] ?? '{}')).toEqual({ categoryIds: ['c2', 'c1', 'c3'] });
+    expect(JSON.parse(puts[0] ?? '{}')).toEqual({ categoryIds: ['c1', 'c2', 'c3'] });
+  });
+
+  it('resets a custom order to the household default', async () => {
+    const puts: string[] = [];
+    stubFetch((url, init) => {
+      const method = init?.method ?? 'GET';
+      if (url === '/api/stores' && method === 'GET')
+        return fakeResponse(200, [store({ categoryOrder: ['c2', 'c1'] })]);
+      if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/stores/s1/category-order' && method === 'PUT') {
+        puts.push(String(init?.body));
+        return fakeResponse(200, store({ categoryOrder: [] }));
+      }
+      return undefined;
+    });
+    render(<StoresPage />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Zurücksetzen: Supermarkt Ost' }));
+    expect(JSON.parse(puts[0] ?? '{}')).toEqual({ categoryIds: [] });
+    expect(await screen.findByText('Standard-Reihenfolge')).toBeDefined();
+  });
+
+  it('renames the store through the dialog', async () => {
+    const patches: string[] = [];
+    stubFetch((url, init) => {
+      const method = init?.method ?? 'GET';
+      if (url === '/api/stores' && method === 'GET') return fakeResponse(200, [store()]);
+      if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/stores/s1' && method === 'PATCH') {
+        patches.push(String(init?.body));
+        return fakeResponse(200, store({ name: 'Supermarkt West' }));
+      }
+      return undefined;
+    });
+    render(<StoresPage />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten: Supermarkt Ost' }));
+    const nameInput = await screen.findByLabelText('Name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Supermarkt West');
+    await user.click(screen.getByRole('button', { name: 'Fertig' }));
+
+    expect(JSON.parse(patches[0] ?? '{}')).toEqual({ name: 'Supermarkt West' });
+    expect(await screen.findByText('Supermarkt West')).toBeDefined();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('creates a store', async () => {

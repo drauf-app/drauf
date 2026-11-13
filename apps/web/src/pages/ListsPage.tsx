@@ -5,12 +5,31 @@ import type { List } from '../api/types';
 import { useT } from '../i18n';
 
 function ListRow({ list }: { list: List }) {
+  const t = useT();
+  const openCount = list.openCount ?? 0;
+  const icons = list.previewIcons ?? [];
+  const rest = openCount - icons.length;
   return (
     <li>
       <Link className="list-row" to={`/lists/${encodeURIComponent(list.id)}`}>
         <span className="list-dot" style={{ background: list.color ?? 'var(--accent)' }} />
         <span className="list-icon">{list.icon}</span>
-        <span className="list-name">{list.name}</span>
+        <span className="list-row-text">
+          <span className="list-name">{list.name}</span>
+          <span className="list-row-meta">
+            {openCount === 0
+              ? t.lists.emptyList
+              : openCount === 1
+                ? t.lists.oneItem
+                : `${openCount} ${t.lists.manyItems}`}
+            {icons.length > 0 && (
+              <span className="list-preview">
+                {icons.join(' ')}
+                {rest > 0 ? ` +${rest}` : ''}
+              </span>
+            )}
+          </span>
+        </span>
       </Link>
     </li>
   );

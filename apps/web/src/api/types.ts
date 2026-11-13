@@ -26,6 +26,9 @@ export interface List {
   ownerId: string;
   defaultStoreId: string | null;
   createdAt: string;
+  /** Overview extras from GET /api/lists (absent on other list responses). */
+  openCount?: number;
+  previewIcons?: string[];
 }
 
 export interface ListDetail extends List {

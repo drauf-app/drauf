@@ -48,6 +48,8 @@ h1 {
 .app-header {
   position: sticky;
   top: 0;
+  /* Above positioned content (tiles), below the drawer backdrop (5). */
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -417,14 +419,6 @@ button:disabled {
   color: var(--text-muted);
 }
 
-.entry-delete {
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  padding: 0.3rem 0.5rem;
-}
-
 .recent {
   margin-top: 1.5rem;
   color: var(--text-muted);
@@ -544,24 +538,92 @@ button:disabled {
   font-size: 0.9rem;
 }
 
-.store-card {
+.store-rows {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.store-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.8rem 1rem;
-  margin: 0.8rem 0;
+  padding: 0.6rem 0.8rem;
 }
 
-.store-head {
+.store-row-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem 1rem;
+  flex-direction: column;
 }
 
-.store-head h2 {
-  margin: 0;
-  font-size: 1.05rem;
+.store-row-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.store-row button {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.6rem;
+  flex-shrink: 0;
+}
+
+.store-row .danger {
+  color: var(--error);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  border: none;
+  background: rgb(0 0 0 / 35%);
+  z-index: 20;
+}
+
+.modal {
+  position: fixed;
+  left: 50%;
+  top: 8dvh;
+  transform: translateX(-50%);
+  width: min(92vw, 26rem);
+  max-height: 84dvh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+  padding: 1rem;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.modal h3 {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .category-order {
@@ -626,6 +688,56 @@ button:disabled {
 
 .plan-day {
   margin-bottom: 1rem;
+}
+
+/* Week at a glance: on wide screens the days become columns. */
+.app-main:has(> .plan-page) {
+  max-width: 90rem;
+}
+
+@media (min-width: 900px) {
+  .plan-days {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.6rem;
+    align-items: start;
+  }
+
+  .plan-day {
+    margin-bottom: 0;
+  }
+
+  .plan-cell {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.15rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .plan-slot-name {
+    width: auto;
+    font-size: 0.75rem;
+  }
+
+  .plan-entry {
+    flex-wrap: wrap;
+    gap: 0.2rem 0.5rem;
+    padding: 0;
+  }
+
+  .plan-entry-text {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    width: 100%;
+  }
+
+  .plan-cook {
+    margin-left: 0;
+  }
+
+  .plan-source {
+    padding-left: 0;
+  }
 }
 
 .plan-day h2 {
@@ -949,11 +1061,21 @@ button:disabled {
   display: block;
 }
 
+/* A link that must read as an action: styled like a regular button. */
 .plan-print-link {
   margin-left: auto;
-  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
   text-decoration: none;
   font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 @media print {
@@ -999,12 +1121,29 @@ button:disabled {
 
 /* Entry editing */
 
-.entry-edit-button {
+/* Quiet square action button with visible hover and press feedback. */
+.icon-button {
+  width: 2.2rem;
+  height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
+  border-radius: var(--radius);
   background: none;
   color: var(--text-muted);
-  font-size: 0.95rem;
-  padding: 0.3rem 0.4rem;
+  font-size: 1rem;
+  padding: 0;
+}
+
+.icon-button:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.icon-button:active {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  transform: scale(0.94);
 }
 
 .entry-editing {
@@ -1026,6 +1165,11 @@ button:disabled {
   grid-column: 1 / -1;
   display: flex;
   gap: 0.4rem;
+}
+
+.entry-edit-actions .danger {
+  margin-left: auto;
+  color: var(--error);
 }
 
 /* Quick-add drawer */
@@ -1169,7 +1313,8 @@ button:disabled {
   font-weight: 500;
   font-size: 0.85rem;
   text-align: center;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .tile-meta {
@@ -1188,17 +1333,9 @@ button:disabled {
 
 .tile-actions {
   position: absolute;
-  top: 0.1rem;
-  right: 0.1rem;
+  top: 0.2rem;
+  right: 0.2rem;
   display: flex;
-}
-
-.tile-actions button {
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  font-size: 1rem;
-  padding: 0.3rem 0.45rem;
 }
 
 .chip-add {
@@ -1299,4 +1436,30 @@ button:disabled {
 
 .details-editor input {
   flex: 1;
+}
+
+.list-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-row .list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-row-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.list-preview {
+  letter-spacing: 0.1em;
 }

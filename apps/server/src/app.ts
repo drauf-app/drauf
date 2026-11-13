@@ -83,7 +83,7 @@ export async function buildApp(
   await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
   await app.register(userRoutes(database, guards), { prefix: '/api/users' });
   await app.register(householdRoutes(database, guards), { prefix: '/api/households' });
-  await app.register(listRoutes(database, guards, hub), { prefix: '/api/lists' });
+  await app.register(listRoutes(database, guards, hub, catalogIndex), { prefix: '/api/lists' });
   await app.register(entryRoutes(database, guards, hub, catalogIndex), { prefix: '/api/lists' });
   await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
   await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });

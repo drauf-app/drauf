@@ -397,6 +397,25 @@ export async function listListMemberUsers(
     .orderBy(asc(t.listMembers.createdAt));
 }
 
+/** Open (unchecked) entry names per list, oldest first — for overview rows. */
+export async function listOpenEntryNames(
+  database: Database,
+  listIds: string[],
+): Promise<Array<{ listId: string; name: string }>> {
+  if (listIds.length === 0) {
+    return [];
+  }
+  const { db, t } = unwrap(database);
+  return (
+    db
+      .select({ listId: t.listEntries.listId, name: t.listEntries.name })
+      .from(t.listEntries)
+      .where(and(inArray(t.listEntries.listId, listIds), isNull(t.listEntries.checkedAt)))
+      // The id breaks createdAt ties (same-millisecond adds) deterministically.
+      .orderBy(asc(t.listEntries.createdAt), asc(t.listEntries.id))
+  );
+}
+
 export async function createListEntry(
   database: Database,
   input: {

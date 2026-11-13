@@ -131,19 +131,11 @@ function EntryRow({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
       </button>
       <button
         type="button"
-        className="entry-edit-button"
+        className="icon-button"
         aria-label={`${t.list.editEntry}: ${entry.name}`}
         onClick={() => onEdit(entry)}
       >
         ✎
-      </button>
-      <button
-        type="button"
-        className="entry-delete"
-        aria-label={t.list.deleteEntry}
-        onClick={() => onDelete(entry)}
-      >
-        ×
       </button>
     </li>
   );
@@ -183,13 +175,11 @@ function EntryTile({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
       <span className="tile-actions">
         <button
           type="button"
+          className="icon-button"
           aria-label={`${t.list.editEntry}: ${entry.name}`}
           onClick={() => onEdit(entry)}
         >
           ✎
-        </button>
-        <button type="button" aria-label={t.list.deleteEntry} onClick={() => onDelete(entry)}>
-          ×
         </button>
       </span>
     </li>
@@ -477,6 +467,10 @@ export function ListPage() {
             categories={categories}
             onSave={(fields) => handleEditSave(entry, fields)}
             onCancel={() => setEditingId(undefined)}
+            onDelete={() => {
+              setEditingId(undefined);
+              handleDelete(entry);
+            }}
           />
         </li>
       );

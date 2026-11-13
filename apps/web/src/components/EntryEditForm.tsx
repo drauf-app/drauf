@@ -8,6 +8,8 @@ interface EntryEditFormProps {
   categories: Category[];
   onSave: (fields: PatchEntryInput) => void;
   onCancel: () => void;
+  /** Deleting lives here: a deliberate two-step instead of a tiny row icon. */
+  onDelete?: () => void;
 }
 
 /**
@@ -15,7 +17,13 @@ interface EntryEditFormProps {
  * quantity clears all portions (unit '' is the API's "no quantity" signal),
  * and a quantity edit replaces merged portions with the one value entered.
  */
-export function EntryEditForm({ entry, categories, onSave, onCancel }: EntryEditFormProps) {
+export function EntryEditForm({
+  entry,
+  categories,
+  onSave,
+  onCancel,
+  onDelete,
+}: EntryEditFormProps) {
   const t = useT();
   const firstQuantity = entry.quantities[0];
   const [name, setName] = useState(entry.name);
@@ -153,6 +161,11 @@ export function EntryEditForm({ entry, categories, onSave, onCancel }: EntryEdit
         <button type="button" onClick={onCancel}>
           {t.common.cancel}
         </button>
+        {onDelete !== undefined && (
+          <button type="button" className="danger" onClick={onDelete}>
+            {t.list.deleteEntry}
+          </button>
+        )}
       </div>
     </form>
   );
