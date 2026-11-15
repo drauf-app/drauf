@@ -2,8 +2,7 @@ import { type FormEvent, useState } from 'react';
 import type { PatchEntryInput } from '../api/lists';
 import type { Category, EntryView } from '../api/types';
 import { useT } from '../i18n';
-import { BUNDLED_EMOJIS } from '../lib/openmoji';
-import { ItemIcon } from './ItemIcon';
+import { IconPicker } from './IconPicker';
 
 interface EntryEditFormProps {
   entry: EntryView;
@@ -41,7 +40,6 @@ export function EntryEditForm({
   const [categoryId, setCategoryId] = useState(entry.categoryId ?? '');
   // '' = automatic (whatever the catalogue matcher resolves).
   const [icon, setIcon] = useState(entry.icon ?? '');
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   function onSubmit(event: FormEvent): void {
     event.preventDefault();
@@ -164,43 +162,12 @@ export function EntryEditForm({
       </label>
       <div className="entry-edit-wide entry-edit-icon">
         <span className="entry-edit-icon-label">{t.list.edit.icon}</span>
-        <button
-          type="button"
-          className="icon-picker-toggle"
-          aria-label={t.list.edit.iconPick}
-          aria-expanded={pickerOpen}
-          onClick={() => setPickerOpen((previous) => !previous)}
-        >
-          {icon === '' ? t.list.edit.iconAuto : <ItemIcon icon={icon} />}
-        </button>
-        {pickerOpen && (
-          <div className="icon-picker">
-            <button
-              type="button"
-              className={icon === '' ? 'icon-option active' : 'icon-option'}
-              onClick={() => {
-                setIcon('');
-                setPickerOpen(false);
-              }}
-            >
-              {t.list.edit.iconAuto}
-            </button>
-            {BUNDLED_EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className={emoji === icon ? 'icon-option active' : 'icon-option'}
-                aria-label={emoji}
-                onClick={() => {
-                  setIcon(emoji);
-                  setPickerOpen(false);
-                }}
-              >
-                <ItemIcon icon={emoji} />
-              </button>
-            ))}
-          </div>
-        )}
+        <IconPicker
+          value={icon}
+          clearLabel={t.list.edit.iconAuto}
+          pickLabel={t.list.edit.iconPick}
+          onChange={setIcon}
+        />
       </div>
       <div className="entry-edit-actions">
         <button type="submit" className="primary">

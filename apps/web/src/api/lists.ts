@@ -29,8 +29,8 @@ export function fetchLists(): Promise<List[]> {
   return apiJson<List[]>('/api/lists');
 }
 
-export function createList(name: string): Promise<List> {
-  return apiJson<List>('/api/lists', { method: 'POST', body: JSON.stringify({ name }) });
+export function createList(input: { name: string; icon?: string; color?: string }): Promise<List> {
+  return apiJson<List>('/api/lists', { method: 'POST', body: JSON.stringify(input) });
 }
 
 export function fetchList(listId: string): Promise<ListDetail> {
@@ -39,7 +39,14 @@ export function fetchList(listId: string): Promise<ListDetail> {
 
 export function patchList(
   listId: string,
-  patch: { name?: string; archived?: boolean; defaultStoreId?: string | null },
+  patch: {
+    name?: string;
+    /** '' clears the icon / colour again. */
+    icon?: string;
+    color?: string;
+    archived?: boolean;
+    defaultStoreId?: string | null;
+  },
 ): Promise<List> {
   return apiJson<List>(`/api/lists/${encodeURIComponent(listId)}`, {
     method: 'PATCH',

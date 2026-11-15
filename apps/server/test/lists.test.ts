@@ -75,6 +75,35 @@ describe('list routes', () => {
     }
   });
 
+  it('keeps icon and colour on create and clears them with empty strings (#52)', async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Geschenke', icon: '🎁', color: '#2563eb' },
+    });
+    expect(created.statusCode).toBe(201);
+    const list = created.json() as { id: string; icon: string | null; color: string | null };
+    expect(list).toMatchObject({ icon: '🎁', color: '#2563eb' });
+
+    const cleared = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${list.id}`,
+      headers: as(christian),
+      payload: { icon: '', color: '' },
+    });
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json()).toMatchObject({ icon: null, color: null });
+
+    const recolored = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${list.id}`,
+      headers: as(christian),
+      payload: { icon: '🧪', color: '#dc2626' },
+    });
+    expect(recolored.json()).toMatchObject({ icon: '🧪', color: '#dc2626' });
+  });
+
   it('hides lists from removed members without leaking existence', async () => {
     const list = await createList();
     const removal = await ctx.app.inject({
