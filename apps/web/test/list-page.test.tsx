@@ -74,6 +74,7 @@ const SUGGESTION: Suggestion = {
 
 interface StubOptions {
   entries?: EntryView[];
+  suggestions?: Suggestion[];
   onEntryPost?: (body: string) => EntryView;
   onEntryPatch?: (url: string, body: string) => EntryView;
   onCheck?: (url: string) => EntryView;
@@ -95,7 +96,7 @@ function stubListApi(options: StubOptions = {}): RecordedRequest[] {
       return fakeResponse(200, []);
     }
     if (url.startsWith('/api/catalog/suggest?') && method === 'GET') {
-      return fakeResponse(200, [SUGGESTION]);
+      return fakeResponse(200, options.suggestions ?? [SUGGESTION]);
     }
     // Mutations without a configured handler fail like a network error.
     if (url === '/api/lists/l1/entries' && method === 'POST') {
@@ -173,7 +174,7 @@ describe('ListPage', () => {
     const user = userEvent.setup();
 
     await user.type(await screen.findByLabelText('Was brauchst du?'), 'nud');
-    await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
+    await user.click(await screen.findByRole('option', { name: /Nudeln/ }));
 
     // Added immediately and bare: no amount, no variety.
     expect(posted).toHaveLength(1);
@@ -199,7 +200,84 @@ describe('ListPage', () => {
 
     // Typing the next article returns to suggestions.
     await user.type(screen.getByLabelText('Nächster Artikel …'), 'mi');
-    expect(await screen.findByRole('button', { name: /Nudeln/ })).toBeDefined();
+    expect(await screen.findByRole('option', { name: /Nudeln/ })).toBeDefined();
+  });
+
+  it('adds a suggestion picked with arrow keys and Enter', async () => {
+    const posted: string[] = [];
+    stubListApi({
+      suggestions: [SUGGESTION, { ...SUGGESTION, name: 'Nudelsalat', source: 'catalog' }],
+      onEntryPost: (body) => {
+        posted.push(body);
+        return entryView({ id: 'e2', name: 'Nudeln', nameNormalized: 'nudeln', categoryId: 'c6' });
+      },
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    const input = await screen.findByLabelText('Was brauchst du?');
+    await user.type(input, 'nud');
+    await screen.findByRole('option', { name: 'Nudelsalat' });
+
+    // Down wraps through the tiles, Up steps back; the input announces the
+    // highlight via aria-activedescendant while focus stays in the field.
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    expect(screen.getByRole('option', { name: 'Nudelsalat' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
+    await user.keyboard('{ArrowUp}');
+    expect(screen.getByRole('option', { name: 'Nudeln' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
+    expect(input.getAttribute('aria-activedescendant')).toBe('quick-add-option-0');
+
+    await user.keyboard('{Enter}');
+    expect(posted).toHaveLength(1);
+    // The highlighted suggestion is added, not the typed free text.
+    expect(JSON.parse(posted[0] ?? '{}')).toEqual({ name: 'Nudeln', categoryId: 'c6' });
+    expect(await screen.findByLabelText('Nächster Artikel …')).toBeDefined();
+  });
+
+  it('keeps Enter as free-text add while nothing is highlighted', async () => {
+    const posted: string[] = [];
+    stubListApi({
+      onEntryPost: (body) => {
+        posted.push(body);
+        return entryView({ id: 'e3', name: 'Nudelholz', nameNormalized: 'nudelholz' });
+      },
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText('Was brauchst du?'), 'Nudelholz');
+    await screen.findByRole('option', { name: 'Nudeln' });
+    await user.keyboard('{Enter}');
+
+    expect(posted).toHaveLength(1);
+    expect(JSON.parse(posted[0] ?? '{}')).toEqual({ name: 'Nudelholz' });
+  });
+
+  it('clears the highlight on the first Escape and closes the drawer on the second', async () => {
+    stubListApi();
+    renderListPage();
+    const user = userEvent.setup();
+
+    const input = await screen.findByLabelText('Was brauchst du?');
+    await user.type(input, 'nud');
+    await screen.findByRole('option', { name: 'Nudeln' });
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('option', { name: 'Nudeln' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
+
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('option', { name: 'Nudeln' }).getAttribute('aria-selected')).toBe(
+      'false',
+    );
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('option')).toBeNull();
+    expect((input as HTMLInputElement).value).toBe('');
   });
 
   it('applies custom modifiers through the + chip and toggles them as multi-select', async () => {
@@ -218,7 +296,7 @@ describe('ListPage', () => {
     const user = userEvent.setup();
 
     await user.type(await screen.findByLabelText('Was brauchst du?'), 'chips');
-    await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
+    await user.click(await screen.findByRole('option', { name: /Nudeln/ }));
 
     await user.click(await screen.findByRole('button', { name: 'Eigene Variante' }));
     await user.type(screen.getByLabelText('Eigene Variante'), 'Lays, Paprika');
@@ -382,7 +460,7 @@ describe('notes', () => {
     expect(await screen.findByText(/die gute/)).toBeDefined();
 
     await user.type(screen.getByLabelText('Was brauchst du?'), 'nud');
-    await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
+    await user.click(await screen.findByRole('option', { name: /Nudeln/ }));
 
     const pill = await screen.findByRole('button', { name: /Letzte Notiz.*al dente/ });
     await user.click(pill);
@@ -467,7 +545,7 @@ describe('flags and the details editor', () => {
 
   async function openDetails(user: ReturnType<typeof userEvent.setup>) {
     await user.type(await screen.findByLabelText('Was brauchst du?'), 'nud');
-    await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
+    await user.click(await screen.findByRole('option', { name: /Nudeln/ }));
     await screen.findByLabelText('Nächster Artikel …');
   }
 

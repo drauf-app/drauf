@@ -114,6 +114,7 @@ export const de = {
     lastNote: 'Letzte Notiz',
     detailsField: 'Details',
     closeDetails: 'Details schließen',
+    suggestions: 'Vorschläge',
   },
   import: {
     title: 'Rezept-Import',
