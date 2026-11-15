@@ -69,6 +69,104 @@ describe('household routes', () => {
     expect(response.statusCode).toBe(401);
   });
 
+  describe('export', () => {
+    it('returns one versioned document with the household data and no secrets', async () => {
+      await createLocalUser(ctx.database, {
+        username: 'kathrin',
+        password: PASSWORD,
+        displayName: 'Kathrin',
+        isAdmin: false,
+      });
+      const login = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username: 'kathrin', password: PASSWORD },
+      });
+      const headers = {
+        authorization: `Bearer ${(login.json() as { accessToken: string }).accessToken}`,
+      };
+
+      // A little of everything: a list with a quantified entry, and a store.
+      const list = (
+        await ctx.app.inject({
+          method: 'POST',
+          url: '/api/lists',
+          headers,
+          payload: { name: 'Wocheneinkauf' },
+        })
+      ).json() as { id: string };
+      await ctx.app.inject({
+        method: 'POST',
+        url: `/api/lists/${list.id}/entries`,
+        headers,
+        payload: { name: 'Milch', quantity: 1, unit: 'l' },
+      });
+      await ctx.app.inject({
+        method: 'POST',
+        url: '/api/stores',
+        headers,
+        payload: { name: 'Biomarkt' },
+      });
+
+      const response = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/households/me/export',
+        headers,
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-disposition']).toContain('drauf-export-');
+
+      const body = response.json() as {
+        version: number;
+        household: { id: string; staples: string[] };
+        users: Array<{ username: string }>;
+        stores: Array<{ name: string; categoryOrder: string[] }>;
+        categories: unknown[];
+        mealSlots: unknown[];
+        catalogUsage: Array<{ nameNormalized: string }>;
+        lists: Array<{
+          name: string;
+          members: string[];
+          entries: Array<{ name: string; portions: Array<{ quantity: number | null }> }>;
+        }>;
+      };
+      expect(body.version).toBe(1);
+      expect(body.household.id).toBe(DEFAULT_HOUSEHOLD_ID);
+      expect(body.household.staples).toContain('Salz');
+      expect(body.users).toEqual([
+        expect.objectContaining({ username: 'kathrin', displayName: 'Kathrin' }),
+      ]);
+      expect(body.categories.length).toBeGreaterThan(0);
+      expect(body.mealSlots.length).toBeGreaterThan(0);
+      expect(body.stores).toEqual([expect.objectContaining({ name: 'Biomarkt' })]);
+      expect(body.catalogUsage).toEqual([expect.objectContaining({ nameNormalized: 'milch' })]);
+      const exported = body.lists.find((item) => item.name === 'Wocheneinkauf');
+      expect(exported?.members.length).toBe(1);
+      expect(exported?.entries[0]).toMatchObject({ name: 'Milch' });
+      expect(exported?.entries[0]?.portions[0]).toMatchObject({ quantity: 1 });
+
+      // Nothing secret leaves the server: no hashes, tokens or credentials.
+      const raw = response.body;
+      for (const needle of ['passwordHash', 'tokenHash', 'secret', 'password']) {
+        expect(raw).not.toContain(needle);
+      }
+    });
+
+    it('is hidden from non-members', async () => {
+      const outsider = await createUser(ctx.database, { username: 'drift3', displayName: 'D' });
+      const token = await signAccessToken(TEST_AUTH_SECRET, {
+        userId: outsider.id,
+        isAdmin: false,
+      });
+      const response = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/households/me/export',
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
   describe('staples', () => {
     let headers: { authorization: string };
 

@@ -3,6 +3,7 @@ import type { AuthGuards } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
 import { listHouseholdMemberUsers, updateHouseholdStaples } from '../db/repositories.js';
 import type { Household } from '../db/schema/types.js';
+import { buildHouseholdExport } from '../households/export.js';
 import { getHouseholdForMember } from '../households/service.js';
 import { effectiveStaples, normalizeStaples } from '../households/staples.js';
 
@@ -48,6 +49,22 @@ export function householdRoutes(database: Database, guards: AuthGuards): Fastify
         name: household.name,
         members: await listHouseholdMemberUsers(database, household.id),
       };
+    });
+
+    /**
+     * The backup document (JSON export per household). Any member may pull
+     * it: everything in it is already visible to members through the
+     * regular APIs, and backups should not depend on an admin being around.
+     */
+    app.get('/me/export', async (request, reply) => {
+      const household = await resolve(reply, request.authUser?.id ?? '');
+      if (household === undefined) return reply;
+      const document = await buildHouseholdExport(database, household);
+      reply.header(
+        'content-disposition',
+        `attachment; filename="drauf-export-${document.exportedAt.slice(0, 10)}.json"`,
+      );
+      return document;
     });
 
     /** Staples are deselected by default in the recipe import preview. */

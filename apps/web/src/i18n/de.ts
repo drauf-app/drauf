@@ -101,6 +101,12 @@ export const de = {
     moveUp: 'Nach oben',
     moveDown: 'Nach unten',
   },
+  backup: {
+    title: 'Sicherung',
+    intro:
+      'Lädt alle Daten des Haushalts als JSON-Datei herunter – Listen, Wochenplan, Läden und Einkaufs-Historie. Als Backup neben der Datenbank-Sicherung.',
+    download: 'Export herunterladen',
+  },
   staples: {
     title: 'Grundvorrat',
     intro:

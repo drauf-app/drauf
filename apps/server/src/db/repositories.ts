@@ -312,6 +312,18 @@ export async function listListsForUser(database: Database, userId: string): Prom
   return rows.map((row) => row.list);
 }
 
+/** Every list attached to the household (n:m), archived ones included. */
+export async function listHouseholdLists(database: Database, householdId: string): Promise<List[]> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ list: t.lists })
+    .from(t.listHouseholds)
+    .innerJoin(t.lists, eq(t.listHouseholds.listId, t.lists.id))
+    .where(eq(t.listHouseholds.householdId, householdId))
+    .orderBy(asc(t.lists.createdAt));
+  return rows.map((row) => row.list);
+}
+
 export async function updateList(
   database: Database,
   id: string,
@@ -821,6 +833,19 @@ export async function listPlanEntries(
     .orderBy(asc(t.planEntries.date), asc(t.planEntries.createdAt));
 }
 
+/** The household's whole plan, for the JSON export. */
+export async function listAllPlanEntries(
+  database: Database,
+  householdId: string,
+): Promise<PlanEntry[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.planEntries)
+    .where(eq(t.planEntries.householdId, householdId))
+    .orderBy(asc(t.planEntries.date), asc(t.planEntries.createdAt));
+}
+
 export async function updatePlanEntry(
   database: Database,
   entryId: string,
@@ -972,6 +997,19 @@ export async function recordCatalogUsage(
 }
 
 /** The household's history row for one normalized item name, if any. */
+/** The household's whole shopping history/learning, for the JSON export. */
+export async function listCatalogUsage(
+  database: Database,
+  householdId: string,
+): Promise<CatalogUsage[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.catalogUsage)
+    .where(eq(t.catalogUsage.householdId, householdId))
+    .orderBy(asc(t.catalogUsage.nameNormalized));
+}
+
 export async function getCatalogUsage(
   database: Database,
   householdId: string,
