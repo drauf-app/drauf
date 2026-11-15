@@ -45,6 +45,8 @@ export const households = pgTable(
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     isDefault: boolean('is_default').notNull(),
+    /** JSON array of staple names for the import preselection; null = defaults. */
+    staples: text('staples'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
   },
   (t) => [uniqueIndex('households_one_default_idx').on(t.isDefault).where(sql`${t.isDefault}`)],

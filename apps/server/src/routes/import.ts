@@ -12,24 +12,11 @@ import {
 } from '../db/repositories.js';
 import type { PlanEntry } from '../db/schema/types.js';
 import { getHouseholdForMember } from '../households/service.js';
+import { DEFAULT_STAPLES, stapleSet } from '../households/staples.js';
 import { FetchGuardError, fetchGuarded } from '../import/fetch.js';
 import { addItemToList, type EntryView, getEntryView } from '../lists/items.js';
 import { getListForMember } from '../lists/service.js';
 import { listTopic, planTopic, type SyncHub } from '../sync/hub.js';
-
-/**
- * Staple items deselected by default in the import preview (maintained per
- * household later); matching is on the parsed, lowercased name.
- */
-const DEFAULT_STAPLES = new Set([
-  'wasser',
-  'salz',
-  'pfeffer',
-  'öl',
-  'olivenöl',
-  'zucker',
-  'salz & pfeffer',
-]);
 
 const previewBody = {
   type: 'object',
@@ -145,10 +132,18 @@ export function importRoutes(
         config: { rateLimit: { max: 10, timeWindow: 60_000 } },
       },
       async (request, reply) => {
+        const auth = requireAuthUser(reply, request.authUser);
         const match = matchProvider(providers, request.body.input);
         if (match === undefined) {
           return reply.code(422).send({ error: 'no_provider' });
         }
+        // The household's own staples list drives the preselection (falls
+        // back to the defaults while the household cannot be resolved).
+        const household = await getHouseholdForMember(database, auth.id);
+        const staples =
+          household === undefined
+            ? new Set(DEFAULT_STAPLES.map((name) => name.toLowerCase()))
+            : stapleSet(household);
         try {
           const preview = await match.provider.fetch(match.url, context);
           return {
@@ -162,7 +157,7 @@ export function importRoutes(
               return {
                 raw,
                 ...parsed,
-                isStaple: DEFAULT_STAPLES.has(parsed.name.toLowerCase()),
+                isStaple: staples.has(parsed.name.toLowerCase()),
               };
             }),
           };

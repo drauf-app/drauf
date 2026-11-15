@@ -586,6 +586,37 @@ button:disabled {
   color: var(--error);
 }
 
+/* Staples (import preselection) as a wrapping row of removable pills. */
+.staples {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.staple {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
+.staple button {
+  border: none;
+  background: none;
+  padding: 0 0.3rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

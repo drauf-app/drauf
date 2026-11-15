@@ -57,6 +57,8 @@ export interface Household {
   id: string;
   name: string;
   isDefault: boolean;
+  /** JSON array of staple names for the import preselection; null = defaults. */
+  staples: string | null;
   createdAt: Date;
 }
 
