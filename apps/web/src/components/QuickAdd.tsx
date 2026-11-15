@@ -1,5 +1,12 @@
 import { ENTRY_FLAGS, parseItemLine, splitVariants } from '@drauf/shared';
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { AddEntryInput, PatchEntryInput } from '../api/lists';
 import { fetchSuggestions } from '../api/lists';
 import type { EntryView, Suggestion } from '../api/types';
@@ -288,6 +295,8 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  // Keyboard highlight in the suggestions (combobox-style); -1 = none.
+  const [highlight, setHighlight] = useState(-1);
   const [details, setDetails] = useState<{ entryId: string; suggestion: Suggestion | undefined }>();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const requestSeq = useRef(0);
@@ -309,6 +318,7 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
     setDetails(undefined);
     setValue('');
     setSuggestions([]);
+    setHighlight(-1);
   }
 
   function updateValue(next: string): void {
@@ -318,6 +328,7 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
       setDetails(undefined);
     }
     stopPendingFetch();
+    setHighlight(-1);
     const query = next.trim();
     if (query === '') {
       setSuggestions([]);
@@ -329,11 +340,13 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
         .then((result) => {
           if (requestSeq.current === seq) {
             setSuggestions(result);
+            setHighlight(-1);
           }
         })
         .catch(() => {
           if (requestSeq.current === seq) {
             setSuggestions([]);
+            setHighlight(-1);
           }
         });
     }, SUGGEST_DEBOUNCE_MS);
@@ -343,6 +356,7 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
     stopPendingFetch();
     setValue('');
     setSuggestions([]);
+    setHighlight(-1);
     const entry = await onAdd(input);
     if (entry !== undefined) {
       setDetails({ entryId: entry.id, suggestion });
@@ -377,6 +391,50 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
   }
 
   const showDetails = open && detailsEntry !== undefined;
+  const suggesting = open && !showDetails && suggestions.length > 0;
+
+  // Keep the highlighted tile in view when the suggestion grid scrolls.
+  useEffect(() => {
+    if (highlight < 0) {
+      return;
+    }
+    const option = document.getElementById(`quick-add-option-${highlight}`);
+    if (option !== null && typeof option.scrollIntoView === 'function') {
+      option.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlight]);
+
+  /**
+   * Combobox-style keyboard access (focus stays in the input): Up/Down move
+   * the highlight through the tiles, Enter adds the highlighted suggestion.
+   * Left/Right stay untouched so the caret keeps working. Without a
+   * highlight, Enter falls through to the free-text submit.
+   */
+  function onKeyDown(event: ReactKeyboardEvent<HTMLInputElement>): void {
+    if (!open) {
+      return;
+    }
+    if (event.key === 'ArrowDown' && suggesting) {
+      event.preventDefault();
+      setHighlight((current) => (current + 1) % suggestions.length);
+    } else if (event.key === 'ArrowUp' && suggesting) {
+      event.preventDefault();
+      setHighlight((current) => (current <= 0 ? suggestions.length - 1 : current - 1));
+    } else if (event.key === 'Enter' && suggesting && highlight >= 0) {
+      event.preventDefault();
+      const suggestion = suggestions[highlight];
+      if (suggestion !== undefined) {
+        void pick(suggestion);
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      if (suggesting && highlight >= 0) {
+        setHighlight(-1);
+      } else {
+        close();
+      }
+    }
+  }
 
   return (
     <>
@@ -397,19 +455,29 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
             onPatch={onPatch}
           />
         )}
-        {open && !showDetails && suggestions.length > 0 && (
-          <ul className="suggestion-tiles">
-            {suggestions.map((suggestion) => (
-              <li key={suggestion.name}>
-                <button type="button" onClick={() => void pick(suggestion)}>
-                  <span className="tile-icon">
-                    {suggestion.icon !== null ? <ItemIcon icon={suggestion.icon} /> : ''}
-                  </span>
-                  <span className="tile-name">{suggestion.name}</span>
-                </button>
-              </li>
+        {suggesting && (
+          <div
+            className="suggestion-tiles"
+            id="quick-add-suggestions"
+            role="listbox"
+            aria-label={t.quickAdd.suggestions}
+          >
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={suggestion.name}
+                type="button"
+                role="option"
+                id={`quick-add-option-${index}`}
+                aria-selected={index === highlight}
+                onClick={() => void pick(suggestion)}
+              >
+                <span className="tile-icon">
+                  {suggestion.icon !== null ? <ItemIcon icon={suggestion.icon} /> : ''}
+                </span>
+                <span className="tile-name">{suggestion.name}</span>
+              </button>
             ))}
-          </ul>
+          </div>
         )}
         <form className="quick-add-form" onSubmit={(event) => void submitFreeText(event)}>
           <input
@@ -419,8 +487,16 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
             placeholder={showDetails ? t.quickAdd.nextArticle : t.quickAdd.placeholder}
             aria-label={showDetails ? t.quickAdd.nextArticle : t.quickAdd.placeholder}
             autoComplete="off"
+            role="combobox"
+            aria-expanded={suggesting}
+            aria-controls="quick-add-suggestions"
+            aria-autocomplete="list"
+            aria-activedescendant={
+              suggesting && highlight >= 0 ? `quick-add-option-${highlight}` : undefined
+            }
             onFocus={() => setOpen(true)}
             onChange={(event) => updateValue(event.target.value)}
+            onKeyDown={onKeyDown}
           />
           <button type="submit" className="primary">
             {t.quickAdd.add}
