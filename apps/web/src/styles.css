@@ -1190,7 +1190,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  padding-bottom: 0.6rem;
+  /* Inline padding keeps focus rings inside this scroll container visible. */
+  padding: 3px 3px 0.6rem;
   max-height: 55dvh;
   overflow-y: auto;
 }
