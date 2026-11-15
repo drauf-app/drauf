@@ -93,6 +93,16 @@ export const de = {
     moveUp: 'Nach oben',
     moveDown: 'Nach unten',
   },
+  staples: {
+    title: 'Grundvorrat',
+    intro:
+      'Zutaten im Grundvorrat werden beim Rezept-Import nicht vorausgewählt – zum Beispiel Salz oder Öl, das ihr ohnehin im Haus habt.',
+    empty: 'Keine Zutaten im Grundvorrat.',
+    newStaple: 'Zutat für den Grundvorrat',
+    add: 'Hinzufügen',
+    remove: 'Entfernen',
+    reset: 'Standard wiederherstellen',
+  },
   quickAdd: {
     placeholder: 'Was brauchst du?',
     nextArticle: 'Nächster Artikel …',

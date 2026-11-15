@@ -42,6 +42,8 @@ export const households = sqliteTable(
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     isDefault: integer('is_default', { mode: 'boolean' }).notNull(),
+    /** JSON array of staple names for the import preselection; null = defaults. */
+    staples: text('staples'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (t) => [uniqueIndex('households_one_default_idx').on(t.isDefault).where(sql`${t.isDefault}`)],

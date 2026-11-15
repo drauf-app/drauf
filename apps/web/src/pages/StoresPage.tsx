@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { fetchStaples, type HouseholdStaples, resetStaples, saveStaples } from '../api/households';
 import { fetchCategories } from '../api/lists';
 import {
   createStore,
@@ -230,6 +231,96 @@ function StoreEditDialog({ store, categories, onChanged, onError, onClose }: Sto
   );
 }
 
+/**
+ * The household's staples (salt, oil, …): ingredients the recipe import
+ * does not preselect. Editing always saves the full list; removing the
+ * custom list brings the defaults back.
+ */
+function StaplesSection() {
+  const t = useT();
+  const [data, setData] = useState<HouseholdStaples>();
+  const [error, setError] = useState(false);
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchStaples()
+      .then((result) => {
+        if (!cancelled) setData(result);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function run(action: () => Promise<HouseholdStaples>): void {
+    setError(false);
+    action()
+      .then(setData)
+      .catch(() => setError(true));
+  }
+
+  function onAdd(event: FormEvent): void {
+    event.preventDefault();
+    const trimmed = name.trim();
+    if (trimmed === '' || data === undefined) {
+      return;
+    }
+    setName('');
+    run(() => saveStaples([...data.staples, trimmed]));
+  }
+
+  return (
+    <>
+      <h2>{t.staples.title}</h2>
+      <p className="placeholder">{t.staples.intro}</p>
+      {data === undefined ? (
+        <p className="placeholder">{error ? t.common.error : t.common.loading}</p>
+      ) : (
+        <>
+          {data.staples.length === 0 && <p className="placeholder">{t.staples.empty}</p>}
+          <ul className="staples">
+            {data.staples.map((staple) => (
+              <li key={staple} className="staple">
+                {staple}
+                <button
+                  type="button"
+                  aria-label={`${t.staples.remove}: ${staple}`}
+                  onClick={() => run(() => saveStaples(data.staples.filter((s) => s !== staple)))}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+          <form className="create-list" onSubmit={onAdd}>
+            <input
+              type="text"
+              value={name}
+              maxLength={100}
+              placeholder={t.staples.newStaple}
+              aria-label={t.staples.newStaple}
+              onChange={(event) => setName(event.target.value)}
+            />
+            <button type="submit" className="primary">
+              {t.staples.add}
+            </button>
+            {data.custom && (
+              <button type="button" onClick={() => run(resetStaples)}>
+                {t.staples.reset}
+              </button>
+            )}
+          </form>
+          {error && <p className="error">{t.common.error}</p>}
+        </>
+      )}
+    </>
+  );
+}
+
 export function StoresPage() {
   const t = useT();
   const [stores, setStores] = useState<StoreWithOrder[]>();
@@ -358,6 +449,7 @@ export function StoresPage() {
         </button>
       </form>
       {error && <p className="error">{t.common.error}</p>}
+      <StaplesSection />
       {editingStore !== undefined && (
         <StoreEditDialog
           store={editingStore}

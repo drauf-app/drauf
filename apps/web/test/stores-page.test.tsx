@@ -22,6 +22,8 @@ function store(overrides: Partial<StoreWithOrder> = {}): StoreWithOrder {
   };
 }
 
+const DEFAULT_STAPLES = { staples: ['Salz', 'Öl'], custom: false };
+
 describe('StoresPage', () => {
   it('shows compact rows with an order hint and disables reset on default order', async () => {
     stubFetch((url) => {
@@ -31,6 +33,7 @@ describe('StoresPage', () => {
           store({ id: 's2', name: 'Biomarkt', categoryOrder: ['c2'] }),
         ]);
       if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/households/staples') return fakeResponse(200, DEFAULT_STAPLES);
       return undefined;
     });
     render(<StoresPage />);
@@ -53,6 +56,7 @@ describe('StoresPage', () => {
       if (url === '/api/stores' && method === 'GET')
         return fakeResponse(200, [store({ categoryOrder: ['c2'] })]);
       if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/households/staples') return fakeResponse(200, DEFAULT_STAPLES);
       if (url === '/api/stores/s1/category-order' && method === 'PUT') {
         puts.push(String(init?.body));
         return fakeResponse(200, store({ categoryOrder: ['c2', 'c1', 'c3'] }));
@@ -81,6 +85,7 @@ describe('StoresPage', () => {
       if (url === '/api/stores' && method === 'GET')
         return fakeResponse(200, [store({ categoryOrder: ['c2', 'c1'] })]);
       if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/households/staples') return fakeResponse(200, DEFAULT_STAPLES);
       if (url === '/api/stores/s1/category-order' && method === 'PUT') {
         puts.push(String(init?.body));
         return fakeResponse(200, store({ categoryOrder: [] }));
@@ -101,6 +106,7 @@ describe('StoresPage', () => {
       const method = init?.method ?? 'GET';
       if (url === '/api/stores' && method === 'GET') return fakeResponse(200, [store()]);
       if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/households/staples') return fakeResponse(200, DEFAULT_STAPLES);
       if (url === '/api/stores/s1' && method === 'PATCH') {
         patches.push(String(init?.body));
         return fakeResponse(200, store({ name: 'Supermarkt West' }));
@@ -127,6 +133,7 @@ describe('StoresPage', () => {
       const method = init?.method ?? 'GET';
       if (url === '/api/stores' && method === 'GET') return fakeResponse(200, []);
       if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/households/staples') return fakeResponse(200, DEFAULT_STAPLES);
       if (url === '/api/stores' && method === 'POST') {
         posted.push(String(init?.body));
         return fakeResponse(201, store({ id: 's9', name: 'Biomarkt' }));
@@ -141,5 +148,59 @@ describe('StoresPage', () => {
 
     expect(await screen.findByText('Biomarkt')).toBeDefined();
     expect(JSON.parse(posted[0] ?? '{}')).toEqual({ name: 'Biomarkt' });
+  });
+
+  describe('staples section', () => {
+    it('lists the staples and saves the full list on add and remove', async () => {
+      const puts: string[] = [];
+      stubFetch((url, init) => {
+        const method = init?.method ?? 'GET';
+        if (url === '/api/stores') return fakeResponse(200, []);
+        if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+        if (url === '/api/households/staples' && method === 'GET')
+          return fakeResponse(200, DEFAULT_STAPLES);
+        if (url === '/api/households/staples' && method === 'PUT') {
+          puts.push(String(init?.body));
+          const { staples } = JSON.parse(String(init?.body)) as { staples: string[] };
+          return fakeResponse(200, { staples, custom: true });
+        }
+        return undefined;
+      });
+      render(<StoresPage />);
+      const user = userEvent.setup();
+
+      expect(await screen.findByText('Salz')).toBeDefined();
+      await user.type(screen.getByLabelText('Zutat für den Grundvorrat'), 'Brühwürfel');
+      await user.click(screen.getByRole('button', { name: 'Hinzufügen' }));
+      expect(await screen.findByText('Brühwürfel')).toBeDefined();
+      expect(JSON.parse(puts[0] ?? '{}')).toEqual({ staples: ['Salz', 'Öl', 'Brühwürfel'] });
+
+      await user.click(screen.getByRole('button', { name: 'Entfernen: Salz' }));
+      expect(JSON.parse(puts[1] ?? '{}')).toEqual({ staples: ['Öl', 'Brühwürfel'] });
+      expect(screen.queryByText('Salz')).toBeNull();
+    });
+
+    it('offers a reset back to the defaults once the list is custom', async () => {
+      let deleted = 0;
+      stubFetch((url, init) => {
+        const method = init?.method ?? 'GET';
+        if (url === '/api/stores') return fakeResponse(200, []);
+        if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+        if (url === '/api/households/staples' && method === 'GET')
+          return fakeResponse(200, { staples: ['Brühwürfel'], custom: true });
+        if (url === '/api/households/staples' && method === 'DELETE') {
+          deleted += 1;
+          return fakeResponse(200, DEFAULT_STAPLES);
+        }
+        return undefined;
+      });
+      render(<StoresPage />);
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole('button', { name: 'Standard wiederherstellen' }));
+      expect(deleted).toBe(1);
+      expect(await screen.findByText('Salz')).toBeDefined();
+      expect(screen.queryByRole('button', { name: 'Standard wiederherstellen' })).toBeNull();
+    });
   });
 });

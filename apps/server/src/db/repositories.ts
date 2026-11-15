@@ -145,10 +145,24 @@ export async function createHousehold(
     id: input.id ?? newId(),
     name: input.name,
     isDefault: input.isDefault,
+    staples: null,
     createdAt: new Date(),
   };
   await db.insert(t.households).values(household);
   return household;
+}
+
+/** Saves the household's staples list as JSON; null restores the defaults. */
+export async function updateHouseholdStaples(
+  database: Database,
+  householdId: string,
+  staples: string[] | null,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.households)
+    .set({ staples: staples === null ? null : JSON.stringify(staples) })
+    .where(eq(t.households.id, householdId));
 }
 
 export async function getDefaultHousehold(database: Database): Promise<Household | undefined> {

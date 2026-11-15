@@ -91,6 +91,34 @@ describe('recipe import', () => {
     ]);
   });
 
+  it('marks staples from the household list once one is saved', async () => {
+    // Tomaten become a staple, Salz stops being one.
+    const put = await ctx.app.inject({
+      method: 'PUT',
+      url: '/api/households/staples',
+      headers: as(christian),
+      payload: { staples: ['Tomaten', 'Öl'] },
+    });
+    expect(put.statusCode).toBe(200);
+
+    const response = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/import/preview',
+      headers: as(christian),
+      payload: { input: 'https://fake.example/r/1' },
+    });
+    expect(response.statusCode).toBe(200);
+    const preview = response.json() as {
+      ingredients: Array<{ name: string; isStaple: boolean }>;
+    };
+    expect(preview.ingredients.map(({ name, isStaple }) => ({ name, isStaple }))).toEqual([
+      { name: 'Tomaten', isStaple: true },
+      { name: 'Zwiebel', isStaple: false },
+      { name: 'Salz', isStaple: false },
+      { name: 'Öl', isStaple: true },
+    ]);
+  });
+
   it('answers 422 when no provider matches', async () => {
     const response = await ctx.app.inject({
       method: 'POST',
