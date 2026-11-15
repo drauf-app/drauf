@@ -8,6 +8,7 @@ import {
   isCategoryLinkedToList,
   isOperationApplied,
   markOperationApplied,
+  recordCatalogNote,
   recordCatalogVariant,
   setEntryChecked,
   updateListEntry,
@@ -267,11 +268,16 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
   }
   patch.fieldTimes = stampFieldTimes(entry.fieldTimes, stamped, ctx.effectiveTime);
   await updateListEntry(ctx.database, entry.id, patch);
-  if (typeof patch.variant === 'string') {
-    // Custom chips learn from every applied variant, also on offline replay.
+  if (typeof patch.variant === 'string' || typeof patch.note === 'string') {
+    // Applied variants and notes feed the suggestions, also on offline replay.
     const householdId = await getListHouseholdId(ctx.database, entry.listId);
     if (householdId !== undefined) {
-      await recordCatalogVariant(ctx.database, householdId, entry.nameNormalized, patch.variant);
+      if (typeof patch.variant === 'string') {
+        await recordCatalogVariant(ctx.database, householdId, entry.nameNormalized, patch.variant);
+      }
+      if (typeof patch.note === 'string') {
+        await recordCatalogNote(ctx.database, householdId, entry.nameNormalized, patch.note);
+      }
     }
   }
   await publishEntry(ctx, 'entry.updated', { ...entry, ...patch });

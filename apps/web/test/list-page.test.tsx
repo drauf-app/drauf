@@ -69,6 +69,7 @@ const SUGGESTION: Suggestion = {
   lastQuantity: 500,
   lastUnit: 'g',
   lastVariant: null,
+  lastNote: 'al dente',
 };
 
 interface StubOptions {
@@ -359,6 +360,36 @@ describe('entry editing', () => {
 
     expect(patched).toHaveLength(0);
     expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+});
+
+describe('notes', () => {
+  it('shows the note on tiles and offers the last note in the drawer', async () => {
+    const patched: string[] = [];
+    stubListApi({
+      entries: [entryView({ icon: '🥛', note: 'die gute' })],
+      onEntryPost: () =>
+        entryView({ id: 'e8', name: 'Nudeln', nameNormalized: 'nudeln', note: null }),
+      onEntryPatch: (_url, body) => {
+        patched.push(body);
+        return entryView({ id: 'e8', name: 'Nudeln', nameNormalized: 'nudeln', note: 'al dente' });
+      },
+    });
+    localStorage.setItem('drauf.list-view', 'tiles');
+    renderListPage();
+    const user = userEvent.setup();
+
+    expect(await screen.findByText(/die gute/)).toBeDefined();
+
+    await user.type(screen.getByLabelText('Was brauchst du?'), 'nud');
+    await user.click(await screen.findByRole('button', { name: /Nudeln/ }));
+
+    const pill = await screen.findByRole('button', { name: /Letzte Notiz.*al dente/ });
+    await user.click(pill);
+    expect(JSON.parse(patched[0] ?? '{}')).toEqual({ note: 'al dente' });
+    // Once the entry has a note, the pill disappears and the note shows.
+    expect(screen.queryByRole('button', { name: /Letzte Notiz/ })).toBeNull();
+    expect(await screen.findByText(/al dente/, { selector: '.drawer-note' })).toBeDefined();
   });
 });
 

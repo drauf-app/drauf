@@ -238,6 +238,7 @@ function suite(getDb: () => Database) {
       unit: 'Stück',
       count: null,
       variant: null,
+      note: null,
       categoryId: null,
     };
     await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, base);
@@ -278,6 +279,7 @@ function suite(getDb: () => Database) {
       quantity: null,
       unit: null,
       count: null,
+      note: null,
       categoryId: null,
     };
     await recordCatalogUsage(database, DEFAULT_HOUSEHOLD_ID, { ...base, variant: 'rot' });
