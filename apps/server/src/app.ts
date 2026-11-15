@@ -6,6 +6,8 @@ import websocket from '@fastify/websocket';
 import { type FastifyInstance, fastify } from 'fastify';
 import { createAuthGuards } from './auth/guard.js';
 import { createOidcService } from './auth/oidc.js';
+import { type Categorizer, createCategorizer } from './categorize/index.js';
+import { createCategorizeService } from './categorize/service.js';
 import type { Config } from './config.js';
 import type { Database } from './db/index.js';
 import { fetchGuarded } from './import/fetch.js';
@@ -31,6 +33,8 @@ export interface BuildAppOptions {
   catalog?: CatalogItem[];
   /** Test seam: replaces the SSRF-guarded page fetcher handed to providers. */
   providerContext?: ProviderContext;
+  /** Test seam: injects an LLM categorizer without network or config. */
+  categorizer?: Categorizer;
 }
 
 export async function buildApp(
@@ -79,24 +83,38 @@ export async function buildApp(
     },
   };
 
+  const categorizer = options.categorizer ?? createCategorizer(config.categorize);
+  const categorize =
+    categorizer === undefined
+      ? undefined
+      : createCategorizeService({
+          database,
+          hub,
+          categorizer,
+          catalog: catalogIndex,
+          log: app.log,
+        });
+
   await app.register(authRoutes(database, config, guards), { prefix: '/api/auth' });
   await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
   await app.register(userRoutes(database, guards), { prefix: '/api/users' });
   await app.register(householdRoutes(database, guards), { prefix: '/api/households' });
   await app.register(listRoutes(database, guards, hub, catalogIndex), { prefix: '/api/lists' });
-  await app.register(entryRoutes(database, guards, hub, catalogIndex), { prefix: '/api/lists' });
+  await app.register(entryRoutes(database, guards, hub, catalogIndex, categorize), {
+    prefix: '/api/lists',
+  });
   await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
   await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
   await app.register(planRoutes(database, guards, hub, providers, providerContext), {
     prefix: '/api/plan',
   });
   await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
-  await app.register(syncRoutes(database, config, guards, hub, catalogIndex), {
+  await app.register(syncRoutes(database, config, guards, hub, catalogIndex, categorize), {
     prefix: '/api/sync',
   });
 
   await app.register(
-    importRoutes(database, guards, hub, providers, providerContext, catalogIndex),
+    importRoutes(database, guards, hub, providers, providerContext, catalogIndex, categorize),
     {
       prefix: '/api/import',
     },

@@ -1,5 +1,6 @@
 import type { CatalogIndex } from '@drauf/catalog';
 import { ENTRY_FLAGS, splitVariants } from '@drauf/shared';
+import type { CategorizeService } from '../categorize/service.js';
 import type { Database } from '../db/index.js';
 import {
   deleteListEntry,
@@ -105,6 +106,7 @@ interface Context {
   userId: string;
   effectiveTime: number;
   catalog: CatalogIndex | undefined;
+  categorize: CategorizeService | undefined;
 }
 
 function optionalCount(value: unknown): number | null {
@@ -181,6 +183,10 @@ async function applyAdd(ctx: Context, data: Record<string, unknown>): Promise<Sy
     ctx.catalog,
   );
   await publishEntry(ctx, merged ? 'entry.updated' : 'entry.created', entry);
+  if (entry.categoryId === null) {
+    // Optional third guessing tier, out-of-band (#22).
+    void ctx.categorize?.schedule(entry);
+  }
   return { id: '', status: 'applied', entryId: entry.id };
 }
 
@@ -366,6 +372,7 @@ export async function applyOperations(
   userId: string,
   operations: SyncOperation[],
   catalog?: CatalogIndex,
+  categorize?: CategorizeService,
 ): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
   for (const operation of operations) {
@@ -379,6 +386,7 @@ export async function applyOperations(
       hub,
       userId,
       catalog,
+      categorize,
       effectiveTime: Math.min(Number.isNaN(clientTime) ? Date.now() : clientTime, Date.now()),
     };
     let result: SyncResult;

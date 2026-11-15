@@ -17,6 +17,7 @@ describe('loadConfig', () => {
       oidc: undefined,
       disabledProviders: [],
       webDir: '../web/dist',
+      categorize: undefined,
     });
   });
 
@@ -34,6 +35,30 @@ describe('loadConfig', () => {
       logLevel: 'debug',
       localLoginEnabled: false,
     });
+  });
+
+  it('resolves the optional LLM categorizer config', () => {
+    expect(loadConfig({ ...BASE_ENV }).categorize).toBeUndefined();
+    expect(
+      loadConfig({ ...BASE_ENV, CATEGORIZE_LLM: 'anthropic', ANTHROPIC_API_KEY: 'k' }).categorize,
+    ).toEqual({ provider: 'anthropic', apiKey: 'k', model: 'claude-opus-5-5' });
+    expect(() => loadConfig({ ...BASE_ENV, CATEGORIZE_LLM: 'anthropic' })).toThrow(
+      /ANTHROPIC_API_KEY/,
+    );
+    expect(
+      loadConfig({
+        ...BASE_ENV,
+        CATEGORIZE_LLM: 'openai',
+        CATEGORIZE_BASE_URL: 'http://ollama:11434/v1/',
+        CATEGORIZE_MODEL: 'qwen3:8b',
+      }).categorize,
+    ).toEqual({
+      provider: 'openai',
+      baseUrl: 'http://ollama:11434/v1',
+      apiKey: undefined,
+      model: 'qwen3:8b',
+    });
+    expect(() => loadConfig({ ...BASE_ENV, CATEGORIZE_LLM: 'openai' })).toThrow(/CATEGORIZE_MODEL/);
   });
 
   it('requires AUTH_SECRET', () => {

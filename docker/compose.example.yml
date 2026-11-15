@@ -27,6 +27,14 @@ services:
       # OIDC_ADMIN_GROUP: "drauf-admin"   # members of this IdP group become admins
       # Turn off individual recipe providers (comma-separated ids):
       # IMPORT_DISABLED_PROVIDERS: "cookidoo"
+      # Optional LLM category guessing for unknown items — off by default.
+      # Enabling it sends item names to the configured provider (or keeps
+      # them on-site with a locally hosted OpenAI-compatible model):
+      # CATEGORIZE_LLM: "anthropic"            # or "openai"
+      # ANTHROPIC_API_KEY: "sk-ant-..."         # for CATEGORIZE_LLM=anthropic
+      # CATEGORIZE_MODEL: "claude-haiku-5-5"    # default: claude-opus-5-5
+      # CATEGORIZE_BASE_URL: "http://ollama:11434/v1"  # for CATEGORIZE_LLM=openai
+      # CATEGORIZE_API_KEY: ""                  # openai endpoints; empty for local models
       # DATABASE_URL: "postgres://drauf:change-me@db:5432/drauf"
     ports:
       - "3000:3000"

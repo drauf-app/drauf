@@ -2,6 +2,7 @@ import type { CatalogIndex } from '@drauf/catalog';
 import { ENTRY_FLAGS, joinVariants, splitVariants } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
+import type { CategorizeService } from '../categorize/service.js';
 import type { Database } from '../db/index.js';
 import {
   deleteListEntry,
@@ -113,6 +114,7 @@ export function entryRoutes(
   guards: AuthGuards,
   hub: SyncHub,
   catalog: CatalogIndex,
+  categorize: CategorizeService | undefined,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
@@ -173,6 +175,10 @@ export function entryRoutes(
           type: merged ? 'entry.updated' : 'entry.created',
           data: view,
         });
+        if (entry.categoryId === null) {
+          // Optional third guessing tier, out-of-band of the add (#22).
+          void categorize?.schedule(entry);
+        }
         return reply.code(merged ? 200 : 201).send(view);
       },
     );

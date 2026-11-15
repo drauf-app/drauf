@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import { verifyAccessToken } from '../auth/tokens.js';
+import type { CategorizeService } from '../categorize/service.js';
 import type { Config } from '../config.js';
 import type { Database } from '../db/index.js';
 import { getHouseholdForMember } from '../households/service.js';
@@ -53,6 +54,7 @@ export function syncRoutes(
   guards: AuthGuards,
   hub: SyncHub,
   catalog: CatalogIndex,
+  categorize: CategorizeService | undefined,
 ): FastifyPluginAsync {
   return async (app) => {
     app.post<{ Body: OperationsInput }>(
@@ -69,6 +71,7 @@ export function syncRoutes(
           auth.id,
           request.body.operations,
           catalog,
+          categorize,
         );
         return { results };
       },

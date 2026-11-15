@@ -110,6 +110,24 @@ catalogue), drawn in the text colour so they follow light and dark mode and
 look the same on every device; `apps/web/scripts/fetch-openmoji.mjs`
 refreshes the assets when catalogue icons change.
 
+Items without a category are guessed deterministically (history, then the
+catalogue). An **optional** third tier asks a language model — off by
+default, enabled only by explicit configuration, and only for names the
+first two tiers could not place. **Enabling it sends item names to the
+configured provider** — or keeps them on-site with a locally hosted model.
+Each name is asked at most once (the answer is remembered per household),
+errors never block adding, and a manual correction always wins.
+
+```bash
+# Anthropic (Claude) — model optional, defaults to claude-opus-5-5;
+# claude-haiku-5-5 is the economical choice for this small task.
+CATEGORIZE_LLM=anthropic ANTHROPIC_API_KEY=sk-ant-… CATEGORIZE_MODEL=claude-haiku-5-5
+
+# Any OpenAI-compatible endpoint — including local models via Ollama,
+# LM Studio or vLLM (same API, no key needed):
+CATEGORIZE_LLM=openai CATEGORIZE_BASE_URL=http://ollama:11434/v1 CATEGORIZE_MODEL=qwen3:8b
+```
+
 Recipe providers live in `packages/providers` (one folder per provider;
 Cookidoo is the first). They run server-side only, fetch public addresses
 only, and store nothing beyond title, link, image URL and the imported
