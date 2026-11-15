@@ -3,7 +3,7 @@
 Self-hosted shopping lists and weekly meal planning for households.
 Add items in seconds, share lists in real time, keep your data on your own server.
 
-> **Status:** early development. Nothing to install yet.
+> **Status:** early development, moving fast. Installable, but expect rough edges.
 
 ## What it will do
 
@@ -28,6 +28,26 @@ Add items in seconds, share lists in real time, keep your data on your own serve
 | ------------- | ------------------------------------------------------------- |
 | Web app (PWA) | Served by the server image                                    |
 | iOS app       | [drauf-app/drauf-ios](https://github.com/drauf-app/drauf-ios) |
+
+## Run it
+
+Every push to `main` publishes `ghcr.io/drauf-app/drauf` (tags: `latest`,
+`sha-<commit>`, and the version on releases) for amd64 and arm64. While this
+repository is private, pulling needs a `docker login ghcr.io` with a token
+that has `read:packages`.
+
+```bash
+curl -O https://raw.githubusercontent.com/drauf-app/drauf/main/docker/compose.example.yml
+mv compose.example.yml compose.yml   # then edit: set AUTH_SECRET at least
+docker compose up -d
+docker compose exec drauf node dist/cli/create-user.js --admin alice
+```
+
+The app listens on port 3000; put the reverse proxy of your choice in front
+for TLS. Data lives in the `/data` volume (SQLite) unless `DATABASE_URL`
+points at PostgreSQL — the compose example documents all variables, and
+migrations run automatically on startup. Back up the volume or database dump
+together with the JSON export from the web app's Läden page.
 
 ## Language
 
