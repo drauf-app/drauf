@@ -62,6 +62,7 @@ export const OPENMOJI_HEXES: ReadonlySet<string> = new Set([
   '1F4A1',
   '1F4A7',
   '1F4C4',
+  '1F4DD',
   '1F4EE',
   '1F50B',
   '1F525',
