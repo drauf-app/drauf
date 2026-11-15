@@ -1,12 +1,15 @@
-# Example Compose setup. Run TLS termination with the reverse proxy of your choice.
+# Example Compose setup. Run TLS termination with the reverse proxy of your
+# choice; this stack only maps a plain port.
 #
 # Without DATABASE_URL the server stores its data in an SQLite file under /data.
 # To use PostgreSQL instead, uncomment the db service and DATABASE_URL below.
 services:
   drauf:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/drauf-app/drauf:latest
+    # To build from a checkout instead:
+    # build:
+    #   context: ..
+    #   dockerfile: docker/Dockerfile
     restart: unless-stopped
     environment:
       HOST: "0.0.0.0"
