@@ -21,6 +21,8 @@ export interface PatchEntryInput {
   flags?: string;
   note?: string;
   categoryId?: string;
+  /** Household item icon; '' goes back to the catalogue match. */
+  icon?: string;
 }
 
 export function fetchLists(): Promise<List[]> {

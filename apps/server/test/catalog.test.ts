@@ -186,6 +186,18 @@ describe('catalog suggestions', () => {
     expect(suggestions[0]?.categoryId).toBe(bakery);
   });
 
+  it('prefers a picked icon over the catalogue one in suggestions (#43)', async () => {
+    const entry = await addItem({ name: 'Nudeln' });
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${entry.id}`,
+      headers: as(christian),
+      payload: { icon: '🥨' },
+    });
+    const suggestions = await suggest('nudeln');
+    expect(suggestions[0]).toMatchObject({ name: 'Nudeln', source: 'history', icon: '🥨' });
+  });
+
   it('respects the limit', async () => {
     const suggestions = await suggest('n', 1);
     expect(suggestions).toHaveLength(1);

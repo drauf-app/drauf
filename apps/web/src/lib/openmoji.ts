@@ -14,3 +14,8 @@ export function openMojiUrl(emoji: string): string | undefined {
   const hex = emojiToHex(emoji);
   return OPENMOJI_HEXES.has(hex) ? `/openmoji/${hex}.svg` : undefined;
 }
+
+/** Every bundled icon as its emoji character, for the icon picker. */
+export const BUNDLED_EMOJIS: readonly string[] = [...OPENMOJI_HEXES].map((hex) =>
+  String.fromCodePoint(...hex.split('-').map((part) => Number.parseInt(part, 16))),
+);

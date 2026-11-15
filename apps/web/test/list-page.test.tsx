@@ -405,6 +405,32 @@ describe('entry editing', () => {
     expect(screen.queryByLabelText('Name')).toBeNull();
   });
 
+  it('picks an item icon from the bundled set and sends it with the patch', async () => {
+    const patched: string[] = [];
+    stubListApi({
+      onEntryPatch: (_url, body) => {
+        patched.push(body);
+        return entryView({ icon: '🥛' });
+      },
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten: Milch' }));
+    // No icon override yet: the toggle reads "Automatisch".
+    const toggle = screen.getByRole('button', { name: 'Icon wählen' });
+    expect(toggle.textContent).toBe('Automatisch');
+
+    await user.click(toggle);
+    await user.click(screen.getByRole('button', { name: '🥛' }));
+    // Picking closes the grid and shows the choice on the toggle.
+    expect(screen.queryByRole('button', { name: '🥛' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    expect(patched).toHaveLength(1);
+    expect(JSON.parse(patched[0] ?? '{}')).toEqual({ icon: '🥛' });
+  });
+
   it('queues the edit as an offline operation when the server is unreachable', async () => {
     stubListApi(); // no PATCH handler: the request fails like a network error
     renderListPage();

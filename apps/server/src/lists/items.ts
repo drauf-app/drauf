@@ -6,6 +6,7 @@ import {
   createListEntry,
   deletePortionsForEntry,
   findMergeableEntry,
+  getCatalogIcons,
   getCatalogUsage,
   getListHouseholdId,
   listCategories,
@@ -43,6 +44,7 @@ export function buildEntryView(
   entry: ListEntry,
   portions: EntryPortion[],
   catalog?: CatalogIndex,
+  icons?: ReadonlyMap<string, string>,
 ): EntryView {
   const groups = new Map<string | null, { sum: number; portions: EntryPortion[] }>();
   for (const portion of portions) {
@@ -68,7 +70,18 @@ export function buildEntryView(
     }
     return { unit, quantity: group.sum };
   });
-  return { ...entry, quantities, portions, icon: catalog?.match(entry.name)?.icon ?? null };
+  // The household's picked icon wins over the catalogue matcher (#43).
+  const icon = icons?.get(entry.nameNormalized) ?? catalog?.match(entry.name)?.icon ?? null;
+  return { ...entry, quantities, portions, icon };
+}
+
+/** The household's icon overrides for a list, for building its entry views. */
+async function iconsForList(
+  database: Database,
+  listId: string,
+): Promise<Map<string, string> | undefined> {
+  const householdId = await getListHouseholdId(database, listId);
+  return householdId === undefined ? undefined : getCatalogIcons(database, householdId);
 }
 
 export interface AddItemInput {
@@ -198,6 +211,7 @@ export async function getEntryViews(
     database,
     entries.map((entry) => entry.id),
   );
+  const icons = await iconsForList(database, listId);
   const byEntry = new Map<string, EntryPortion[]>();
   for (const portion of portions) {
     const group = byEntry.get(portion.entryId);
@@ -207,7 +221,7 @@ export async function getEntryViews(
       group.push(portion);
     }
   }
-  return entries.map((entry) => buildEntryView(entry, byEntry.get(entry.id) ?? [], catalog));
+  return entries.map((entry) => buildEntryView(entry, byEntry.get(entry.id) ?? [], catalog, icons));
 }
 
 export async function getEntryView(
@@ -215,7 +229,8 @@ export async function getEntryView(
   entry: ListEntry,
   catalog?: CatalogIndex,
 ): Promise<EntryView> {
-  return buildEntryView(entry, await listPortionsForEntries(database, [entry.id]), catalog);
+  const icons = await iconsForList(database, entry.listId);
+  return buildEntryView(entry, await listPortionsForEntries(database, [entry.id]), catalog, icons);
 }
 
 /** An explicit amount edit replaces all portions with one manual portion. */

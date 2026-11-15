@@ -11,6 +11,7 @@ import {
   recordCatalogNote,
   recordCatalogVariant,
   setCatalogUsageCategory,
+  setCatalogUsageIcon,
   setEntryChecked,
   updateListEntry,
 } from '../db/repositories.js';
@@ -52,6 +53,8 @@ const patchBody = {
     flags: { type: 'string', maxLength: 128 },
     note: { type: 'string', maxLength: 500 },
     categoryId: { type: 'string', maxLength: 64 },
+    /** Household item icon ('' = back to the catalogue match), not an entry field. */
+    icon: { type: 'string', maxLength: 16 },
   },
   additionalProperties: false,
 } as const;
@@ -84,6 +87,8 @@ interface AddInput {
 interface PatchInput extends Partial<AddInput> {
   /** Comma list of fixed shopping flags; '' clears them. */
   flags?: string;
+  /** Household item icon ('' = back to the catalogue match), not an entry field. */
+  icon?: string;
 }
 
 interface ListParamsInput {
@@ -181,7 +186,8 @@ export function entryRoutes(
         if (resolved?.entry === undefined) return reply;
         let entry = resolved.entry;
 
-        const { name, variant, flags, note, quantity, unit, count, categoryId } = request.body;
+        const { name, variant, flags, note, quantity, unit, count, categoryId, icon } =
+          request.body;
         const patch: Parameters<typeof updateListEntry>[2] = {};
         const editedFields: string[] = [];
         if (categoryId !== undefined) {
@@ -238,10 +244,21 @@ export function entryRoutes(
         if (
           patch.categoryId !== undefined ||
           appliedVariant !== undefined ||
-          appliedNote !== undefined
+          appliedNote !== undefined ||
+          icon !== undefined
         ) {
           const householdId = await getListHouseholdId(database, entry.listId);
           if (householdId !== undefined) {
+            if (icon !== undefined) {
+              // The icon lives on the household's item, so it shows
+              // everywhere and survives re-adds (#43).
+              await setCatalogUsageIcon(
+                database,
+                householdId,
+                entry.nameNormalized,
+                icon.trim() === '' ? null : icon.trim(),
+              );
+            }
             if (patch.categoryId !== undefined) {
               // "Kategorie erfragt": remember the chosen category for next time (K3).
               await setCatalogUsageCategory(

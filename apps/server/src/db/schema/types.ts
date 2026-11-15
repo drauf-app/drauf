@@ -131,6 +131,8 @@ export interface CatalogUsage {
   lastNote: string | null;
   /** JSON array of recently used variants, most recent first. */
   variants: string | null;
+  /** Icon picked by the household; overrides the catalogue matcher. */
+  icon: string | null;
   updatedAt: Date;
 }
 

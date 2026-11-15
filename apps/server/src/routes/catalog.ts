@@ -87,7 +87,7 @@ export function catalogRoutes(
           suggestions.push({
             name: row.name,
             source: 'history',
-            icon: catalogItem?.icon ?? null,
+            icon: row.icon ?? catalogItem?.icon ?? null,
             categoryId:
               row.categoryId ??
               (catalogItem === undefined ? null : resolveKey(catalogItem.categoryKey)),
