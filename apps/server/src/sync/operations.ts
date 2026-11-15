@@ -10,6 +10,7 @@ import {
   markOperationApplied,
   recordCatalogNote,
   recordCatalogVariant,
+  setCatalogUsageIcon,
   setEntryChecked,
   updateListEntry,
 } from '../db/repositories.js';
@@ -263,11 +264,25 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
     }
   }
 
-  if (stamped.length === 0) {
+  // The icon lives on the household's item, not the entry: no per-field
+  // clock, the newest replay simply wins ('' clears back to the matcher).
+  const icon = optionalString(input.icon, 16);
+  let iconApplied = false;
+  if (icon !== undefined) {
+    const householdId = await getListHouseholdId(ctx.database, entry.listId);
+    if (householdId !== undefined) {
+      await setCatalogUsageIcon(ctx.database, householdId, entry.nameNormalized, icon);
+      iconApplied = true;
+    }
+  }
+
+  if (stamped.length === 0 && !iconApplied) {
     return { id: '', status: lost ? 'conflict' : 'rejected', entryId: entry.id };
   }
-  patch.fieldTimes = stampFieldTimes(entry.fieldTimes, stamped, ctx.effectiveTime);
-  await updateListEntry(ctx.database, entry.id, patch);
+  if (stamped.length > 0) {
+    patch.fieldTimes = stampFieldTimes(entry.fieldTimes, stamped, ctx.effectiveTime);
+    await updateListEntry(ctx.database, entry.id, patch);
+  }
   if (typeof patch.variant === 'string' || typeof patch.note === 'string') {
     // Applied variants and notes feed the suggestions, also on offline replay.
     const householdId = await getListHouseholdId(ctx.database, entry.listId);

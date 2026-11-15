@@ -1,5 +1,5 @@
 import { splitVariants } from '@drauf/shared';
-import { and, asc, desc, eq, gte, inArray, isNull, like, lt, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lt, lte } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { newId } from './ids.js';
 import type { Database } from './index.js';
@@ -1030,6 +1030,38 @@ export async function recordCatalogNote(
         eq(t.catalogUsage.nameNormalized, nameNormalized),
       ),
     );
+}
+
+/** Remembers the icon picked for an item (null = back to the catalogue match). */
+export async function setCatalogUsageIcon(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+  icon: string | null,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.catalogUsage)
+    .set({ icon })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
+}
+
+/** The household's picked icons by normalized name; they override the matcher. */
+export async function getCatalogIcons(
+  database: Database,
+  householdId: string,
+): Promise<Map<string, string>> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ nameNormalized: t.catalogUsage.nameNormalized, icon: t.catalogUsage.icon })
+    .from(t.catalogUsage)
+    .where(and(eq(t.catalogUsage.householdId, householdId), isNotNull(t.catalogUsage.icon)));
+  return new Map(rows.map((row) => [row.nameNormalized, row.icon as string]));
 }
 
 /** Remembers the category chosen for an item, when a history row exists. */

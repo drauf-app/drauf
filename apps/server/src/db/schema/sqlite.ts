@@ -239,6 +239,8 @@ export const catalogUsage = sqliteTable(
     lastNote: text('last_note'),
     /** JSON array of recently used variants, most recent first (K2 custom chips). */
     variants: text('variants'),
+    /** Icon picked by the household; overrides the catalogue matcher. */
+    icon: text('icon'),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.householdId, t.nameNormalized] })],

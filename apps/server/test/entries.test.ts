@@ -190,6 +190,48 @@ describe('list entry routes', () => {
     expect((cleared.json() as EntryView).note).toBeNull();
   });
 
+  it('remembers a picked icon on the household item and across re-adds (#43)', async () => {
+    // Unknown item: no catalogue match, no icon.
+    const created = (await addItem({ name: 'Zaubertrank' })).json() as EntryView;
+    expect(created.icon).toBeNull();
+
+    const patched = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { icon: '🧪' },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect((patched.json() as EntryView).icon).toBe('🧪');
+
+    // The icon belongs to the item, so it survives delete + re-add.
+    await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+    });
+    const readded = (await addItem({ name: 'Zaubertrank' })).json() as EntryView;
+    expect(readded.icon).toBe('🧪');
+
+    // A pick also overrides a catalogue match, and '' goes back to it.
+    const milk = (await addItem({ name: 'Milch' })).json() as EntryView;
+    expect(milk.icon).toBe('🥛');
+    const overridden = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${milk.id}`,
+      headers: as(christian),
+      payload: { icon: '🧀' },
+    });
+    expect((overridden.json() as EntryView).icon).toBe('🧀');
+    const cleared = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${milk.id}`,
+      headers: as(christian),
+      payload: { icon: '' },
+    });
+    expect((cleared.json() as EntryView).icon).toBe('🥛');
+  });
+
   it('deletes entries', async () => {
     const created = (await (await addItem({ name: 'Milch' })).json()) as { id: string };
     const deleted = await ctx.app.inject({

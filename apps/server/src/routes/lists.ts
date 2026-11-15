@@ -1,10 +1,12 @@
 import type { CatalogIndex } from '@drauf/catalog';
+import { normalizeItemName } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
 import {
   addListMember,
   deleteList,
+  getCatalogIcons,
   getListById,
   getUserById,
   isStoreLinkedToList,
@@ -15,6 +17,7 @@ import {
   removeListMember,
   updateList,
 } from '../db/repositories.js';
+import { getHouseholdForMember } from '../households/service.js';
 import { createListForUser, getListForMember } from '../lists/service.js';
 import { listTopic, type SyncHub } from '../sync/hub.js';
 
@@ -110,11 +113,17 @@ export function listRoutes(
         database,
         lists.map((list) => list.id),
       );
+      // Picked icons override the matcher in the previews too (#43).
+      const household = await getHouseholdForMember(database, auth.id);
+      const picked =
+        household === undefined
+          ? new Map<string, string>()
+          : await getCatalogIcons(database, household.id);
       return lists.map((list) => {
         const names = open.filter((entry) => entry.listId === list.id);
         const previewIcons: string[] = [];
         for (const entry of names) {
-          const icon = catalog.match(entry.name)?.icon;
+          const icon = picked.get(normalizeItemName(entry.name)) ?? catalog.match(entry.name)?.icon;
           if (icon !== undefined && previewIcons.length < PREVIEW_ICONS) {
             previewIcons.push(icon);
           }

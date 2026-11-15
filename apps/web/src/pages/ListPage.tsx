@@ -90,6 +90,7 @@ function patchEntryLocally(entry: EntryView, patch: PatchEntryInput): EntryView 
     ...(patch.flags === undefined ? {} : { flags: cleared(patch.flags) ?? null }),
     ...(patch.note === undefined ? {} : { note: cleared(patch.note) ?? null }),
     ...(patch.categoryId === undefined ? {} : { categoryId: cleared(patch.categoryId) ?? null }),
+    ...(patch.icon === undefined ? {} : { icon: cleared(patch.icon) ?? null }),
     ...(hasAmount ? { quantities: localQuantities(patch) } : {}),
   };
 }
