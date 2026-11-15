@@ -1487,11 +1487,23 @@ button:disabled {
   text-align: left;
 }
 
-/* Bundled OpenMoji icons scale with the surrounding font size. */
+/* Bundled OpenMoji line-art icons scale with the surrounding font size.
+   The SVG (black strokes on transparency) is used as an alpha mask painted
+   with the current text colour, so icons stay legible in dark mode. */
 .openmoji {
+  display: inline-block;
   width: 1.2em;
   height: 1.2em;
   vertical-align: -0.2em;
+  background-color: currentColor;
+  mask-image: var(--openmoji-url);
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  -webkit-mask-image: var(--openmoji-url);
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
 }
 
 .list-preview {

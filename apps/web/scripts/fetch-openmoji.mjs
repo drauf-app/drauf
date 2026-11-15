@@ -1,7 +1,7 @@
 /**
- * Downloads the OpenMoji color SVGs for every icon the catalogue uses into
- * public/openmoji/ and regenerates src/lib/openmoji-manifest.ts. Run after
- * adding catalogue items with new icons:
+ * Downloads the OpenMoji black (line-art) SVGs for every icon the catalogue
+ * uses into public/openmoji/ and regenerates src/lib/openmoji-manifest.ts.
+ * Run after adding catalogue items with new icons:
  *
  *   node scripts/fetch-openmoji.mjs
  *
@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const OPENMOJI_VERSION = '15.1.0';
-const BASE = `https://raw.githubusercontent.com/hfg-gmuend/openmoji/${OPENMOJI_VERSION}/color/svg`;
+const BASE = `https://raw.githubusercontent.com/hfg-gmuend/openmoji/${OPENMOJI_VERSION}/black/svg`;
 
 const webRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = join(webRoot, '..', '..', 'packages', 'catalog', 'data');
@@ -39,6 +39,21 @@ for (const file of readdirSync(dataDir)) {
   }
 }
 
+/**
+ * The web app renders these SVGs as CSS alpha masks painted with the text
+ * colour, which only works while they contain nothing but black strokes and
+ * fills on transparency. An opaque white (or coloured) area would turn into
+ * a solid blob, so refuse such an asset outright.
+ */
+export function assertMaskable(hex, svg) {
+  const painted = [...svg.matchAll(/(?:fill|stroke)\s*[=:]\s*["']?([^"';]+)/g)]
+    .map((match) => match[1].trim().toLowerCase())
+    .filter((value) => !['none', '#000', '#000000', 'black'].includes(value));
+  if (painted.length > 0) {
+    throw new Error(`${hex}.svg uses non-black paint (${painted.join(', ')}) — breaks the mask`);
+  }
+}
+
 const available = [];
 for (const icon of [...icons].sort()) {
   const hex = emojiToHex(icon);
@@ -49,7 +64,9 @@ for (const icon of [...icons].sort()) {
       console.warn(`missing in OpenMoji: ${icon} (${hex}) — keeps the text emoji`);
       continue;
     }
-    writeFileSync(target, Buffer.from(await response.arrayBuffer()));
+    const svg = Buffer.from(await response.arrayBuffer());
+    assertMaskable(hex, svg.toString('utf8'));
+    writeFileSync(target, svg);
   }
   available.push(hex);
 }
