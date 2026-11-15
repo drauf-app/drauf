@@ -1,6 +1,7 @@
 :root {
   color-scheme: light dark;
-  --accent: #1f7a4d;
+  /* The brand green, identical to the iOS app's accent colour. */
+  --accent: #167a47;
   --accent-contrast: #ffffff;
   --bg: #f6f7f6;
   --surface: #ffffff;
@@ -13,6 +14,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Dark accent from the iOS asset catalogue; buttons flip to dark text. */
+    --accent: #4ecd86;
+    --accent-contrast: #0b1911;
     --bg: #141716;
     --surface: #1e2320;
     --text: #e8ebe9;
@@ -60,9 +64,17 @@ h1 {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-weight: 700;
   color: var(--accent);
   font-size: 1.2rem;
+}
+
+.brand-logo {
+  width: 1.5em;
+  height: 1.5em;
 }
 
 .app-header nav {

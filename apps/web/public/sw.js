@@ -3,7 +3,7 @@
  * served network-first with a cache fallback, and /api is never touched —
  * offline data flows through the operation queue, not through caches.
  */
-const CACHE = 'drauf-shell-v1';
+const CACHE = 'drauf-shell-v2'; // bumped for the new app icon
 
 self.addEventListener('install', () => {
   self.skipWaiting();
