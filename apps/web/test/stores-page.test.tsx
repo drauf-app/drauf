@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Category, StoreWithOrder } from '../src/api/types';
 import { StoresPage } from '../src/pages/StoresPage';
 import { fakeResponse, stubFetch } from './fake-fetch';
@@ -148,6 +148,40 @@ describe('StoresPage', () => {
 
     expect(await screen.findByText('Biomarkt')).toBeDefined();
     expect(JSON.parse(posted[0] ?? '{}')).toEqual({ name: 'Biomarkt' });
+  });
+
+  describe('backup section', () => {
+    it('downloads the export as a JSON file', async () => {
+      let exports = 0;
+      stubFetch((url) => {
+        if (url === '/api/stores') return fakeResponse(200, []);
+        if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+        if (url === '/api/households/staples') return fakeResponse(200, DEFAULT_STAPLES);
+        if (url === '/api/households/me/export') {
+          exports += 1;
+          return fakeResponse(200, { version: 1, lists: [] });
+        }
+        return undefined;
+      });
+      // jsdom has no object URLs; the component only needs them to exist.
+      const created: Blob[] = [];
+      vi.stubGlobal('URL', {
+        ...URL,
+        createObjectURL: (blob: Blob) => {
+          created.push(blob);
+          return 'blob:fake';
+        },
+        revokeObjectURL: () => {},
+      });
+      render(<StoresPage />);
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole('button', { name: 'Export herunterladen' }));
+      await screen.findByText('Sicherung');
+      expect(exports).toBe(1);
+      expect(created).toHaveLength(1);
+      expect(created[0]?.type).toBe('application/json');
+    });
   });
 
   describe('staples section', () => {

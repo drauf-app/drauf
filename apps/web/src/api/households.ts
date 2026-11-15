@@ -22,3 +22,8 @@ export function saveStaples(staples: string[]): Promise<HouseholdStaples> {
 export function resetStaples(): Promise<HouseholdStaples> {
   return apiJson<HouseholdStaples>('/api/households/staples', { method: 'DELETE' });
 }
+
+/** The household's backup document; the caller turns it into a file. */
+export function fetchExport(): Promise<unknown> {
+  return apiJson<unknown>('/api/households/me/export');
+}

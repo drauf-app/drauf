@@ -5,7 +5,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { fetchStaples, type HouseholdStaples, resetStaples, saveStaples } from '../api/households';
+import {
+  fetchExport,
+  fetchStaples,
+  type HouseholdStaples,
+  resetStaples,
+  saveStaples,
+} from '../api/households';
 import { fetchCategories } from '../api/lists';
 import {
   createStore,
@@ -321,6 +327,43 @@ function StaplesSection() {
   );
 }
 
+/** Backup: downloads the household's JSON export as a file. */
+function ExportSection() {
+  const t = useT();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function onDownload(): Promise<void> {
+    setBusy(true);
+    setError(false);
+    try {
+      const data = await fetchExport();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `drauf-export-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <h2>{t.backup.title}</h2>
+      <p className="placeholder">{t.backup.intro}</p>
+      <button type="button" disabled={busy} onClick={() => void onDownload()}>
+        {t.backup.download}
+      </button>
+      {error && <p className="error">{t.common.error}</p>}
+    </>
+  );
+}
+
 export function StoresPage() {
   const t = useT();
   const [stores, setStores] = useState<StoreWithOrder[]>();
@@ -450,6 +493,7 @@ export function StoresPage() {
       </form>
       {error && <p className="error">{t.common.error}</p>}
       <StaplesSection />
+      <ExportSection />
       {editingStore !== undefined && (
         <StoreEditDialog
           store={editingStore}
