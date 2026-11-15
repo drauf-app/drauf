@@ -99,6 +99,7 @@ export interface Suggestion {
   lastUnit?: string | null;
   lastCount?: number | null;
   lastVariant?: string | null;
+  lastNote?: string | null;
 }
 
 export interface StoreWithOrder {

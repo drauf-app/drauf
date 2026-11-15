@@ -162,6 +162,7 @@ function EntryTile({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
         </span>
         <span className="tile-name">{entry.name}</span>
         {meta !== '' && <span className="tile-meta">{meta}</span>}
+        {entry.note !== null && <span className="tile-note">📝 {entry.note}</span>}
         {entry.flags !== null && (
           <span className="tile-flags">
             {splitVariants(entry.flags).map((flag) => (

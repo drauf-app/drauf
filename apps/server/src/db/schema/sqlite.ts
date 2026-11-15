@@ -234,6 +234,7 @@ export const catalogUsage = sqliteTable(
     lastUnit: text('last_unit'),
     lastVariant: text('last_variant'),
     lastCount: integer('last_count'),
+    lastNote: text('last_note'),
     /** JSON array of recently used variants, most recent first (K2 custom chips). */
     variants: text('variants'),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),

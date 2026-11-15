@@ -8,6 +8,7 @@ import {
   getListEntry,
   getListHouseholdId,
   isCategoryLinkedToList,
+  recordCatalogNote,
   recordCatalogVariant,
   setCatalogUsageCategory,
   setEntryChecked,
@@ -233,7 +234,12 @@ export function entryRoutes(
           entry = { ...entry, ...patch };
         }
         const appliedVariant = typeof patch.variant === 'string' ? patch.variant : undefined;
-        if (patch.categoryId !== undefined || appliedVariant !== undefined) {
+        const appliedNote = typeof patch.note === 'string' ? patch.note : undefined;
+        if (
+          patch.categoryId !== undefined ||
+          appliedVariant !== undefined ||
+          appliedNote !== undefined
+        ) {
           const householdId = await getListHouseholdId(database, entry.listId);
           if (householdId !== undefined) {
             if (patch.categoryId !== undefined) {
@@ -253,6 +259,9 @@ export function entryRoutes(
                 entry.nameNormalized,
                 appliedVariant,
               );
+            }
+            if (appliedNote !== undefined) {
+              await recordCatalogNote(database, householdId, entry.nameNormalized, appliedNote);
             }
           }
         }

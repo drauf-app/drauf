@@ -646,3 +646,82 @@ describe('list overview summaries', () => {
     expect(row?.previewIcons).toEqual(['🍝', '🥛']);
   });
 });
+
+describe('note suggestions', () => {
+  let ctx: TestApp;
+  let christian: { id: string; token: string };
+  let listId: string;
+
+  function as(user: { token: string }) {
+    return { authorization: `Bearer ${user.token}` };
+  }
+
+  async function lastNoteFor(q: string): Promise<string | null | undefined> {
+    const response = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/catalog/suggest?q=${encodeURIComponent(q)}`,
+      headers: as(christian),
+    });
+    return (response.json() as Array<{ lastNote?: string | null }>)[0]?.lastNote;
+  }
+
+  beforeEach(async () => {
+    ctx = await createTestApp({}, { catalog: fakeCatalog });
+    const result = await createLocalUser(ctx.database, {
+      username: 'christian',
+      password: PASSWORD,
+      displayName: 'Christian',
+      isAdmin: false,
+    });
+    if (!result.ok) throw new Error('fixture user not created');
+    const login = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'christian', password: PASSWORD },
+    });
+    christian = {
+      id: result.user.id,
+      token: (login.json() as { accessToken: string }).accessToken,
+    };
+    const list = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Weekly shop' },
+    });
+    listId = (list.json() as { id: string }).id;
+  });
+
+  afterEach(async () => {
+    await ctx.close();
+  });
+
+  it('remembers the last note across note-less adds and PATCH edits', async () => {
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+      payload: { name: 'Brot', note: 'nur wenn frisch' },
+    });
+    expect(await lastNoteFor('brot')).toBe('nur wenn frisch');
+
+    // A note-less re-add keeps the remembered note (it stays a suggestion).
+    const again = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/lists/${listId}/entries`,
+      headers: as(christian),
+      payload: { name: 'Brot', variant: 'Dinkel' },
+    });
+    expect(await lastNoteFor('brot')).toBe('nur wenn frisch');
+
+    // A note applied later (editor, drawer pill) becomes the new suggestion.
+    const entry = again.json() as { id: string };
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${entry.id}`,
+      headers: as(christian),
+      payload: { note: 'das dunkle' },
+    });
+    expect(await lastNoteFor('brot')).toBe('das dunkle');
+  });
+});

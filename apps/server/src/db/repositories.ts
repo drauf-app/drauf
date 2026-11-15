@@ -906,6 +906,7 @@ export async function recordCatalogUsage(
     unit: string | null;
     count: number | null;
     variant: string | null;
+    note: string | null;
     categoryId: string | null;
   },
 ): Promise<void> {
@@ -927,6 +928,7 @@ export async function recordCatalogUsage(
       lastUnit: input.unit,
       lastCount: input.count,
       lastVariant: input.variant,
+      lastNote: input.note,
       variants: input.variant === null ? null : pushVariant(null, input.variant),
       updatedAt: now,
     });
@@ -942,6 +944,8 @@ export async function recordCatalogUsage(
         lastUnit: input.unit,
         lastCount: input.count,
         lastVariant: input.variant,
+        // A note-less add keeps the remembered note (notes stay suggestions).
+        lastNote: input.note ?? existing.lastNote,
         // Used variants accumulate; adds without one keep the learned list.
         variants:
           input.variant === null
@@ -987,6 +991,25 @@ export async function recordCatalogVariant(
   await db
     .update(t.catalogUsage)
     .set({ lastVariant: variant, variants: pushVariant(existing.variants, variant) })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
+}
+
+/** Remembers a note applied after the add (editor, sync), if a row exists. */
+export async function recordCatalogNote(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+  note: string,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.catalogUsage)
+    .set({ lastNote: note })
     .where(
       and(
         eq(t.catalogUsage.householdId, householdId),

@@ -36,6 +36,7 @@ export interface Suggestion {
   lastCount?: number | null;
   lastUnit?: string | null;
   lastVariant?: string | null;
+  lastNote?: string | null;
 }
 
 function requireAuthUser(reply: FastifyReply, authUser: AuthUser | undefined): AuthUser {
@@ -98,6 +99,7 @@ export function catalogRoutes(
             lastCount: row.lastCount,
             lastUnit: row.lastUnit,
             lastVariant: row.lastVariant,
+            lastNote: row.lastNote,
           });
         }
 

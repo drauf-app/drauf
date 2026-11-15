@@ -126,6 +126,7 @@ export interface CatalogUsage {
   lastUnit: string | null;
   lastVariant: string | null;
   lastCount: number | null;
+  lastNote: string | null;
   /** JSON array of recently used variants, most recent first. */
   variants: string | null;
   updatedAt: Date;

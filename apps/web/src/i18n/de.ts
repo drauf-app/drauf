@@ -101,6 +101,7 @@ export const de = {
     customVariant: 'Eigene Variante',
     applyVariant: 'Variante übernehmen',
     editDetails: 'Eigene Details bearbeiten',
+    lastNote: 'Letzte Notiz',
     detailsField: 'Details',
     closeDetails: 'Details schließen',
   },

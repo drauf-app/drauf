@@ -181,6 +181,7 @@ export async function addItemToList(
       unit: normalizeOptional(input.unit),
       count: input.count ?? null,
       variant,
+      note,
       categoryId: entry.categoryId,
     });
   }

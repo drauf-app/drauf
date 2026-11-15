@@ -1,0 +1,1 @@
+ALTER TABLE `catalog_usage` ADD `last_note` text;
