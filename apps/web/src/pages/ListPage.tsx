@@ -17,7 +17,9 @@ import {
 import { fetchStores } from '../api/stores';
 import type { Category, EntryView, ListDetail, StoreWithOrder } from '../api/types';
 import { ApiError, useAuth } from '../auth/store';
+import { ColorSwatches } from '../components/ColorSwatches';
 import { EntryEditForm } from '../components/EntryEditForm';
+import { IconPicker } from '../components/IconPicker';
 import { ItemIcon } from '../components/ItemIcon';
 import { QuickAdd } from '../components/QuickAdd';
 import { useT } from '../i18n';
@@ -210,7 +212,7 @@ export function ListPage() {
   const [stores, setStores] = useState<StoreWithOrder[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [actionFailed, setActionFailed] = useState(false);
-  const [renaming, setRenaming] = useState<string>();
+  const [editing, setEditing] = useState<{ name: string; icon: string; color: string }>();
   const [editingId, setEditingId] = useState<string>();
   const [listView, setListView] = useState<'rows' | 'tiles'>(loadListView);
 
@@ -402,18 +404,25 @@ export function ListPage() {
     setFields(entry.id, fields);
   }
 
-  function handleRename(event: FormEvent): void {
+  function handleListSave(event: FormEvent): void {
     event.preventDefault();
-    const name = renaming?.trim() ?? '';
-    if (name === '') {
-      setRenaming(undefined);
+    if (editing === undefined || list === undefined) {
       return;
     }
-    run(async () => {
-      const updated = await patchList(listId, { name });
-      setList((previous) => (previous === undefined ? previous : { ...previous, ...updated }));
-    });
-    setRenaming(undefined);
+    const name = editing.name.trim();
+    const patch = {
+      ...(name !== '' && name !== list.name ? { name } : {}),
+      // '' clears icon / colour back to "none" on the server.
+      ...(editing.icon !== (list.icon ?? '') ? { icon: editing.icon } : {}),
+      ...(editing.color !== (list.color ?? '') ? { color: editing.color } : {}),
+    };
+    if (Object.keys(patch).length > 0) {
+      run(async () => {
+        const updated = await patchList(listId, patch);
+        setList((previous) => (previous === undefined ? previous : { ...previous, ...updated }));
+      });
+    }
+    setEditing(undefined);
   }
 
   function handleArchive(): void {
@@ -495,23 +504,37 @@ export function ListPage() {
   return (
     <section className="list-page">
       <header className="list-header">
-        {renaming === undefined ? (
+        {editing === undefined ? (
           <h1>
-            {list.icon !== null && <span className="list-icon">{list.icon}</span>}
+            {list.icon !== null && (
+              <span className="list-icon">
+                <ItemIcon icon={list.icon} />
+              </span>
+            )}
             {list.name}
           </h1>
         ) : (
-          <form className="rename-form" onSubmit={handleRename}>
+          <form className="rename-form" onSubmit={handleListSave}>
+            <IconPicker
+              value={editing.icon}
+              clearLabel={t.lists.noIcon}
+              pickLabel={t.lists.pickIcon}
+              onChange={(icon) => setEditing({ ...editing, icon })}
+            />
             <input
               type="text"
-              value={renaming}
+              value={editing.name}
               maxLength={100}
-              aria-label={t.list.rename}
-              // biome-ignore lint/a11y/noAutofocus: the form only appears on an explicit rename action.
+              aria-label={t.list.listName}
+              // biome-ignore lint/a11y/noAutofocus: the form only appears on an explicit edit action.
               autoFocus
-              onChange={(event) => setRenaming(event.target.value)}
+              onChange={(event) => setEditing({ ...editing, name: event.target.value })}
             />
             <button type="submit">{t.common.save}</button>
+            <ColorSwatches
+              value={editing.color}
+              onChange={(color) => setEditing({ ...editing, color })}
+            />
           </form>
         )}
         {stores.length > 0 && (
@@ -550,7 +573,12 @@ export function ListPage() {
           </button>
         </div>
         <div className="list-actions">
-          <button type="button" onClick={() => setRenaming(list.name)}>
+          <button
+            type="button"
+            onClick={() =>
+              setEditing({ name: list.name, icon: list.icon ?? '', color: list.color ?? '' })
+            }
+          >
             {t.list.rename}
           </button>
           <button type="button" onClick={handleArchive}>

@@ -2,6 +2,8 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { createList, fetchLists } from '../api/lists';
 import type { List } from '../api/types';
+import { ColorSwatches } from '../components/ColorSwatches';
+import { IconPicker } from '../components/IconPicker';
 import { ItemIcon } from '../components/ItemIcon';
 import { useT } from '../i18n';
 
@@ -14,7 +16,11 @@ function ListRow({ list }: { list: List }) {
     <li>
       <Link className="list-row" to={`/lists/${encodeURIComponent(list.id)}`}>
         <span className="list-dot" style={{ background: list.color ?? 'var(--accent)' }} />
-        <span className="list-icon">{list.icon}</span>
+        {list.icon !== null && (
+          <span className="list-icon">
+            <ItemIcon icon={list.icon} />
+          </span>
+        )}
         <span className="list-row-text">
           <span className="list-name">{list.name}</span>
           <span className="list-row-meta">
@@ -44,6 +50,8 @@ export function ListsPage() {
   const [lists, setLists] = useState<List[]>();
   const [error, setError] = useState(false);
   const [name, setName] = useState('');
+  const [icon, setIcon] = useState('');
+  const [color, setColor] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -69,9 +77,15 @@ export function ListsPage() {
     setBusy(true);
     setError(false);
     try {
-      const list = await createList(trimmed);
+      const list = await createList({
+        name: trimmed,
+        ...(icon !== '' ? { icon } : {}),
+        ...(color !== '' ? { color } : {}),
+      });
       setLists((previous) => [...(previous ?? []), list]);
       setName('');
+      setIcon('');
+      setColor('');
     } catch {
       setError(true);
     } finally {
@@ -106,6 +120,12 @@ export function ListsPage() {
         </details>
       )}
       <form className="create-list" onSubmit={(event) => void onCreate(event)}>
+        <IconPicker
+          value={icon}
+          clearLabel={t.lists.noIcon}
+          pickLabel={t.lists.pickIcon}
+          onChange={setIcon}
+        />
         <input
           type="text"
           value={name}
@@ -117,6 +137,7 @@ export function ListsPage() {
         <button type="submit" className="primary" disabled={busy}>
           {t.lists.create}
         </button>
+        <ColorSwatches value={color} onChange={setColor} />
       </form>
       {error && <p className="error">{t.common.error}</p>}
     </section>

@@ -21,7 +21,8 @@ import { getHouseholdForMember } from '../households/service.js';
 import { createListForUser, getListForMember } from '../lists/service.js';
 import { listTopic, type SyncHub } from '../sync/hub.js';
 
-const COLOR_PATTERN = '^#[0-9a-fA-F]{6}$';
+/** #rrggbb, or '' to clear the colour again. */
+const COLOR_PATTERN = '^$|^#[0-9a-fA-F]{6}$';
 
 const createBody = {
   type: 'object',
@@ -137,7 +138,13 @@ export function listRoutes(
       { schema: { body: createBody } },
       async (request, reply) => {
         const auth = requireAuthUser(reply, request.authUser);
-        const list = await createListForUser(database, auth.id, request.body);
+        const { name, icon, color } = request.body;
+        const list = await createListForUser(database, auth.id, {
+          name,
+          // '' means "none", like clearing on PATCH.
+          ...(icon !== undefined && icon.trim() !== '' ? { icon: icon.trim() } : {}),
+          ...(color !== undefined && color !== '' ? { color } : {}),
+        });
         return reply.code(201).send({ ...list, openCount: 0, previewIcons: [] });
       },
     );
@@ -174,7 +181,15 @@ export function listRoutes(
         ) {
           return reply.code(400).send({ error: 'invalid_store' });
         }
-        await updateList(database, list.id, request.body);
+        const { name, icon, color, archived } = request.body;
+        await updateList(database, list.id, {
+          ...(name !== undefined ? { name } : {}),
+          ...(archived !== undefined ? { archived } : {}),
+          ...(defaultStoreId !== undefined ? { defaultStoreId } : {}),
+          // '' clears icon and colour back to "none".
+          ...(icon !== undefined ? { icon: icon.trim() === '' ? null : icon.trim() } : {}),
+          ...(color !== undefined ? { color: color === '' ? null : color } : {}),
+        });
         const updated = await getListById(database, list.id);
         hub.publish(listTopic(list.id), { type: 'list.updated', data: updated });
         return updated;

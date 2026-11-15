@@ -269,6 +269,8 @@ button:disabled {
 
 .create-list {
   flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   margin-top: 1rem;
 }
@@ -325,7 +327,41 @@ button:disabled {
 
 .rename-form {
   flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+}
+
+/* The list colour as a row of dots; the crossed first dot means "none". */
+.color-swatches {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.color-swatch {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.color-swatch.none {
+  background: linear-gradient(
+      to top left,
+      transparent 44%,
+      var(--text-muted) 46%,
+      var(--text-muted) 54%,
+      transparent 56%
+    )
+    var(--surface);
+}
+
+.color-swatch.active {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--accent);
 }
 
 .category-group h2 {

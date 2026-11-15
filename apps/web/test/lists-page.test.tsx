@@ -69,4 +69,42 @@ describe('ListsPage', () => {
     expect(await screen.findByText('Drogerie')).toBeDefined();
     expect(JSON.parse(posted[0] ?? '{}')).toEqual({ name: 'Drogerie' });
   });
+
+  it('creates a list with a picked icon and colour (#52)', async () => {
+    const posted: string[] = [];
+    stubFetch((url, init) => {
+      const method = init?.method ?? 'GET';
+      if (url === '/api/lists' && method === 'GET') {
+        return fakeResponse(200, []);
+      }
+      if (url === '/api/lists' && method === 'POST') {
+        posted.push(String(init?.body));
+        return fakeResponse(201, { ...list('l9', 'Geschenke'), icon: '🎁', color: '#2563eb' });
+      }
+      return undefined;
+    });
+    render(
+      <MemoryRouter>
+        <ListsPage />
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText('Name der neuen Liste'), 'Geschenke');
+    await user.click(screen.getByRole('button', { name: 'Icon wählen' }));
+    await user.click(screen.getByRole('button', { name: '🎁' }));
+    await user.click(screen.getByRole('button', { name: 'Blau' }));
+    await user.click(screen.getByRole('button', { name: 'Anlegen' }));
+
+    expect(await screen.findByText('Geschenke')).toBeDefined();
+    expect(JSON.parse(posted[0] ?? '{}')).toEqual({
+      name: 'Geschenke',
+      icon: '🎁',
+      color: '#2563eb',
+    });
+    // The new row shows the icon and the colour dot.
+    expect(document.querySelector('.list-icon .openmoji')).not.toBeNull();
+    const dot = document.querySelector('.list-dot') as HTMLElement;
+    expect(dot.style.background).toContain('37, 99, 235');
+  });
 });

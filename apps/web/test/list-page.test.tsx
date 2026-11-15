@@ -78,6 +78,7 @@ interface StubOptions {
   onEntryPost?: (body: string) => EntryView;
   onEntryPatch?: (url: string, body: string) => EntryView;
   onCheck?: (url: string) => EntryView;
+  onListPatch?: (body: string) => ListDetail;
 }
 
 function stubListApi(options: StubOptions = {}): RecordedRequest[] {
@@ -85,6 +86,10 @@ function stubListApi(options: StubOptions = {}): RecordedRequest[] {
     const method = init?.method ?? 'GET';
     if (url === '/api/lists/l1' && method === 'GET') {
       return fakeResponse(200, LIST);
+    }
+    if (url === '/api/lists/l1' && method === 'PATCH') {
+      const view = options.onListPatch?.(String(init?.body));
+      return view === undefined ? undefined : fakeResponse(200, view);
     }
     if (url === '/api/lists/l1/entries' && method === 'GET') {
       return fakeResponse(200, options.entries ?? [entryView({})]);
@@ -403,6 +408,30 @@ describe('entry editing', () => {
     expect(await screen.findByText('Bio')).toBeDefined();
     expect(screen.getByText('500 g', { selector: '.entry-quantity' })).toBeDefined();
     expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+
+  it('edits the list icon and colour through the header form (#52)', async () => {
+    const patched: string[] = [];
+    stubListApi({
+      onListPatch: (body) => {
+        patched.push(body);
+        return { ...LIST, icon: '🎁', color: '#2563eb' };
+      },
+    });
+    renderListPage();
+    const user = userEvent.setup();
+
+    await screen.findByText('Milch');
+    await user.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+    await user.click(screen.getByRole('button', { name: 'Icon wählen' }));
+    await user.click(screen.getByRole('button', { name: '🎁' }));
+    await user.click(screen.getByRole('button', { name: 'Blau' }));
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    // Only the changed fields travel; the name stayed untouched.
+    expect(JSON.parse(patched[0] ?? '{}')).toEqual({ icon: '🎁', color: '#2563eb' });
+    // The header shows the picked icon once saved.
+    expect(document.querySelector('h1 .list-icon .openmoji')).not.toBeNull();
   });
 
   it('picks an item icon from the bundled set and sends it with the patch', async () => {
