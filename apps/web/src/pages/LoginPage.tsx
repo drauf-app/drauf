@@ -72,7 +72,10 @@ export function LoginPage() {
   return (
     <div className="screen-center">
       <div className="card login-card">
-        <h1 className="brand">{t.appName}</h1>
+        <h1 className="brand">
+          <img className="brand-logo" src="/icon.svg" alt="" />
+          {t.appName}
+        </h1>
         <h2>{t.login.title}</h2>
         {providers?.localLogin === true && (
           <form onSubmit={(event) => void onSubmit(event)}>

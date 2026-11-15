@@ -2,7 +2,7 @@ import { useT } from '../i18n';
 
 /** The fixed list colours, in the order of i18n lists.colorNames. */
 export const LIST_COLORS: readonly string[] = [
-  '#1f7a4d',
+  '#167a47',
   '#2563eb',
   '#0d9488',
   '#d97706',

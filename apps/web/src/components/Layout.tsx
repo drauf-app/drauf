@@ -15,7 +15,10 @@ export function Layout() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="brand">{t.appName}</span>
+        <span className="brand">
+          <img className="brand-logo" src="/icon.svg" alt="" />
+          {t.appName}
+        </span>
         <nav>
           <NavLink to="/" end>
             {t.nav.lists}
