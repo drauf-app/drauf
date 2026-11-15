@@ -407,7 +407,7 @@ describe('tile view', () => {
 
     expect(localStorage.getItem('drauf.list-view')).toBe('tiles');
     expect(document.querySelector('.entries.tiles')).not.toBeNull();
-    expect(screen.getByText('🥛')).toBeDefined();
+    expect(document.querySelector('img.openmoji[src="/openmoji/1F95B.svg"]')).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Abhaken: Milch' }));
     expect(await screen.findByText('Zuletzt gekauft')).toBeDefined();

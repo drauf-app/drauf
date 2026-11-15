@@ -18,6 +18,7 @@ import { fetchStores } from '../api/stores';
 import type { Category, EntryView, ListDetail, StoreWithOrder } from '../api/types';
 import { ApiError, useAuth } from '../auth/store';
 import { EntryEditForm } from '../components/EntryEditForm';
+import { ItemIcon } from '../components/ItemIcon';
 import { QuickAdd } from '../components/QuickAdd';
 import { useT } from '../i18n';
 import {
@@ -158,7 +159,7 @@ function EntryTile({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
         onClick={() => onToggle(entry)}
       >
         <span className="tile-icon" aria-hidden="true">
-          {checked ? '✓' : (entry.icon ?? '')}
+          {checked ? '✓' : entry.icon !== null ? <ItemIcon icon={entry.icon} /> : ''}
         </span>
         <span className="tile-name">{entry.name}</span>
         {meta !== '' && <span className="tile-meta">{meta}</span>}

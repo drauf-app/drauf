@@ -1,0 +1,8 @@
+The SVG files in this directory are from OpenMoji — the open-source emoji
+and icon project (https://openmoji.org), designed at HfG Schwäbisch Gmünd.
+
+License: Creative Commons Attribution-ShareAlike 4.0 International
+(CC BY-SA 4.0), https://creativecommons.org/licenses/by-sa/4.0/
+
+The files are unmodified copies from the OpenMoji 15.1.0 release, selected
+to cover the icons used by the Drauf item catalogue (itself CC BY-SA 4.0).

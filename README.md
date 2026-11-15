@@ -84,6 +84,10 @@ size/variety chips. Items added without a category get one guessed on the
 server — the household's learned choice first, then a catalogue match, exact
 or by the German compound head ("Zwiebelsuppe" is a Suppe, "Würzspinat" a
 Spinat); correcting a category once is remembered and wins from then on.
+Item icons in the web app render from a bundled subset of
+[OpenMoji](https://openmoji.org) (CC BY-SA 4.0, like the catalogue), so they
+look the same on every device; `apps/web/scripts/fetch-openmoji.mjs`
+refreshes the assets when catalogue icons change.
 
 Recipe providers live in `packages/providers` (one folder per provider;
 Cookidoo is the first). They run server-side only, fetch public addresses
