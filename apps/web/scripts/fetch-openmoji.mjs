@@ -29,7 +29,10 @@ export function emojiToHex(emoji) {
     .join('-');
 }
 
-const icons = new Set();
+/** Icons the UI itself uses (e.g. the note marker), beyond the catalogue. */
+const UI_ICONS = ['📝'];
+
+const icons = new Set(UI_ICONS);
 for (const file of readdirSync(dataDir)) {
   if (!file.endsWith('.json')) continue;
   for (const item of JSON.parse(readFileSync(join(dataDir, file), 'utf8'))) {

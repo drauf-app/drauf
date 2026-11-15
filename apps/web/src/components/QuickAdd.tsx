@@ -218,14 +218,18 @@ function DetailsView({
         </span>
         <span className="drawer-item-quantity">{formatQuantities(entry.quantities)}</span>
       </div>
-      {entry.note !== null && <div className="drawer-note">📝 {entry.note}</div>}
+      {entry.note !== null && (
+        <div className="drawer-note">
+          <ItemIcon icon="📝" /> {entry.note}
+        </div>
+      )}
       {entry.note === null && suggestion?.lastNote != null && (
         <button
           type="button"
           className="note-suggestion"
           onClick={() => onPatch(entry.id, { note: suggestion.lastNote as string })}
         >
-          📝 {t.quickAdd.lastNote}: „{suggestion.lastNote}“
+          <ItemIcon icon="📝" /> {t.quickAdd.lastNote}: „{suggestion.lastNote}“
         </button>
       )}
 
