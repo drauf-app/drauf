@@ -37,7 +37,7 @@ describe('ListsPage', () => {
 
     expect(await screen.findByText('Wocheneinkauf')).toBeDefined();
     expect(screen.getByText('3 Artikel')).toBeDefined();
-    expect(screen.getByText(/🍝 🥛/)).toBeDefined();
+    expect(document.querySelectorAll('.list-preview img.openmoji')).toHaveLength(2);
     // Lists without the summary (e.g. fresh ones) read as empty.
     expect(screen.getByText('Leer')).toBeDefined();
     expect(screen.getByText('Archivierte Listen')).toBeDefined();

@@ -21,6 +21,7 @@ import {
   toggleDraft,
 } from '../lib/details';
 import { formatQuantities } from '../lib/entries';
+import { ItemIcon } from './ItemIcon';
 
 const SUGGEST_DEBOUNCE_MS = 150;
 const DETAILS_PATCH_DEBOUNCE_MS = 500;
@@ -199,7 +200,11 @@ function DetailsView({
   return (
     <div className="drawer-details">
       <div className="drawer-item">
-        {entry.icon !== null && <span className="drawer-item-icon">{entry.icon}</span>}
+        {entry.icon !== null && (
+          <span className="drawer-item-icon">
+            <ItemIcon icon={entry.icon} />
+          </span>
+        )}
         <span className="drawer-item-name">
           {entry.name}
           {entry.variant !== null && <span className="entry-variant"> {entry.variant}</span>}
@@ -397,7 +402,9 @@ export function QuickAdd({ entries, onAdd, onPatch }: QuickAddProps) {
             {suggestions.map((suggestion) => (
               <li key={suggestion.name}>
                 <button type="button" onClick={() => void pick(suggestion)}>
-                  <span className="tile-icon">{suggestion.icon}</span>
+                  <span className="tile-icon">
+                    {suggestion.icon !== null ? <ItemIcon icon={suggestion.icon} /> : ''}
+                  </span>
                   <span className="tile-name">{suggestion.name}</span>
                 </button>
               </li>

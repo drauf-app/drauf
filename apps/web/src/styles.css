@@ -1460,10 +1460,6 @@ button:disabled {
   color: var(--text-muted);
 }
 
-.list-preview {
-  letter-spacing: 0.1em;
-}
-
 .tile-note {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -1488,4 +1484,18 @@ button:disabled {
   background: none;
   color: var(--text-muted);
   text-align: left;
+}
+
+/* Bundled OpenMoji icons scale with the surrounding font size. */
+.openmoji {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+}
+
+.list-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  letter-spacing: normal;
 }

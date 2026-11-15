@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { createList, fetchLists } from '../api/lists';
 import type { List } from '../api/types';
+import { ItemIcon } from '../components/ItemIcon';
 import { useT } from '../i18n';
 
 function ListRow({ list }: { list: List }) {
@@ -24,7 +25,10 @@ function ListRow({ list }: { list: List }) {
                 : `${openCount} ${t.lists.manyItems}`}
             {icons.length > 0 && (
               <span className="list-preview">
-                {icons.join(' ')}
+                {icons.map((icon, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: icons can repeat; order is stable.
+                  <ItemIcon key={`${icon}-${index}`} icon={icon} />
+                ))}
                 {rest > 0 ? ` +${rest}` : ''}
               </span>
             )}
