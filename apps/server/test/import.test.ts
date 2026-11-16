@@ -17,7 +17,7 @@ const fakeProvider: RecipeProvider = {
       title: 'Tomatensuppe',
       imageUrl: 'https://img.example/x.jpg',
       servings: 4,
-      ingredients: ['500 g Tomaten', '1 Zwiebel', 'Salz', '2 EL Öl'],
+      ingredients: ['500 g Tomaten', '1 Zwiebel', 'Salz', '2 EL Öl', '2 Stängel Basilikum'],
     };
   },
 };
@@ -88,6 +88,14 @@ describe('recipe import', () => {
       { raw: '1 Zwiebel', name: 'Zwiebel', quantity: 1, isStaple: false },
       { raw: 'Salz', name: 'Salz', isStaple: true },
       { raw: '2 EL Öl', name: 'Öl', quantity: 2, unit: 'EL', isStaple: true },
+      // Herb counters are units, so the item merges by its name (#61).
+      {
+        raw: '2 Stängel Basilikum',
+        name: 'Basilikum',
+        quantity: 2,
+        unit: 'Stängel',
+        isStaple: false,
+      },
     ]);
   });
 
@@ -116,6 +124,7 @@ describe('recipe import', () => {
       { name: 'Zwiebel', isStaple: false },
       { name: 'Salz', isStaple: false },
       { name: 'Öl', isStaple: true },
+      { name: 'Basilikum', isStaple: false },
     ]);
   });
 

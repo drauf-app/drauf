@@ -52,6 +52,15 @@ const UNITS = new Set([
   'blätter',
   'rolle',
   'rollen',
+  // Common in recipe ingredient lines ("2 Stängel Basilikum"), so the herb
+  // merges by its name instead of by "Stängel Basilikum" (#61).
+  'stängel',
+  'zweig',
+  'zweige',
+  'kopf',
+  'köpfe',
+  'knolle',
+  'knollen',
 ]);
 
 function parseQuantityToken(token: string): number | null {
