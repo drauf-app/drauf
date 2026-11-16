@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { buildUserPrompt, type Categorizer, pickAnswer, SYSTEM_PROMPT } from './index.js';
+import { buildUserPrompt, type Categorizer, SYSTEM_PROMPT } from './index.js';
 
 /** One small classification call; callers treat every failure as "none". */
 export function anthropicCategorizer(config: {
@@ -23,11 +23,10 @@ export function anthropicCategorizer(config: {
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildUserPrompt(name, options) }],
       });
-      const text = response.content
+      return response.content
         .filter((block) => block.type === 'text')
         .map((block) => block.text)
         .join('');
-      return pickAnswer(text, options);
     },
   };
 }

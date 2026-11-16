@@ -14,7 +14,7 @@ import type { ListEntry } from '../db/schema/types.js';
 import { getEntryView } from '../lists/items.js';
 import { listTopic, type SyncHub } from '../sync/hub.js';
 import { stampFieldTimes } from '../sync/operations.js';
-import type { Categorizer } from './index.js';
+import { type Categorizer, pickAnswer } from './index.js';
 
 export interface CategorizeService {
   /**
@@ -58,23 +58,34 @@ export function createCategorizeService(deps: {
       await setCatalogUsageAsked(deps.database, householdId, entry.nameNormalized, new Date());
 
       const categories = await listCategories(deps.database, householdId);
-      // The model answers with a token: the fixed key where one exists,
-      // the (custom) category's name otherwise.
-      const byToken = new Map(
-        categories.map((category) => [category.key ?? category.name, category.id]),
-      );
+      // The model is offered one token per category: the fixed key where
+      // one exists, the (custom) category's name otherwise. Answers are
+      // accepted by token or by category name, nothing else.
+      const options = categories.map((category) => category.key ?? category.name);
+      const byAnswer = new Map<string, string>();
+      for (const category of categories) {
+        if (category.key !== null) {
+          byAnswer.set(category.key, category.id);
+        }
+        byAnswer.set(category.name, category.id);
+      }
 
-      let token: string | null;
+      let raw: string;
       try {
-        token = await deps.categorizer.guess(entry.name, [...byToken.keys()]);
+        raw = await deps.categorizer.guess(entry.name, options);
       } catch (err) {
         // Fail open — and let a later add retry after a transport error.
         deps.log.warn({ err }, 'LLM categorization failed');
         await setCatalogUsageAsked(deps.database, householdId, entry.nameNormalized, null);
         return;
       }
-      const categoryId = token === null ? undefined : byToken.get(token);
+      const token = pickAnswer(raw, [...byAnswer.keys()]);
+      const categoryId = token === null ? undefined : byAnswer.get(token);
       if (categoryId === undefined) {
+        deps.log.info(
+          { item: entry.name, answer: raw.slice(0, 200) },
+          'LLM category answer discarded',
+        );
         return;
       }
 

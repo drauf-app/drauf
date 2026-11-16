@@ -12,6 +12,10 @@ const PASSWORD = 'correct-horse-battery';
 describe('pickAnswer (strict output contract)', () => {
   const options = ['drinks', 'bread-bakery', 'Getränkemarkt'];
 
+  it('accepts the German category name as an answer too', () => {
+    expect(pickAnswer('Getränkemarkt', options)).toBe('Getränkemarkt');
+  });
+
   it('accepts exact tokens, case-insensitively, with quotes and periods stripped', () => {
     expect(pickAnswer('drinks', options)).toBe('drinks');
     expect(pickAnswer('  Drinks.\n', options)).toBe('drinks');
@@ -52,7 +56,7 @@ describe('anthropic categorizer', () => {
     });
 
     const answer = await categorizer.guess('Spezi', ['drinks', 'snacks']);
-    expect(answer).toBe('drinks');
+    expect(answer.trim()).toBe('drinks');
     expect(requests).toHaveLength(1);
     expect(requests[0]?.url).toBe('https://api.anthropic.com/v1/messages');
     const body = JSON.parse(String(requests[0]?.init.body)) as {
@@ -86,7 +90,7 @@ describe('openai-compatible categorizer', () => {
     });
 
     const answer = await categorizer.guess('Spezi', ['drinks', 'snacks']);
-    expect(answer).toBe('drinks');
+    expect(answer).toBe(' Drinks ');
     expect(requests[0]?.url).toBe('http://ollama.local:11434/v1/chat/completions');
     const headers = requests[0]?.init.headers as Record<string, string>;
     expect(headers.authorization).toBeUndefined();
@@ -110,7 +114,7 @@ describe('categorization service (via the add path)', () => {
   let headers: { authorization: string };
   let listId: string;
   let calls: string[][];
-  let answer: () => Promise<string | null>;
+  let answer: () => Promise<string>;
 
   const fake: Categorizer = {
     guess: (name, options) => {
@@ -204,7 +208,7 @@ describe('categorization service (via the add path)', () => {
   });
 
   it('discards invalid answers and does not ask the same name again', async () => {
-    answer = () => Promise.resolve(null);
+    answer = () => Promise.resolve('keine Ahnung, vielleicht Gewürze?');
     const created = await addItem('Omas Geheimgewürz');
     await vi.waitFor(() => expect(calls).toHaveLength(1));
     await new Promise((resolve) => setTimeout(resolve, 20));

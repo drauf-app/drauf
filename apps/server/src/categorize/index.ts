@@ -7,8 +7,8 @@ import { openAiCategorizer } from './openai.js';
  * history and the deterministic catalogue matcher both found nothing.
  */
 export interface Categorizer {
-  /** Picks one of the offered category tokens, or null for "none". */
-  guess(name: string, options: string[]): Promise<string | null>;
+  /** Returns the model's raw answer; the service validates and logs it. */
+  guess(name: string, options: string[]): Promise<string>;
 }
 
 const SYSTEM_PROMPT =

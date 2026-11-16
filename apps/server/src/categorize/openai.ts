@@ -1,4 +1,4 @@
-import { buildUserPrompt, type Categorizer, pickAnswer, SYSTEM_PROMPT } from './index.js';
+import { buildUserPrompt, type Categorizer, SYSTEM_PROMPT } from './index.js';
 
 /**
  * Any OpenAI-compatible chat-completions endpoint — which includes locally
@@ -37,8 +37,7 @@ export function openAiCategorizer(config: {
       const body = (await response.json()) as {
         choices?: Array<{ message?: { content?: string | null } }>;
       };
-      const text = body.choices?.[0]?.message?.content ?? '';
-      return pickAnswer(text, options);
+      return body.choices?.[0]?.message?.content ?? '';
     },
   };
 }
