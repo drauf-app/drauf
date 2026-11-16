@@ -244,6 +244,8 @@ export const catalogUsage = pgTable(
     variants: text('variants'),
     /** Icon picked by the household; overrides the catalogue matcher. */
     icon: text('icon'),
+    /** When the optional LLM was asked for a category — never ask twice. */
+    categoryAskedAt: timestamp('category_asked_at', { withTimezone: true, mode: 'date' }),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.householdId, t.nameNormalized] })],

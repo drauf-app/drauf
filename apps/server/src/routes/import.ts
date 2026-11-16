@@ -3,6 +3,7 @@ import { matchProvider, type ProviderContext, type RecipeProvider } from '@drauf
 import { parseItemLine } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
+import type { CategorizeService } from '../categorize/service.js';
 import type { Database } from '../db/index.js';
 import {
   createPlanEntry,
@@ -121,6 +122,7 @@ export function importRoutes(
   providers: RecipeProvider[],
   context: ProviderContext,
   catalog: CatalogIndex,
+  categorize: CategorizeService | undefined,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
@@ -242,6 +244,10 @@ export function importRoutes(
               type: merged ? 'entry.updated' : 'entry.created',
               data: view,
             });
+            if (entry.categoryId === null) {
+              // Optional third guessing tier, out-of-band of the import (#22).
+              void categorize?.schedule(entry);
+            }
             entries.push(view);
           }
         }

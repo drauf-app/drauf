@@ -1,0 +1,1 @@
+ALTER TABLE "catalog_usage" ADD COLUMN "category_asked_at" timestamp with time zone;

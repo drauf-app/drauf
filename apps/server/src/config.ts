@@ -20,6 +20,14 @@ export interface OidcConfig {
   appRedirects: string[];
 }
 
+/**
+ * Optional LLM category guessing (#22). Off unless configured; enabling it
+ * means item names are sent to the configured endpoint.
+ */
+export type CategorizeConfig =
+  | { provider: 'anthropic'; apiKey: string; model: string }
+  | { provider: 'openai'; baseUrl: string; apiKey: string | undefined; model: string };
+
 export interface Config {
   host: string;
   port: number;
@@ -36,6 +44,8 @@ export interface Config {
   disabledProviders: string[];
   /** Directory with the built web app; served when it exists. */
   webDir: string;
+  /** LLM category guessing; undefined = off (the default). */
+  categorize: CategorizeConfig | undefined;
 }
 
 interface Env {
@@ -56,6 +66,11 @@ interface Env {
   OIDC_APP_REDIRECTS?: string;
   IMPORT_DISABLED_PROVIDERS?: string;
   WEB_DIR: string;
+  CATEGORIZE_LLM?: 'anthropic' | 'openai';
+  CATEGORIZE_MODEL?: string;
+  CATEGORIZE_BASE_URL: string;
+  CATEGORIZE_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;
 }
 
 const schema = {
@@ -79,6 +94,11 @@ const schema = {
     OIDC_APP_REDIRECTS: { type: 'string' },
     IMPORT_DISABLED_PROVIDERS: { type: 'string' },
     WEB_DIR: { type: 'string', default: '../web/dist' },
+    CATEGORIZE_LLM: { type: 'string', enum: ['anthropic', 'openai'] },
+    CATEGORIZE_MODEL: { type: 'string' },
+    CATEGORIZE_BASE_URL: { type: 'string', default: 'https://api.openai.com/v1' },
+    CATEGORIZE_API_KEY: { type: 'string' },
+    ANTHROPIC_API_KEY: { type: 'string' },
   },
 } as const;
 
@@ -113,6 +133,34 @@ function resolveOidc(env: Env): OidcConfig | undefined {
       .split(',')
       .map((entry) => entry.trim())
       .filter((entry) => entry !== ''),
+  };
+}
+
+function resolveCategorize(env: Env): CategorizeConfig | undefined {
+  if (env.CATEGORIZE_LLM === undefined) {
+    return undefined;
+  }
+  if (env.CATEGORIZE_LLM === 'anthropic') {
+    if (env.ANTHROPIC_API_KEY === undefined) {
+      throw new Error('ANTHROPIC_API_KEY is required when CATEGORIZE_LLM=anthropic');
+    }
+    return {
+      provider: 'anthropic',
+      apiKey: env.ANTHROPIC_API_KEY,
+      model: env.CATEGORIZE_MODEL ?? 'claude-opus-5-5',
+    };
+  }
+  // 'openai' also covers local models: Ollama, LM Studio and vLLM expose
+  // the same chat-completions API, so self-hosters need no third backend.
+  if (env.CATEGORIZE_MODEL === undefined) {
+    throw new Error('CATEGORIZE_MODEL is required when CATEGORIZE_LLM=openai');
+  }
+  requireUrl(env.CATEGORIZE_BASE_URL, 'CATEGORIZE_BASE_URL');
+  return {
+    provider: 'openai',
+    baseUrl: env.CATEGORIZE_BASE_URL.replace(/\/$/, ''),
+    apiKey: env.CATEGORIZE_API_KEY,
+    model: env.CATEGORIZE_MODEL,
   };
 }
 
@@ -164,5 +212,6 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
       .map((entry) => entry.trim())
       .filter((entry) => entry !== ''),
     webDir: env.WEB_DIR,
+    categorize: resolveCategorize(env),
   };
 }

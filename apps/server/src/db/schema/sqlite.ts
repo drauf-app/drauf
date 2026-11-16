@@ -241,6 +241,8 @@ export const catalogUsage = sqliteTable(
     variants: text('variants'),
     /** Icon picked by the household; overrides the catalogue matcher. */
     icon: text('icon'),
+    /** When the optional LLM was asked for a category — never ask twice. */
+    categoryAskedAt: integer('category_asked_at', { mode: 'timestamp_ms' }),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.householdId, t.nameNormalized] })],

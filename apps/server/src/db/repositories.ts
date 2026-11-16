@@ -1102,6 +1102,45 @@ export async function getCatalogIcons(
   return new Map(rows.map((row) => [row.nameNormalized, row.icon as string]));
 }
 
+/** Marks (or, with null, clears) that the LLM was asked for this item's category. */
+export async function setCatalogUsageAsked(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+  askedAt: Date | null,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.catalogUsage)
+    .set({ categoryAskedAt: askedAt })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
+}
+
+/** Adopts the guessed category only while no one chose one in the meantime. */
+export async function setCatalogUsageCategoryIfUnset(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+  categoryId: string,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.catalogUsage)
+    .set({ categoryId })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+        isNull(t.catalogUsage.categoryId),
+      ),
+    );
+}
+
 /** Remembers the category chosen for an item, when a history row exists. */
 export async function setCatalogUsageCategory(
   database: Database,

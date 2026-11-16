@@ -133,6 +133,8 @@ export interface CatalogUsage {
   variants: string | null;
   /** Icon picked by the household; overrides the catalogue matcher. */
   icon: string | null;
+  /** When the optional LLM was asked for a category — never ask twice. */
+  categoryAskedAt: Date | null;
   updatedAt: Date;
 }
 
