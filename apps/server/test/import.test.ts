@@ -329,6 +329,27 @@ describe('SSRF guard', () => {
     expect(isPrivateAddress(address)).toBe(expected);
   });
 
+  it('dispatches through the guard agent without a protocol mismatch', async () => {
+    // Regression for the node:24 container bug: the global fetch is backed
+    // by Node's bundled undici, which rejected the npm package's Agent with
+    // "invalid onRequestStart method" before any connection. 192.0.2.1
+    // (TEST-NET-1) is public to the guard but unroutable, so a healthy
+    // dispatch fails at the network layer — never at the handler handshake.
+    const error = await fetchGuarded('http://192.0.2.1/x', {
+      timeoutMs: 500,
+      maxBytes: 1024,
+      accept: '*/*',
+      allowedContentTypes: [''],
+    }).catch((err: unknown) => err);
+    expect(error).toBeInstanceOf(FetchGuardError);
+    const guardError = error as FetchGuardError;
+    expect(['timeout', 'fetch_failed']).toContain(guardError.code);
+    const chain = [guardError.cause, (guardError.cause as Error | undefined)?.cause]
+      .map((entry) => String((entry as Error | undefined)?.message ?? ''))
+      .join(' | ');
+    expect(chain).not.toContain('onRequestStart');
+  });
+
   it('blocks literal private addresses and non-http URLs without fetching', async () => {
     for (const url of [
       'http://127.0.0.1/x',
