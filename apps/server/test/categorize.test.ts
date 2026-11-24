@@ -184,13 +184,17 @@ describe('categorization service (via the add path)', () => {
 
   it('fills in the guessed category out-of-band and asks only once per name', async () => {
     const created = await addItem('Zaubertrank');
-    // The add path answers immediately, without the category.
+    // The add path answers immediately, without the category — but with
+    // the transient hint that a guess is running (#60).
     expect(created.categoryId).toBeNull();
+    expect(created.categorizing).toBe(true);
 
     const drinks = await categoryIdByKey('drinks');
     await vi.waitFor(async () => {
       expect((await getEntry(created.id))?.categoryId).toBe(drinks);
     });
+    // The stored view never carries the transient flag.
+    expect((await getEntry(created.id))?.categorizing).toBeUndefined();
     expect(calls).toHaveLength(1);
     expect(calls[0]?.[0]).toBe('Zaubertrank');
     expect(calls[0]).toContain('drinks');
@@ -203,6 +207,7 @@ describe('categorization service (via the add path)', () => {
   it('never asks for items the catalogue already places', async () => {
     const created = await addItem('Milch');
     expect(created.categoryId).not.toBeNull();
+    expect(created.categorizing).toBeUndefined();
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(calls).toHaveLength(0);
   });

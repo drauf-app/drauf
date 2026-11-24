@@ -245,15 +245,20 @@ export function importRoutes(
               'recipe',
               catalog,
             );
-            const view = await getEntryView(database, entry, catalog);
+            let view = await getEntryView(database, entry, catalog);
+            // Optional third guessing tier, out-of-band of the import (#22);
+            // the flag tells clients a guess is running (#60).
+            if (
+              entry.categoryId === null &&
+              categorize !== undefined &&
+              (await categorize.schedule(entry))
+            ) {
+              view = { ...view, categorizing: true };
+            }
             hub.publish(listTopic(listInput.id), {
               type: merged ? 'entry.updated' : 'entry.created',
               data: view,
             });
-            if (entry.categoryId === null) {
-              // Optional third guessing tier, out-of-band of the import (#22).
-              void categorize?.schedule(entry);
-            }
             entries.push(view);
           }
         }
