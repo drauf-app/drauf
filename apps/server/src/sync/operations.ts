@@ -3,19 +3,23 @@ import { ENTRY_FLAGS, splitVariants } from '@drauf/shared';
 import type { CategorizeService } from '../categorize/service.js';
 import type { Database } from '../db/index.js';
 import {
+  deleteEntryPortion,
   deleteListEntry,
+  getEntryPortion,
   getListEntry,
   getListHouseholdId,
   isCategoryLinkedToList,
   isOperationApplied,
+  listPortionsForEntries,
   markOperationApplied,
   recordCatalogNote,
   recordCatalogVariant,
   setCatalogUsageIcon,
   setEntryChecked,
+  updateEntryPortion,
   updateListEntry,
 } from '../db/repositories.js';
-import type { ListEntry } from '../db/schema/types.js';
+import type { EntryPortion, ListEntry } from '../db/schema/types.js';
 import {
   addItemToList,
   getEntryView,
@@ -31,6 +35,8 @@ export const OPERATION_TYPES = [
   'entry.check',
   'entry.uncheck',
   'entry.delete',
+  'portion.set',
+  'portion.delete',
 ] as const;
 
 export type OperationType = (typeof OPERATION_TYPES)[number];
@@ -49,6 +55,8 @@ export interface SyncResult {
   status: 'applied' | 'duplicate' | 'conflict' | 'rejected';
   error?: string;
   entryId?: string;
+  /** For entry.add: the portion the operation created (#48). */
+  portionId?: string;
 }
 
 export function parseFieldTimes(raw: string | null): Record<string, number> {
@@ -171,7 +179,7 @@ async function applyAdd(ctx: Context, data: Record<string, unknown>): Promise<Sy
   const count = optionalCount(data.count);
   const variant = optionalString(data.variant, 64);
   const note = optionalString(data.note, 500);
-  const { entry, merged } = await addItemToList(
+  const { entry, merged, portionId } = await addItemToList(
     ctx.database,
     listId,
     ctx.userId,
@@ -199,7 +207,7 @@ async function applyAdd(ctx: Context, data: Record<string, unknown>): Promise<Sy
     entry,
     categorizing ? { categorizing: true } : {},
   );
-  return { id: '', status: 'applied', entryId: entry.id };
+  return { id: '', status: 'applied', entryId: entry.id, portionId };
 }
 
 async function applySetFields(ctx: Context, data: Record<string, unknown>): Promise<SyncResult> {
@@ -344,6 +352,77 @@ async function applyUncheck(ctx: Context, data: Record<string, unknown>): Promis
   return { id: '', status: 'applied', entryId: entry.id };
 }
 
+/** One portion of an entry, validated to belong to it (nested-id check). */
+async function requirePortion(
+  ctx: Context,
+  entry: ListEntry,
+  data: Record<string, unknown>,
+): Promise<EntryPortion> {
+  const portion = await getEntryPortion(ctx.database, entry.id, requireString(data.portionId, 64));
+  if (portion === undefined) {
+    throw new OperationError('not_found');
+  }
+  return portion;
+}
+
+/**
+ * Replaces one portion's value (#48): quantity, unit and count form one
+ * semantic value sharing one clock — absent fields become null, LWW runs
+ * against the portion's own updatedAt (createdAt before the first edit).
+ */
+async function applyPortionSet(ctx: Context, data: Record<string, unknown>): Promise<SyncResult> {
+  const entry = await requireEntry(ctx, data);
+  const portion = await requirePortion(ctx, entry, data);
+  const quantity =
+    data.quantity === undefined || data.quantity === null ? null : Number(data.quantity);
+  if (quantity !== null && (!Number.isFinite(quantity) || quantity <= 0)) {
+    throw new OperationError('invalid_payload');
+  }
+  const unit = optionalString(data.unit, 32) ?? null;
+  const count = optionalCount(data.count);
+  const lastWrite = (portion.updatedAt ?? portion.createdAt).getTime();
+  if (ctx.effectiveTime < lastWrite) {
+    return { id: '', status: 'conflict', entryId: entry.id, portionId: portion.id };
+  }
+  await updateEntryPortion(ctx.database, portion.id, {
+    quantity,
+    unit,
+    count,
+    updatedAt: new Date(ctx.effectiveTime),
+  });
+  await publishEntry(ctx, 'entry.updated', entry);
+  return { id: '', status: 'applied', entryId: entry.id, portionId: portion.id };
+}
+
+/**
+ * Removes one portion (#48); deleting the last one deletes the entry, the
+ * same rule clients apply locally. Replays of already-deleted portions are
+ * idempotent like entry.delete.
+ */
+async function applyPortionDelete(
+  ctx: Context,
+  data: Record<string, unknown>,
+): Promise<SyncResult> {
+  const entry = await requireEntry(ctx, data);
+  const portionId = requireString(data.portionId, 64);
+  const portion = await getEntryPortion(ctx.database, entry.id, portionId);
+  if (portion === undefined) {
+    return { id: '', status: 'applied', entryId: entry.id, portionId };
+  }
+  await deleteEntryPortion(ctx.database, portion.id);
+  const remaining = await listPortionsForEntries(ctx.database, [entry.id]);
+  if (remaining.length === 0) {
+    await deleteListEntry(ctx.database, entry.id);
+    ctx.hub.publish(listTopic(entry.listId), {
+      type: 'entry.deleted',
+      data: { id: entry.id, listId: entry.listId },
+    });
+  } else {
+    await publishEntry(ctx, 'entry.updated', entry);
+  }
+  return { id: '', status: 'applied', entryId: entry.id, portionId };
+}
+
 async function applyDelete(ctx: Context, data: Record<string, unknown>): Promise<SyncResult> {
   const listId = await requireListAccess(ctx, data);
   const entryId = requireString(data.entryId, 64);
@@ -369,6 +448,10 @@ async function applyOne(ctx: Context, operation: SyncOperation): Promise<SyncRes
       return applyUncheck(ctx, operation.data);
     case 'entry.delete':
       return applyDelete(ctx, operation.data);
+    case 'portion.set':
+      return applyPortionSet(ctx, operation.data);
+    case 'portion.delete':
+      return applyPortionDelete(ctx, operation.data);
   }
 }
 

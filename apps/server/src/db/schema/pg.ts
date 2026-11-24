@@ -289,6 +289,8 @@ export const entryPortions = pgTable('entry_portions', {
   origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
   addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  /** Last portion.set per-portion clock; null = never edited (createdAt rules). */
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }),
 });
 
 /** Processed sync operation ids: replaying a queued operation is a no-op. */
