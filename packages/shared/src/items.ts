@@ -55,6 +55,8 @@ const UNITS = new Set([
   // Common in recipe ingredient lines ("2 Stängel Basilikum"), so the herb
   // merges by its name instead of by "Stängel Basilikum" (#61).
   'stängel',
+  'teelöffel',
+  'esslöffel',
   'zweig',
   'zweige',
   'kopf',
@@ -76,6 +78,14 @@ function parseQuantityToken(token: string): number | null {
   const combined = /^(\d+)([½⅓¼¾⅔⅛])$/.exec(token);
   if (combined !== null) {
     return Number.parseInt(combined[1] as string, 10) + (FRACTIONS[combined[2] as string] ?? 0);
+  }
+  // ASCII fractions: "1/2", also "1 1/2" collapses to the token "1/2" only
+  // when written without the whole part.
+  const slash = /^(\d+)\/(\d+)$/.exec(token);
+  if (slash !== null) {
+    const numerator = Number.parseInt(slash[1] as string, 10);
+    const denominator = Number.parseInt(slash[2] as string, 10);
+    return denominator > 0 ? numerator / denominator : null;
   }
   return null;
 }

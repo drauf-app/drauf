@@ -17,7 +17,15 @@ const fakeProvider: RecipeProvider = {
       title: 'Tomatensuppe',
       imageUrl: 'https://img.example/x.jpg',
       servings: 4,
-      ingredients: ['500 g Tomaten', '1 Zwiebel', 'Salz', '2 EL Öl', '2 Stängel Basilikum'],
+      ingredients: [
+        '500 g Tomaten',
+        '1 Zwiebel',
+        'Salz',
+        '2 EL Öl',
+        '2 Stängel Basilikum',
+        '½ Teelöffel Salz',
+        '1/2 TL Zucker',
+      ],
     };
   },
 };
@@ -121,6 +129,9 @@ describe('recipe import', () => {
         unit: 'Stängel',
         isStaple: false,
       },
+      // Unicode and ASCII fractions, spoon units spelled out.
+      { raw: '½ Teelöffel Salz', name: 'Salz', quantity: 0.5, unit: 'Teelöffel', isStaple: true },
+      { raw: '1/2 TL Zucker', name: 'Zucker', quantity: 0.5, unit: 'TL', isStaple: true },
     ]);
   });
 
@@ -150,6 +161,8 @@ describe('recipe import', () => {
       { name: 'Salz', isStaple: false },
       { name: 'Öl', isStaple: true },
       { name: 'Basilikum', isStaple: false },
+      { name: 'Salz', isStaple: false },
+      { name: 'Zucker', isStaple: false },
     ]);
   });
 
