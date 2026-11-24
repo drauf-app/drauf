@@ -1,6 +1,6 @@
 import dns from 'node:dns';
 import { isIP } from 'node:net';
-import { Agent } from 'undici';
+import { Agent, fetch as undiciFetch } from 'undici';
 
 const MAX_REDIRECTS = 5;
 
@@ -128,13 +128,16 @@ export async function fetchGuarded(
   const signal = AbortSignal.timeout(options.timeoutMs);
 
   for (let redirects = 0; ; redirects += 1) {
-    let response: Response;
+    // undici's own fetch, not the global one: the global fetch is backed by
+    // Node's bundled undici, whose dispatcher protocol can disagree with the
+    // npm package the Agent comes from ("invalid onRequestStart method" on
+    // node:24-slim). Same-library fetch + Agent can never mismatch.
+    let response: Awaited<ReturnType<typeof undiciFetch>>;
     try {
-      response = await fetch(url, {
+      response = await undiciFetch(url, {
         redirect: 'manual',
         signal,
         headers: { accept: options.accept, 'user-agent': 'Drauf (self-hosted recipe import)' },
-        // @ts-expect-error Node's fetch accepts an undici dispatcher.
         dispatcher,
       });
     } catch (cause) {
