@@ -31,10 +31,9 @@ Add items in seconds, share lists in real time, keep your data on your own serve
 
 ## Run it
 
-Every push to `main` publishes `ghcr.io/drauf-app/drauf` (tags: `latest`,
-`sha-<commit>`, and the version on releases) for amd64 and arm64. While this
-repository is private, pulling needs a `docker login ghcr.io` with a token
-that has `read:packages`.
+Every push to `main` publishes [`ghcr.io/drauf-app/drauf`](https://github.com/drauf-app/drauf/pkgs/container/drauf)
+(tags: `latest`, `sha-<commit>`, and the version on releases) for amd64 and
+arm64. The image is public — no registry login needed.
 
 ```bash
 curl -O https://raw.githubusercontent.com/drauf-app/drauf/main/docker/compose.example.yml
