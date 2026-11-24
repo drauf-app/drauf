@@ -147,6 +147,9 @@ export const de = {
     done: 'Importiert!',
     noProvider: 'Keine passende Rezept-Quelle erkannt.',
     fetchFailed: 'Das Rezept konnte nicht geladen werden.',
+    timeout: 'Die Rezeptseite hat zu lange nicht geantwortet. Bitte erneut versuchen.',
+    parseFailed:
+      'Die Rezeptseite konnte nicht gelesen werden – womöglich hat sich ihr Aufbau geändert.',
     nothingSelected: 'Bitte mindestens ein Ziel wählen.',
     slotOccupied: 'In diesem Plan-Feld steht schon etwas.',
   },

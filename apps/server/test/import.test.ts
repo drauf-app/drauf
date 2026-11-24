@@ -22,6 +22,28 @@ const fakeProvider: RecipeProvider = {
   },
 };
 
+/** Upstream answered, but not with the page (e.g. a CDN/WAF 403). */
+const blockedUpstreamProvider: RecipeProvider = {
+  id: 'blocked-upstream',
+  matches(input) {
+    return input.includes('blocked.example') ? 'https://blocked.example/r/1' : null;
+  },
+  async fetch() {
+    throw new FetchGuardError('upstream_error', undefined, 403);
+  },
+};
+
+/** The page was fetched fine but the provider could not read it. */
+const brokenParserProvider: RecipeProvider = {
+  id: 'broken-parser',
+  matches(input) {
+    return input.includes('broken.example') ? 'https://broken.example/r/1' : null;
+  },
+  async fetch() {
+    throw new Error('selector .recipe-title matched nothing');
+  },
+};
+
 describe('recipe import', () => {
   let ctx: TestApp;
   let christian: { id: string; token: string };
@@ -33,7 +55,10 @@ describe('recipe import', () => {
   }
 
   beforeEach(async () => {
-    ctx = await createTestApp({}, { providers: [fakeProvider] });
+    ctx = await createTestApp(
+      {},
+      { providers: [fakeProvider, blockedUpstreamProvider, brokenParserProvider] },
+    );
     const result = await createLocalUser(ctx.database, {
       username: 'christian',
       password: PASSWORD,
@@ -126,6 +151,26 @@ describe('recipe import', () => {
       { name: 'Öl', isStaple: true },
       { name: 'Basilikum', isStaple: false },
     ]);
+  });
+
+  it('tells an upstream block apart from a parser failure (#50)', async () => {
+    const blocked = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/import/preview',
+      headers: as(christian),
+      payload: { input: 'https://blocked.example/r/1' },
+    });
+    expect(blocked.statusCode).toBe(502);
+    expect(blocked.json()).toEqual({ error: 'upstream_error', status: 403 });
+
+    const broken = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/import/preview',
+      headers: as(christian),
+      payload: { input: 'https://broken.example/r/1' },
+    });
+    expect(broken.statusCode).toBe(502);
+    expect(broken.json()).toEqual({ error: 'parse_failed' });
   });
 
   it('answers 422 when no provider matches', async () => {

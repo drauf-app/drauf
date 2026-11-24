@@ -8,16 +8,21 @@ export type FetchGuardErrorCode =
   | 'invalid_url'
   | 'blocked_address'
   | 'fetch_failed'
+  | 'upstream_error'
+  | 'too_many_redirects'
   | 'unsupported_content'
   | 'too_large'
   | 'timeout';
 
 export class FetchGuardError extends Error {
   readonly code: FetchGuardErrorCode;
+  /** HTTP status of the upstream answer, when one was received. */
+  readonly status: number | undefined;
 
-  constructor(code: FetchGuardErrorCode, cause?: unknown) {
-    super(code, { cause });
+  constructor(code: FetchGuardErrorCode, cause?: unknown, status?: number) {
+    super(status === undefined ? code : `${code} (${status})`, { cause });
     this.code = code;
+    this.status = status;
   }
 }
 
@@ -147,15 +152,17 @@ export async function fetchGuarded(
       const location = response.headers.get('location');
       await response.body?.cancel();
       if (location === null || redirects >= MAX_REDIRECTS) {
-        throw new FetchGuardError('fetch_failed');
+        throw new FetchGuardError('too_many_redirects', undefined, response.status);
       }
       url = checkUrl(new URL(location, url).href);
       continue;
     }
 
     if (!response.ok) {
+      // A CDN/WAF block (403) looks very different from a vanished recipe
+      // (404) when debugging — carry the status instead of hiding it (#50).
       await response.body?.cancel();
-      throw new FetchGuardError('fetch_failed');
+      throw new FetchGuardError('upstream_error', undefined, response.status);
     }
     const contentType = response.headers.get('content-type') ?? '';
     if (!options.allowedContentTypes.some((allowed) => contentType.startsWith(allowed))) {
