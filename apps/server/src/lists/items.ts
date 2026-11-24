@@ -38,6 +38,8 @@ export interface EntryView extends ListEntry {
   portions: EntryPortion[];
   /** Catalogue icon for tile views; resolved by name, null when unknown. */
   icon: string | null;
+  /** Transient: an LLM category guess is running for this entry (#60). */
+  categorizing?: boolean;
 }
 
 export function buildEntryView(

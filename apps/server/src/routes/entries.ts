@@ -170,15 +170,21 @@ export function entryRoutes(
           'manual',
           catalog,
         );
-        const view = await getEntryView(database, entry, catalog);
+        let view = await getEntryView(database, entry, catalog);
+        // Optional third guessing tier, out-of-band of the add (#22); the
+        // flag tells clients a guess is running, its outcome arrives as an
+        // entry.updated event (#60).
+        if (
+          entry.categoryId === null &&
+          categorize !== undefined &&
+          (await categorize.schedule(entry))
+        ) {
+          view = { ...view, categorizing: true };
+        }
         hub.publish(listTopic(request.params.id), {
           type: merged ? 'entry.updated' : 'entry.created',
           data: view,
         });
-        if (entry.categoryId === null) {
-          // Optional third guessing tier, out-of-band of the add (#22).
-          void categorize?.schedule(entry);
-        }
         return reply.code(merged ? 200 : 201).send(view);
       },
     );

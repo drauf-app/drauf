@@ -130,6 +130,9 @@ function EntryRow({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
             ))}
           </span>
           {entry.note !== null && <span className="entry-note">{entry.note}</span>}
+          {entry.categorizing === true && entry.categoryId === null && (
+            <span className="categorizing-hint">{t.list.categorizing}</span>
+          )}
         </span>
         {quantities !== '' && <span className="entry-quantity">{quantities}</span>}
       </button>
@@ -170,6 +173,9 @@ function EntryTile({ entry, onToggle, onDelete, onEdit }: EntryRowProps) {
           <span className="tile-note">
             <ItemIcon icon="📝" /> {entry.note}
           </span>
+        )}
+        {entry.categorizing === true && entry.categoryId === null && (
+          <span className="categorizing-hint">{t.list.categorizing}</span>
         )}
         {entry.flags !== null && (
           <span className="tile-flags">

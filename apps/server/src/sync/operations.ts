@@ -152,10 +152,15 @@ async function requireEntry(ctx: Context, data: Record<string, unknown>): Promis
   return entry;
 }
 
-async function publishEntry(ctx: Context, type: string, entry: ListEntry): Promise<void> {
+async function publishEntry(
+  ctx: Context,
+  type: string,
+  entry: ListEntry,
+  extra: Record<string, unknown> = {},
+): Promise<void> {
   ctx.hub.publish(listTopic(entry.listId), {
     type,
-    data: await getEntryView(ctx.database, entry, ctx.catalog),
+    data: { ...(await getEntryView(ctx.database, entry, ctx.catalog)), ...extra },
   });
 }
 
@@ -190,11 +195,18 @@ async function applyAdd(ctx: Context, data: Record<string, unknown>): Promise<Sy
     'manual',
     ctx.catalog,
   );
-  await publishEntry(ctx, merged ? 'entry.updated' : 'entry.created', entry);
-  if (entry.categoryId === null) {
-    // Optional third guessing tier, out-of-band (#22).
-    void ctx.categorize?.schedule(entry);
-  }
+  // Optional third guessing tier, out-of-band (#22); the flag tells
+  // clients a guess is running (#60).
+  const categorizing =
+    entry.categoryId === null &&
+    ctx.categorize !== undefined &&
+    (await ctx.categorize.schedule(entry));
+  await publishEntry(
+    ctx,
+    merged ? 'entry.updated' : 'entry.created',
+    entry,
+    categorizing ? { categorizing: true } : {},
+  );
   return { id: '', status: 'applied', entryId: entry.id, portionId };
 }
 

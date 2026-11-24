@@ -1616,6 +1616,27 @@ button:disabled {
   color: var(--text-muted);
 }
 
+/* "Kategorie wird geraten …": quiet pulse while the LLM guess runs; the
+   entry.updated sync event replaces the entry and the hint disappears. */
+.categorizing-hint {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-muted);
+  animation: categorizing-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes categorizing-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .categorizing-hint {
+    animation: none;
+  }
+}
+
 /* One quiet line; the full note lives in the drawer and the editor. */
 .tile-note {
   font-size: 0.72rem;
