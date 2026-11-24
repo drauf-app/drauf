@@ -82,6 +82,8 @@ export interface EntryView {
   portions: EntryPortion[];
   /** Catalogue icon for tile views; null when the item is unknown. */
   icon: string | null;
+  /** Transient: the server is asking the LLM for a category right now. */
+  categorizing?: boolean;
 }
 
 /** One quick-add suggestion; history entries come first. */

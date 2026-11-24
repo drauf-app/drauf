@@ -68,6 +68,7 @@ export const de = {
       iconPick: 'Icon wählen',
     },
     deleteEntry: 'Eintrag löschen',
+    categorizing: 'Kategorie wird geraten …',
     checkEntry: 'Abhaken',
     uncheckEntry: 'Zurück auf die Liste',
     rename: 'Bearbeiten',

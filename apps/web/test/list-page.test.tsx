@@ -208,6 +208,20 @@ describe('ListPage', () => {
     expect(await screen.findByRole('option', { name: /Nudeln/ })).toBeDefined();
   });
 
+  it('shows the categorizing hint only while the guess is pending', async () => {
+    stubListApi({
+      entries: [
+        entryView({ categoryId: null, categorizing: true }),
+        entryView({ id: 'e9', name: 'Brot', nameNormalized: 'brot', categoryId: null }),
+      ],
+    });
+    renderListPage();
+
+    await screen.findByText('Milch');
+    // Hint for the pending entry only; the resolved one shows nothing.
+    expect(screen.getAllByText('Kategorie wird geraten …')).toHaveLength(1);
+  });
+
   it('adds a suggestion picked with arrow keys and Enter', async () => {
     const posted: string[] = [];
     stubListApi({
