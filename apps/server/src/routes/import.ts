@@ -165,9 +165,15 @@ export function importRoutes(
           };
         } catch (err) {
           request.log.warn({ err, provider: match.provider.id }, 'recipe preview failed');
-          return reply.code(502).send({
-            error: err instanceof FetchGuardError ? err.code : 'fetch_failed',
-          });
+          if (err instanceof FetchGuardError) {
+            return reply.code(502).send({
+              error: err.code,
+              ...(err.status === undefined ? {} : { status: err.status }),
+            });
+          }
+          // The page was fetched but the provider could not read it — a
+          // layout change, not a network problem (#50).
+          return reply.code(502).send({ error: 'parse_failed' });
         }
       },
     );

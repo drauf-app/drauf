@@ -88,6 +88,10 @@ export function ImportPage() {
     } catch (err) {
       if (err instanceof ApiError && err.code === 'no_provider') {
         setError(t.import.noProvider);
+      } else if (err instanceof ApiError && err.code === 'timeout') {
+        setError(t.import.timeout);
+      } else if (err instanceof ApiError && err.code === 'parse_failed') {
+        setError(t.import.parseFailed);
       } else if (err instanceof ApiError) {
         setError(t.import.fetchFailed);
       } else {
