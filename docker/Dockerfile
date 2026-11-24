@@ -41,6 +41,11 @@ COPY --from=build /app/packages/providers/dist packages/providers/dist
 COPY packages/catalog/package.json packages/catalog/
 COPY --from=build /app/packages/catalog/dist packages/catalog/dist
 COPY packages/catalog/data packages/catalog/data
+# The workspace link @drauf/shared -> ../../../shared lives in the package's
+# own node_modules; without it the catalogue cannot resolve its import at
+# runtime (the build-only CI image check never caught that — the smoke test
+# in ci.yml does now).
+COPY --from=prod-deps /app/packages/catalog/node_modules packages/catalog/node_modules
 COPY apps/server/package.json apps/server/
 COPY --from=build /app/apps/server/dist apps/server/dist
 COPY --from=build /app/apps/server/drizzle apps/server/drizzle

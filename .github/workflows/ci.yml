@@ -52,7 +52,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: docker build -f docker/Dockerfile .
+      - run: docker build -f docker/Dockerfile -t drauf-ci .
+      # Smoke test: a built image is not a working one (module resolution,
+      # migrations and the web dir only fail at startup). Boot it and ask.
+      - run: |
+          docker run -d --name drauf-smoke \
+            -e AUTH_SECRET=ci-smoke-secret-0123456789abcdef-0123 \
+            -p 3000:3000 drauf-ci
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/healthz > /dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server never became healthy"
+          docker logs drauf-smoke
+          exit 1
 
   zizmor:
     runs-on: ubuntu-latest
