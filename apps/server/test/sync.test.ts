@@ -331,6 +331,170 @@ describe('sync', () => {
       expect(result).toMatchObject({ status: 'rejected', error: 'not_found' });
     });
 
+    it('edits one portion of a merged entry without touching the other (#48)', async () => {
+      // A manual 500 g and a recipe-style second add merge into one entry.
+      const [first] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Hack', quantity: 500, unit: 'g' },
+        },
+      ]);
+      expect(first).toMatchObject({ status: 'applied' });
+      expect(typeof first?.portionId).toBe('string');
+      const [second] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Hack', quantity: 300, unit: 'g' },
+        },
+      ]);
+
+      const [set] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'portion.set',
+          time: new Date().toISOString(),
+          data: {
+            listId,
+            entryId: second?.entryId,
+            portionId: second?.portionId,
+            quantity: 400,
+            unit: 'g',
+          },
+        },
+      ]);
+      expect(set).toMatchObject({ status: 'applied', portionId: second?.portionId });
+
+      const [entry] = await getEntries();
+      // 500 g untouched + the edited 400 g sum per L4.
+      expect(entry?.quantities).toEqual([{ unit: 'g', quantity: 900 }]);
+      expect(entry?.portions).toHaveLength(2);
+    });
+
+    it('rejects an older portion.set as a conflict', async () => {
+      const [added] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Milch', quantity: 1, unit: 'l' },
+        },
+      ]);
+      const [newer] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'portion.set',
+          time: new Date().toISOString(),
+          data: {
+            listId,
+            entryId: added?.entryId,
+            portionId: added?.portionId,
+            quantity: 2,
+            unit: 'l',
+          },
+        },
+      ]);
+      expect(newer).toMatchObject({ status: 'applied' });
+
+      // An op stamped before that edit loses (per-portion LWW).
+      const [older] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'portion.set',
+          time: new Date(Date.now() - 60_000).toISOString(),
+          data: {
+            listId,
+            entryId: added?.entryId,
+            portionId: added?.portionId,
+            quantity: 3,
+            unit: 'l',
+          },
+        },
+      ]);
+      expect(older).toMatchObject({ status: 'conflict' });
+      const [entry] = await getEntries();
+      expect(entry?.quantities).toEqual([{ unit: 'l', quantity: 2 }]);
+    });
+
+    it('deletes one portion; deleting the last one deletes the entry (#48)', async () => {
+      const [a] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Zwiebeln', quantity: 3 },
+        },
+      ]);
+      const [b] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Zwiebeln', quantity: 50, unit: 'g' },
+        },
+      ]);
+      expect(a?.entryId).toBe(b?.entryId);
+
+      const deleteB = {
+        id: randomUUID(),
+        type: 'portion.delete',
+        time: new Date().toISOString(),
+        data: { listId, entryId: b?.entryId, portionId: b?.portionId },
+      };
+      const [removed] = await runOps([deleteB]);
+      expect(removed).toMatchObject({ status: 'applied' });
+      let entries = await getEntries();
+      expect(entries[0]?.portions).toHaveLength(1);
+
+      // Replay is idempotent, like entry.delete.
+      const [replayed] = await runOps([{ ...deleteB, id: randomUUID() }]);
+      expect(replayed).toMatchObject({ status: 'applied' });
+
+      const [last] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'portion.delete',
+          time: new Date().toISOString(),
+          data: { listId, entryId: a?.entryId, portionId: a?.portionId },
+        },
+      ]);
+      expect(last).toMatchObject({ status: 'applied' });
+      entries = await getEntries();
+      expect(entries).toHaveLength(0);
+    });
+
+    it('rejects portion operations with foreign or mismatched ids', async () => {
+      const [added] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Milch' },
+        },
+      ]);
+      const [other] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Brot' },
+        },
+      ]);
+      // A portion id that belongs to a different entry is not found.
+      const [mismatched] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'portion.set',
+          time: new Date().toISOString(),
+          data: { listId, entryId: added?.entryId, portionId: other?.portionId, quantity: 2 },
+        },
+      ]);
+      expect(mismatched).toMatchObject({ status: 'rejected', error: 'not_found' });
+    });
+
     it('treats deletes as idempotent', async () => {
       const [added] = await runOps([
         {

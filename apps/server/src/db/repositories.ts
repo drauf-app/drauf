@@ -552,7 +552,7 @@ export async function createEntryPortion(
   },
 ): Promise<EntryPortion> {
   const { db, t } = unwrap(database);
-  const portion: EntryPortion = { id: newId(), createdAt: new Date(), ...input };
+  const portion: EntryPortion = { id: newId(), createdAt: new Date(), updatedAt: null, ...input };
   await db.insert(t.entryPortions).values(portion);
   return portion;
 }
@@ -570,6 +570,34 @@ export async function listPortionsForEntries(
     .from(t.entryPortions)
     .where(inArray(t.entryPortions.entryId, entryIds))
     .orderBy(asc(t.entryPortions.createdAt));
+}
+
+export async function getEntryPortion(
+  database: Database,
+  entryId: string,
+  portionId: string,
+): Promise<EntryPortion | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select()
+    .from(t.entryPortions)
+    .where(and(eq(t.entryPortions.id, portionId), eq(t.entryPortions.entryId, entryId)));
+  return rows[0];
+}
+
+/** Replaces one portion's value; the three fields share one clock (#48). */
+export async function updateEntryPortion(
+  database: Database,
+  portionId: string,
+  patch: Pick<EntryPortion, 'quantity' | 'unit' | 'count' | 'updatedAt'>,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.entryPortions).set(patch).where(eq(t.entryPortions.id, portionId));
+}
+
+export async function deleteEntryPortion(database: Database, portionId: string): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.entryPortions).where(eq(t.entryPortions.id, portionId));
 }
 
 export async function deletePortionsForEntry(database: Database, entryId: string): Promise<void> {

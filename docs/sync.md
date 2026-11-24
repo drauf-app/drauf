@@ -37,17 +37,27 @@ order:
 }
 ```
 
-| Type              | Data                                                                                              | Behaviour                                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `entry.add`       | `listId`, `name`, optional `quantity`, `unit`, `variant`, `note`, `categoryId`                    | Same merge semantics as the REST endpoint                          |
-| `entry.setFields` | `listId`, `entryId`, `fields` (any of `name`, `variant`, `note`, `categoryId`, `quantity`+`unit`) | Per-field LWW; applies the winning fields, `conflict` if none wins |
-| `entry.check`     | `listId`, `entryId`                                                                               | Idempotent; the first check-off sticks                             |
-| `entry.uncheck`   | `listId`, `entryId`                                                                               | Applies only when newer than the check-off                         |
-| `entry.delete`    | `listId`, `entryId`                                                                               | Idempotent                                                         |
+| Type              | Data                                                                                              | Behaviour                                                                                                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entry.add`       | `listId`, `name`, optional `quantity`, `unit`, `variant`, `note`, `categoryId`                    | Same merge semantics as the REST endpoint                                                                                                                                                           |
+| `entry.setFields` | `listId`, `entryId`, `fields` (any of `name`, `variant`, `note`, `categoryId`, `quantity`+`unit`) | Per-field LWW; applies the winning fields, `conflict` if none wins                                                                                                                                  |
+| `entry.check`     | `listId`, `entryId`                                                                               | Idempotent; the first check-off sticks                                                                                                                                                              |
+| `entry.uncheck`   | `listId`, `entryId`                                                                               | Applies only when newer than the check-off                                                                                                                                                          |
+| `entry.delete`    | `listId`, `entryId`                                                                               | Idempotent                                                                                                                                                                                          |
+| `portion.set`     | `listId`, `entryId`, `portionId`, optional `quantity`, `unit`, `count`                            | Replaces the one portion's value; absent fields become null. The three fields share one clock: LWW against the portion's `updatedAt` (its `createdAt` before the first edit), `conflict` when older |
+| `portion.delete`  | `listId`, `entryId`, `portionId`                                                                  | Idempotent; deleting the last portion deletes the entry (emits `entry.deleted`)                                                                                                                     |
 
 The response carries one result per operation: `applied`, `duplicate`,
 `conflict` or `rejected` (with an error code), plus the `entryId` where
-relevant. Conflict outcomes are terminal: replaying them yields `duplicate`.
+relevant — and, for `entry.add`, the `portionId` of the portion the add
+created, so clients can later edit exactly their own contribution of a
+merged entry. Conflict outcomes are terminal: replaying them yields
+`duplicate`.
+
+Portion-level edits exist for clients that edit a single contribution of a
+merged entry (L4 traceability — the iOS chip bar edits exactly the portion
+its add created). `entry.setFields` with `quantity`/`unit`/`count` keeps its
+replace-all-portions semantics for whole-quantity edits.
 
 Offline replay covers list entries — the flows that genuinely happen without
 connectivity (adding and checking off while shopping). Everything else uses the

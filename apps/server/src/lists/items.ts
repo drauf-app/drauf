@@ -98,6 +98,8 @@ export interface AddItemInput {
 export interface AddItemResult {
   entry: ListEntry;
   merged: boolean;
+  /** The portion this add created, so clients can edit exactly it (#48). */
+  portionId: string;
 }
 
 /**
@@ -175,7 +177,7 @@ export async function addItemToList(
     });
   }
 
-  await createEntryPortion(database, {
+  const portion = await createEntryPortion(database, {
     entryId: entry.id,
     quantity: input.quantity ?? null,
     unit: normalizeOptional(input.unit),
@@ -198,7 +200,7 @@ export async function addItemToList(
       categoryId: entry.categoryId,
     });
   }
-  return { entry, merged };
+  return { entry, merged, portionId: portion.id };
 }
 
 export async function getEntryViews(

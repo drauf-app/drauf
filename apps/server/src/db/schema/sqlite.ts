@@ -286,6 +286,8 @@ export const entryPortions = sqliteTable('entry_portions', {
   origin: text('origin', { enum: ['manual', 'recipe'] }).notNull(),
   addedById: text('added_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  /** Last portion.set per-portion clock; null = never edited (createdAt rules). */
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }),
 });
 
 /** Processed sync operation ids: replaying a queued operation is a no-op. */

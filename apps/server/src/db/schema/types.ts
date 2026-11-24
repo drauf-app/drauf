@@ -167,6 +167,8 @@ export interface EntryPortion {
   origin: PortionOrigin;
   addedById: string | null;
   createdAt: Date;
+  /** Last portion.set per-portion clock; null = never edited (createdAt rules). */
+  updatedAt: Date | null;
 }
 
 export interface List {

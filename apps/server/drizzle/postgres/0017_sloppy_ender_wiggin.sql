@@ -1,0 +1,1 @@
+ALTER TABLE "entry_portions" ADD COLUMN "updated_at" timestamp with time zone;
