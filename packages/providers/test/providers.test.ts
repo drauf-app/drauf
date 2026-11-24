@@ -20,6 +20,36 @@ const RECIPE_HTML = `<!doctype html>
 </script>
 </head><body></body></html>`;
 
+describe('entity decoding', () => {
+  const ENTITY_HTML = `<!doctype html>
+<html><head>
+<meta property="og:title" content="S&uuml;&szlig;e &amp; Saure Suppe" />
+<script type="application/ld+json">
+{"@type":"Recipe","name":"Kr&auml;utersuppe","recipeYield":"2",
+ "recipeIngredient":["&frac12; Teel\u00f6ffel Salz","&#189; TL Zucker","&#xBD; Bund Dill","&amp;frac12; literal"]}
+</script>
+</head><body></body></html>`;
+
+  it('decodes named and numeric entities in JSON-LD and meta content', () => {
+    const preview = parseCookidooHtml(ENTITY_HTML);
+    expect(preview.title).toBe('Kräutersuppe');
+    expect(preview.ingredients).toEqual([
+      '½ Teelöffel Salz',
+      '½ TL Zucker',
+      '½ Bund Dill',
+      // Decoding runs once: double-encoded text yields the literal entity.
+      '&frac12; literal',
+    ]);
+  });
+
+  it('decodes entities in the meta fallback too', () => {
+    const preview = parseCookidooHtml(
+      '<meta property="og:title" content="S&uuml;&szlig;e &amp; Saure Suppe" />',
+    );
+    expect(preview.title).toBe('Süße & Saure Suppe');
+  });
+});
+
 describe('extractFirstUrl', () => {
   it('finds the URL inside shared text instead of treating the text as a URL', () => {
     const shared =

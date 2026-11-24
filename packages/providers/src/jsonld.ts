@@ -1,3 +1,49 @@
+/**
+ * Minimal HTML entity decoding for text lifted out of pages: some sites
+ * (Cookidoo among them) leave entities like &frac12; inside their JSON-LD
+ * strings. Decodes numeric references and the named entities seen in recipe
+ * text; unknown names stay untouched, and decoding runs exactly once, so
+ * double-encoded text (&amp;frac12;) correctly yields the literal entity.
+ */
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  frac12: '\u00bd',
+  frac14: '\u00bc',
+  frac34: '\u00be',
+  auml: 'ä',
+  ouml: 'ö',
+  uuml: 'ü',
+  Auml: 'Ä',
+  Ouml: 'Ö',
+  Uuml: 'Ü',
+  szlig: 'ß',
+  eacute: 'é',
+  egrave: 'è',
+  agrave: 'à',
+  ccedil: 'ç',
+  deg: '°',
+  ndash: '\u2013',
+  mdash: '\u2014',
+};
+
+export function decodeHtmlEntities(text: string): string {
+  return text.replace(/&(#[xX]?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (whole, body: string) => {
+    if (body.startsWith('#')) {
+      const hex = body[1] === 'x' || body[1] === 'X';
+      const code = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
+      return Number.isFinite(code) && code > 0 && code <= 0x10ffff
+        ? String.fromCodePoint(code)
+        : whole;
+    }
+    return NAMED_ENTITIES[body] ?? whole;
+  });
+}
+
 const SCRIPT_PATTERN =
   /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
 
@@ -54,7 +100,7 @@ export function findJsonLd(html: string, type: string): JsonObject | undefined {
 /** Reads a string property that may be a string, array of strings, or {url}. */
 export function readStringish(value: unknown): string | null {
   if (typeof value === 'string' && value.trim() !== '') {
-    return value.trim();
+    return decodeHtmlEntities(value.trim());
   }
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -77,5 +123,6 @@ export function readMetaContent(html: string, property: string): string | null {
     'i',
   );
   const match = pattern.exec(html);
-  return match?.[1]?.trim() || null;
+  const content = match?.[1]?.trim();
+  return content ? decodeHtmlEntities(content) : null;
 }

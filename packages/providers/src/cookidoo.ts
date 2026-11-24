@@ -1,4 +1,4 @@
-import { findJsonLd, readMetaContent, readStringish } from './jsonld.js';
+import { decodeHtmlEntities, findJsonLd, readMetaContent, readStringish } from './jsonld.js';
 import type { RecipePreview, RecipeProvider } from './types.js';
 import { extractFirstUrl } from './url.js';
 
@@ -23,7 +23,7 @@ function readIngredients(value: unknown): string[] {
   }
   return value
     .filter((line): line is string => typeof line === 'string')
-    .map((line) => line.trim())
+    .map((line) => decodeHtmlEntities(line.trim()))
     .filter((line) => line !== '');
 }
 
