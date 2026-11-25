@@ -1,46 +1,17 @@
-import { decodeHtmlEntities, findJsonLd, readMetaContent, readStringish } from './jsonld.js';
+import { parseRecipeHtml } from './recipe.js';
 import type { RecipePreview, RecipeProvider } from './types.js';
 import { extractFirstUrl } from './url.js';
 
 const HOSTNAME_PATTERN = /(^|\.)cookidoo\.[a-z.]{2,10}$/i;
 
-function parseServings(value: unknown): number | null {
-  const text = readStringish(value) ?? (typeof value === 'number' ? String(value) : null);
-  if (text === null) {
-    return null;
-  }
-  const match = /\d+/.exec(text);
-  if (match === null) {
-    return null;
-  }
-  const servings = Number.parseInt(match[0], 10);
-  return servings > 0 && servings <= 1000 ? servings : null;
-}
-
-function readIngredients(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value
-    .filter((line): line is string => typeof line === 'string')
-    .map((line) => decodeHtmlEntities(line.trim()))
-    .filter((line) => line !== '');
-}
-
 /**
  * Parses the public Cookidoo recipe page (no login; preparation steps are
- * login-gated and deliberately never read). Primary source is the schema.org
- * Recipe JSON-LD; every field falls back independently — a missing field must
- * not abort the import.
+ * login-gated and deliberately never read). The shared schema.org parse
+ * covers it fully today; the dedicated provider keeps the hostname match
+ * and the hook for site-specific fixes.
  */
 export function parseCookidooHtml(html: string): RecipePreview {
-  const recipe = findJsonLd(html, 'Recipe') ?? {};
-  return {
-    title: readStringish(recipe.name) ?? readMetaContent(html, 'og:title'),
-    imageUrl: readStringish(recipe.image) ?? readMetaContent(html, 'og:image'),
-    servings: parseServings(recipe.recipeYield),
-    ingredients: readIngredients(recipe.recipeIngredient),
-  };
+  return parseRecipeHtml(html);
 }
 
 export const cookidooProvider: RecipeProvider = {
