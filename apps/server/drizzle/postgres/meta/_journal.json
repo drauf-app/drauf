@@ -141,6 +141,13 @@
       "when": 1795624448869,
       "tag": "0019_jazzy_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795639565606,
+      "tag": "0020_luxuriant_the_captain",
+      "breakpoints": true
     }
   ]
 }

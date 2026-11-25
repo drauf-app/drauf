@@ -123,7 +123,7 @@ export function ImportPage() {
       .filter((_, index) => selected.has(index))
       .map((ingredient) => toApplyItem(ingredient, factor));
     const wantList = toList && listId !== '' && items.length > 0;
-    const wantPlan = toPlan && slotId !== '';
+    const wantPlan = toPlan;
     if (!wantList && !wantPlan) {
       setError(t.import.nothingSelected);
       return;
@@ -134,7 +134,8 @@ export function ImportPage() {
         ? {
             plan: {
               date: planDate,
-              slotId,
+              // The meal label is optional; days hold any number of entries.
+              ...(slotId === '' ? {} : { slotId }),
               link: preview.url,
               ...(preview.title === null ? {} : { title: preview.title }),
               ...(preview.imageUrl === null ? {} : { imageUrl: preview.imageUrl }),
@@ -147,12 +148,8 @@ export function ImportPage() {
     try {
       await applyImport(request);
       await navigate(wantList ? `/lists/${encodeURIComponent(listId)}` : '/plan');
-    } catch (err) {
-      setError(
-        err instanceof ApiError && err.code === 'slot_occupied'
-          ? t.import.slotOccupied
-          : t.common.error,
-      );
+    } catch {
+      setError(t.common.error);
     } finally {
       setBusy(false);
     }
@@ -273,6 +270,7 @@ export function ImportPage() {
                   value={slotId}
                   onChange={(event) => setSlotId(event.target.value)}
                 >
+                  <option value="">{t.plan.noSlot}</option>
                   {slots.map((slot) => (
                     <option key={slot.id} value={slot.id}>
                       {slot.name}

@@ -3,7 +3,8 @@ import type { HouseholdInfo, MealSlot, PlanEntry } from './types';
 
 export interface PlanEntryInput {
   date: string;
-  slotId: string;
+  /** Optional meal label; days hold 1..n entries. */
+  slotId?: string;
   text?: string;
   link?: string;
   imageUrl?: string;
@@ -12,6 +13,7 @@ export interface PlanEntryInput {
 
 export interface PlanEntryPatch {
   date?: string;
+  /** The meal label; '' clears it, like the other optional fields. */
   slotId?: string;
   /** '' clears an optional field. */
   text?: string;

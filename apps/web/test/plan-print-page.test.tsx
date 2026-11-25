@@ -70,12 +70,12 @@ describe('PlanPrintPage', () => {
     renderPrint();
     const user = userEvent.setup();
 
-    await screen.findAllByText('Mittagessen');
+    await screen.findByText('Drucken');
     await user.selectOptions(screen.getByLabelText('Vorlage'), 'calendar');
 
     const table = await screen.findByRole('table');
-    // Header row: one empty corner cell plus seven day columns.
-    expect(table.querySelectorAll('thead th')).toHaveLength(8);
-    expect(table.querySelectorAll('tbody tr')).toHaveLength(2);
+    // Header row: seven day columns; entries list inside each day cell.
+    expect(table.querySelectorAll('thead th')).toHaveLength(7);
+    expect(table.querySelectorAll('tbody td')).toHaveLength(7);
   });
 });

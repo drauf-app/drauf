@@ -272,13 +272,24 @@ describe('recipe import', () => {
   });
 
   it('validates everything before writing anything', async () => {
-    const occupied = await ctx.app.inject({
+    // Imports land next to existing entries now (days hold 1..n), including
+    // without any meal label at all.
+    await ctx.app.inject({
       method: 'POST',
       url: '/api/plan/entries',
       headers: as(christian),
-      payload: { date: '2026-11-16', slotId: lunch.id, text: 'Belegt' },
+      payload: { date: '2026-11-16', slotId: lunch.id, text: 'Schon da' },
     });
-    expect(occupied.statusCode).toBe(201);
+    const alongside = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/import/apply',
+      headers: as(christian),
+      payload: { plan: { date: '2026-11-16', link: 'https://fake.example/r/1' } },
+    });
+    expect(alongside.statusCode).toBe(201);
+    expect(
+      (alongside.json() as { planEntry: { slotId: string | null } }).planEntry.slotId,
+    ).toBeNull();
 
     const response = await ctx.app.inject({
       method: 'POST',
@@ -286,12 +297,12 @@ describe('recipe import', () => {
       headers: as(christian),
       payload: {
         list: { id: listId, items: [{ name: 'Tomaten' }] },
-        plan: { date: '2026-11-16', slotId: lunch.id, link: 'https://fake.example/r/1' },
+        plan: { date: '2026-11-16', slotId: 'bogus-slot', link: 'https://fake.example/r/1' },
       },
     });
-    expect(response.statusCode).toBe(409);
+    expect(response.statusCode).toBe(400);
 
-    // The occupied plan slot prevented the list items from being written.
+    // The invalid plan target prevented the list items from being written.
     const entries = await ctx.app.inject({
       method: 'GET',
       url: `/api/lists/${listId}/entries`,

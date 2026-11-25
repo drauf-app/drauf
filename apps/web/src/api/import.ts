@@ -30,7 +30,7 @@ export interface ApplyItem {
 
 export interface ApplyInput {
   list?: { id: string; items: ApplyItem[] };
-  plan?: { date: string; slotId: string; title?: string; link: string; imageUrl?: string };
+  plan?: { date: string; slotId?: string; title?: string; link: string; imageUrl?: string };
 }
 
 export interface ApplyResult {

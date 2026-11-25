@@ -181,7 +181,6 @@ export const de = {
     parseFailed:
       'Die Rezeptseite konnte nicht gelesen werden – womöglich hat sich ihr Aufbau geändert.',
     nothingSelected: 'Bitte mindestens ein Ziel wählen.',
-    slotOccupied: 'In diesem Plan-Feld steht schon etwas.',
   },
   plan: {
     title: 'Wochenplan',
@@ -195,8 +194,8 @@ export const de = {
     noCook: 'Niemand',
     moveDay: 'Tag',
     moveSlot: 'Mahlzeit',
+    noSlot: 'Ohne Mahlzeit',
     delete: 'Eintrag löschen',
-    slotOccupied: 'In diesem Feld steht schon etwas.',
     openLink: 'Rezept öffnen',
     print: {
       title: 'Wochenplan',

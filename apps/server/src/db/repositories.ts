@@ -797,7 +797,7 @@ export async function createPlanEntry(
   input: {
     householdId: string;
     date: string;
-    slotId: string;
+    slotId: string | null;
     text: string | null;
     link: string | null;
     imageUrl: string | null;
@@ -821,26 +821,6 @@ export async function getPlanEntry(
     .select()
     .from(t.planEntries)
     .where(and(eq(t.planEntries.id, entryId), eq(t.planEntries.householdId, householdId)));
-  return rows[0];
-}
-
-export async function findPlanEntryForSlot(
-  database: Database,
-  householdId: string,
-  date: string,
-  slotId: string,
-): Promise<PlanEntry | undefined> {
-  const { db, t } = unwrap(database);
-  const rows = await db
-    .select()
-    .from(t.planEntries)
-    .where(
-      and(
-        eq(t.planEntries.householdId, householdId),
-        eq(t.planEntries.date, date),
-        eq(t.planEntries.slotId, slotId),
-      ),
-    );
   return rows[0];
 }
 

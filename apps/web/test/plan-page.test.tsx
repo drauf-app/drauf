@@ -73,9 +73,11 @@ describe('PlanPage', () => {
 
     expect(await screen.findByText('Pasta')).toBeDefined();
     expect(screen.getByText('Christian')).toBeDefined();
-    // Two slots on each of the seven days, sorted by sortOrder.
-    expect(screen.getAllByText('Mittagessen')).toHaveLength(7);
-    expect(screen.getAllByText('Abendessen')).toHaveLength(7);
+    // The slot renders as a label tag on the entry, not as empty cells.
+    expect(screen.getAllByText('Mittagessen')).toHaveLength(1);
+    expect(screen.queryByText('Abendessen')).toBeNull();
+    // One add button per day: days hold any number of entries.
+    expect(screen.getAllByRole('button', { name: /Eintrag hinzufügen/ })).toHaveLength(7);
   });
 
   it('shows the source label as a clickable link next to the title', async () => {
@@ -109,14 +111,13 @@ describe('PlanPage', () => {
     const user = userEvent.setup();
 
     const addButtons = await screen.findAllByRole('button', { name: /Eintrag hinzufügen/ });
-    const firstDayDinner = addButtons.find((button) =>
-      button.getAttribute('aria-label')?.includes('Abendessen'),
-    );
-    if (firstDayDinner === undefined) throw new Error('no dinner cell found');
-    await user.click(firstDayDinner);
+    const firstDay = addButtons[0];
+    if (firstDay === undefined) throw new Error('no day cell found');
+    await user.click(firstDay);
 
     await user.type(screen.getByLabelText('Gericht oder Link'), 'Flammkuchen');
     await user.selectOptions(screen.getByLabelText('Wer kocht?'), 'u1');
+    await user.selectOptions(screen.getByLabelText('Mahlzeit'), 's2');
     await user.click(screen.getByRole('button', { name: 'Speichern' }));
 
     expect(await screen.findByText('Flammkuchen')).toBeDefined();
@@ -174,7 +175,6 @@ describe('PlanPage', () => {
     expect(await screen.findByText('Lasagne')).toBeDefined();
     expect(JSON.parse(posted[0] ?? '{}')).toEqual({
       date: DAYS[0],
-      slotId: 's1',
       text: 'Lasagne',
       link: 'https://example.com/r/lasagne',
     });
