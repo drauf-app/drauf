@@ -1123,19 +1123,31 @@ export async function recordCatalogNote(
 export async function setCatalogUsageIcon(
   database: Database,
   householdId: string,
-  nameNormalized: string,
+  item: { name: string; nameNormalized: string },
   icon: string | null,
 ): Promise<void> {
   const { db, t } = unwrap(database);
-  await db
-    .update(t.catalogUsage)
-    .set({ icon })
-    .where(
-      and(
-        eq(t.catalogUsage.householdId, householdId),
-        eq(t.catalogUsage.nameNormalized, nameNormalized),
-      ),
-    );
+  const key = and(
+    eq(t.catalogUsage.householdId, householdId),
+    eq(t.catalogUsage.nameNormalized, item.nameNormalized),
+  );
+  const existing = (await db.select().from(t.catalogUsage).where(key))[0];
+  if (existing === undefined) {
+    if (icon === null) {
+      return;
+    }
+    // A pick can precede any recorded add (e.g. right after a rename).
+    await db.insert(t.catalogUsage).values({
+      householdId,
+      nameNormalized: item.nameNormalized,
+      name: item.name,
+      count: 0,
+      icon,
+      updatedAt: new Date(),
+    });
+    return;
+  }
+  await db.update(t.catalogUsage).set({ icon }).where(key);
 }
 
 /** The household's picked icons by normalized name; they override the matcher. */

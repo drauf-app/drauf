@@ -104,6 +104,36 @@ describe('list routes', () => {
     expect(recolored.json()).toMatchObject({ icon: '🧪', color: '#dc2626' });
   });
 
+  it('accepts namespaced icon ids and rejects malformed ones (#71)', async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Markt', icon: 'custom:wochenmarkt' },
+    });
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({ icon: 'custom:wochenmarkt' });
+
+    const malformedCreate = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/lists',
+      headers: as(christian),
+      payload: { name: 'Kaputt', icon: 'custom:not a key' },
+    });
+    expect(malformedCreate.statusCode).toBe(400);
+    expect(malformedCreate.json()).toMatchObject({ error: 'invalid_icon' });
+
+    const listId = (created.json() as { id: string }).id;
+    const malformedPatch = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}`,
+      headers: as(christian),
+      payload: { icon: 'Nope:Bad' },
+    });
+    expect(malformedPatch.statusCode).toBe(400);
+    expect(malformedPatch.json()).toMatchObject({ error: 'invalid_icon' });
+  });
+
   it('hides lists from removed members without leaking existence', async () => {
     const list = await createList();
     const removal = await ctx.app.inject({

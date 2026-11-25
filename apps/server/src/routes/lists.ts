@@ -1,5 +1,5 @@
 import type { CatalogIndex } from '@drauf/catalog';
-import { normalizeItemName } from '@drauf/shared';
+import { ICON_ID_MAX_LENGTH, isValidIconId, normalizeItemName } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
@@ -29,7 +29,7 @@ const createBody = {
   required: ['name'],
   properties: {
     name: { type: 'string', minLength: 1, maxLength: 100 },
-    icon: { type: 'string', maxLength: 64 },
+    icon: { type: 'string', maxLength: ICON_ID_MAX_LENGTH },
     color: { type: 'string', pattern: COLOR_PATTERN },
   },
   additionalProperties: false,
@@ -40,7 +40,7 @@ const patchBody = {
   minProperties: 1,
   properties: {
     name: { type: 'string', minLength: 1, maxLength: 100 },
-    icon: { type: 'string', maxLength: 64 },
+    icon: { type: 'string', maxLength: ICON_ID_MAX_LENGTH },
     color: { type: 'string', pattern: COLOR_PATTERN },
     archived: { type: 'boolean' },
     defaultStoreId: { type: ['string', 'null'], maxLength: 64 },
@@ -139,6 +139,9 @@ export function listRoutes(
       async (request, reply) => {
         const auth = requireAuthUser(reply, request.authUser);
         const { name, icon, color } = request.body;
+        if (icon !== undefined && icon.trim() !== '' && !isValidIconId(icon.trim())) {
+          return reply.code(400).send({ error: 'invalid_icon' });
+        }
         const list = await createListForUser(database, auth.id, {
           name,
           // '' means "none", like clearing on PATCH.
@@ -182,6 +185,9 @@ export function listRoutes(
           return reply.code(400).send({ error: 'invalid_store' });
         }
         const { name, icon, color, archived } = request.body;
+        if (icon !== undefined && icon.trim() !== '' && !isValidIconId(icon.trim())) {
+          return reply.code(400).send({ error: 'invalid_icon' });
+        }
         await updateList(database, list.id, {
           ...(name !== undefined ? { name } : {}),
           ...(archived !== undefined ? { archived } : {}),

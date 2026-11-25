@@ -1,5 +1,11 @@
 import type { CatalogIndex } from '@drauf/catalog';
-import { ENTRY_FLAGS, joinVariants, splitVariants } from '@drauf/shared';
+import {
+  ENTRY_FLAGS,
+  ICON_ID_MAX_LENGTH,
+  isValidIconId,
+  joinVariants,
+  splitVariants,
+} from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { CategorizeService } from '../categorize/service.js';
@@ -55,7 +61,7 @@ const patchBody = {
     note: { type: 'string', maxLength: 500 },
     categoryId: { type: 'string', maxLength: 64 },
     /** Household item icon ('' = back to the catalogue match), not an entry field. */
-    icon: { type: 'string', maxLength: 16 },
+    icon: { type: 'string', maxLength: ICON_ID_MAX_LENGTH },
   },
   additionalProperties: false,
 } as const;
@@ -200,6 +206,9 @@ export function entryRoutes(
 
         const { name, variant, flags, note, quantity, unit, count, categoryId, icon } =
           request.body;
+        if (icon !== undefined && icon.trim() !== '' && !isValidIconId(icon.trim())) {
+          return reply.code(400).send({ error: 'invalid_icon' });
+        }
         const patch: Parameters<typeof updateListEntry>[2] = {};
         const editedFields: string[] = [];
         if (categoryId !== undefined) {
@@ -267,7 +276,7 @@ export function entryRoutes(
               await setCatalogUsageIcon(
                 database,
                 householdId,
-                entry.nameNormalized,
+                { name: entry.name, nameNormalized: entry.nameNormalized },
                 icon.trim() === '' ? null : icon.trim(),
               );
             }

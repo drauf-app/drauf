@@ -1,5 +1,5 @@
 import type { CatalogIndex } from '@drauf/catalog';
-import { ENTRY_FLAGS, splitVariants } from '@drauf/shared';
+import { ENTRY_FLAGS, ICON_ID_MAX_LENGTH, isValidIconId, splitVariants } from '@drauf/shared';
 import type { CategorizeService } from '../categorize/service.js';
 import type { Database } from '../db/index.js';
 import {
@@ -292,12 +292,20 @@ async function applySetFields(ctx: Context, data: Record<string, unknown>): Prom
 
   // The icon lives on the household's item, not the entry: no per-field
   // clock, the newest replay simply wins ('' clears back to the matcher).
-  const icon = optionalString(input.icon, 16);
+  const icon = optionalString(input.icon, ICON_ID_MAX_LENGTH);
+  if (typeof icon === 'string' && !isValidIconId(icon)) {
+    throw new OperationError('invalid_payload');
+  }
   let iconApplied = false;
   if (icon !== undefined) {
     const householdId = await getListHouseholdId(ctx.database, entry.listId);
     if (householdId !== undefined) {
-      await setCatalogUsageIcon(ctx.database, householdId, entry.nameNormalized, icon);
+      await setCatalogUsageIcon(
+        ctx.database,
+        householdId,
+        { name: entry.name, nameNormalized: entry.nameNormalized },
+        icon,
+      );
       iconApplied = true;
     }
   }

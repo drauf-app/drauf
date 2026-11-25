@@ -20,7 +20,11 @@ const dataDir = join(webRoot, '..', '..', 'packages', 'catalog', 'data');
 const outDir = join(webRoot, 'public', 'openmoji');
 mkdirSync(outDir, { recursive: true });
 
-/** OpenMoji file names: codepoints joined by '-', without variation selectors. */
+/**
+ * OpenMoji file names: codepoints joined by '-', without variation selectors.
+ * Copy of emojiToHex in packages/shared/src/icons.ts — the script must run
+ * without a prior workspace build; keep the two in sync.
+ */
 export function emojiToHex(emoji) {
   return [...emoji]
     .map((char) => char.codePointAt(0))
