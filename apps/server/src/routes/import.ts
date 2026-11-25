@@ -5,12 +5,7 @@ import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { CategorizeService } from '../categorize/service.js';
 import type { Database } from '../db/index.js';
-import {
-  createPlanEntry,
-  findPlanEntryForSlot,
-  getMealSlot,
-  isCategoryLinkedToList,
-} from '../db/repositories.js';
+import { createPlanEntry, getMealSlot, isCategoryLinkedToList } from '../db/repositories.js';
 import type { PlanEntry } from '../db/schema/types.js';
 import { getHouseholdForMember } from '../households/service.js';
 import { DEFAULT_STAPLES, stapleSet } from '../households/staples.js';
@@ -59,9 +54,10 @@ const applyBody = {
     },
     plan: {
       type: 'object',
-      required: ['date', 'slotId', 'link'],
+      required: ['date', 'link'],
       properties: {
         date: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        /** Optional meal label; days hold 1..n entries. */
         slotId: { type: 'string', maxLength: 64 },
         title: { type: 'string', maxLength: 200 },
         link: { type: 'string', maxLength: 1024 },
@@ -96,7 +92,7 @@ interface ApplyItem {
 
 interface ApplyInput {
   list?: { id: string; items: ApplyItem[] };
-  plan?: { date: string; slotId: string; title?: string; link: string; imageUrl?: string };
+  plan?: { date: string; slotId?: string; title?: string; link: string; imageUrl?: string };
 }
 
 function requireAuthUser(reply: FastifyReply, authUser: AuthUser | undefined): AuthUser {
@@ -228,18 +224,11 @@ export function importRoutes(
           if (planInput.imageUrl !== undefined && !isHttpUrl(planInput.imageUrl)) {
             return reply.code(400).send({ error: 'invalid_link' });
           }
-          const slot = await getMealSlot(database, householdId, planInput.slotId);
-          if (slot === undefined) {
-            return reply.code(400).send({ error: 'invalid_slot' });
-          }
-          const occupied = await findPlanEntryForSlot(
-            database,
-            householdId,
-            planInput.date,
-            planInput.slotId,
-          );
-          if (occupied !== undefined) {
-            return reply.code(409).send({ error: 'slot_occupied' });
+          if (planInput.slotId !== undefined && planInput.slotId !== '') {
+            const slot = await getMealSlot(database, householdId, planInput.slotId);
+            if (slot === undefined) {
+              return reply.code(400).send({ error: 'invalid_slot' });
+            }
           }
         }
 
@@ -274,19 +263,16 @@ export function importRoutes(
 
         let planEntry: PlanEntry | undefined;
         if (planInput !== undefined && householdId !== undefined) {
-          try {
-            planEntry = await createPlanEntry(database, {
-              householdId,
-              date: planInput.date,
-              slotId: planInput.slotId,
-              text: planInput.title?.trim() || null,
-              link: planInput.link,
-              imageUrl: planInput.imageUrl ?? null,
-              cookId: null,
-            });
-          } catch {
-            return reply.code(409).send({ error: 'slot_occupied' });
-          }
+          planEntry = await createPlanEntry(database, {
+            householdId,
+            date: planInput.date,
+            slotId:
+              planInput.slotId === undefined || planInput.slotId === '' ? null : planInput.slotId,
+            text: planInput.title?.trim() || null,
+            link: planInput.link,
+            imageUrl: planInput.imageUrl ?? null,
+            cookId: null,
+          });
           hub.publish(planTopic(householdId), { type: 'plan.entry.created', data: planEntry });
         }
 

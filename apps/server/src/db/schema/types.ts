@@ -106,7 +106,8 @@ export interface PlanEntry {
   householdId: string;
   /** ISO calendar date (YYYY-MM-DD). */
   date: string;
-  slotId: string;
+  /** Optional meal label (Frühstück, Abendessen, …); days hold 1..n entries. */
+  slotId: string | null;
   text: string | null;
   link: string | null;
   imageUrl: string | null;

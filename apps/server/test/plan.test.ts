@@ -99,7 +99,7 @@ describe('meal plan routes', () => {
       expect(await getSlots()).toHaveLength(2);
     });
 
-    it('cascades entries when a slot is deleted', async () => {
+    it('keeps entries when their label slot is deleted', async () => {
       await addEntry({ date: '2026-11-16', slotId: lunch.id, text: 'Pasta' });
       await ctx.app.inject({
         method: 'DELETE',
@@ -111,7 +111,8 @@ describe('meal plan routes', () => {
         url: '/api/plan/entries?from=2026-11-16&to=2026-11-16',
         headers: as(christian),
       });
-      expect(entries.json()).toEqual([]);
+      // Slots are labels now, not containers: the label goes, the meal stays.
+      expect(entries.json()).toMatchObject([{ text: 'Pasta', slotId: null }]);
     });
   });
 
@@ -169,44 +170,48 @@ describe('meal plan routes', () => {
       expect(cook.json()).toEqual({ error: 'invalid_cook' });
     });
 
-    it('keeps one entry per day and slot', async () => {
+    it('holds any number of entries per day, labeled or not', async () => {
       await addEntry({ date: '2026-11-16', slotId: lunch.id, text: 'Pasta' });
-      const duplicate = await addEntry({ date: '2026-11-16', slotId: lunch.id, text: 'Curry' });
-      expect(duplicate.statusCode).toBe(409);
-      expect(duplicate.json()).toEqual({ error: 'slot_occupied' });
+      const second = await addEntry({ date: '2026-11-16', slotId: lunch.id, text: 'Curry' });
+      expect(second.statusCode).toBe(201);
+      // No label at all: just something for that day (e.g. a cake).
+      const unlabeled = await addEntry({ date: '2026-11-16', text: 'Kuchen' });
+      expect(unlabeled.statusCode).toBe(201);
+      expect((unlabeled.json() as PlanEntry).slotId).toBeNull();
+
+      const entries = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/plan/entries?from=2026-11-16&to=2026-11-16',
+        headers: as(christian),
+      });
+      expect(entries.json()).toHaveLength(3);
     });
 
-    it('moves entries to free days and refuses occupied ones (W6)', async () => {
+    it('moves entries between days and relabels them (W6)', async () => {
       const entry = (await (
         await addEntry({ date: '2026-11-16', slotId: lunch.id, text: 'Pasta' })
       ).json()) as PlanEntry;
       await addEntry({ date: '2026-11-17', slotId: lunch.id, text: 'Curry' });
 
-      const blocked = await ctx.app.inject({
-        method: 'PATCH',
-        url: `/api/plan/entries/${entry.id}`,
-        headers: as(kathrin),
-        payload: { date: '2026-11-17' },
-      });
-      expect(blocked.statusCode).toBe(409);
-
+      // Days hold any number of entries now: moving next to Curry is fine.
       const moved = await ctx.app.inject({
         method: 'PATCH',
         url: `/api/plan/entries/${entry.id}`,
         headers: as(kathrin),
-        payload: { date: '2026-11-18', slotId: dinner.id },
+        payload: { date: '2026-11-17', slotId: dinner.id },
       });
       expect(moved.statusCode).toBe(200);
-      expect(moved.json()).toMatchObject({ date: '2026-11-18', slotId: dinner.id, text: 'Pasta' });
+      expect(moved.json()).toMatchObject({ date: '2026-11-17', slotId: dinner.id, text: 'Pasta' });
 
-      // Editing without moving must not collide with itself.
-      const selfEdit = await ctx.app.inject({
+      // '' clears the label back to "none".
+      const unlabeled = await ctx.app.inject({
         method: 'PATCH',
         url: `/api/plan/entries/${entry.id}`,
         headers: as(christian),
-        payload: { text: 'Pasta al forno' },
+        payload: { slotId: '' },
       });
-      expect(selfEdit.statusCode).toBe(200);
+      expect(unlabeled.statusCode).toBe(200);
+      expect((unlabeled.json() as PlanEntry).slotId).toBeNull();
     });
 
     it('clears cook and swaps text for link, but never both to null', async () => {

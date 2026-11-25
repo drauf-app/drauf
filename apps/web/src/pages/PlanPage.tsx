@@ -12,8 +12,7 @@ import {
   type RecipeSuggestion,
 } from '../api/plan';
 import type { HouseholdMember, MealSlot, PlanEntry } from '../api/types';
-import { ApiError } from '../auth/store';
-import { type Messages, useT } from '../i18n';
+import { useT } from '../i18n';
 import { applyPlanEvent } from '../lib/plan-events';
 import { sourceLabel } from '../lib/source';
 import { type SyncEvent, useSync } from '../lib/sync';
@@ -23,20 +22,22 @@ function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
 
-function cellKey(date: string, slotId: string): string {
-  return `${date}|${slotId}`;
-}
-
-function saveErrorMessage(err: unknown, t: Messages): string {
-  if (err instanceof ApiError && err.code === 'slot_occupied') {
-    return t.plan.slotOccupied;
-  }
-  return t.common.error;
+/**
+ * Entries sort by their label's configured order (Frühstück before
+ * Abendessen), unlabeled last, ties by creation time.
+ */
+function sortDayEntries(entries: PlanEntry[], slots: MealSlot[]): PlanEntry[] {
+  const order = new Map(slots.map((slot) => [slot.id, slot.sortOrder]));
+  return [...entries].sort((a, b) => {
+    const byLabel =
+      (a.slotId === null ? Number.MAX_SAFE_INTEGER : (order.get(a.slotId) ?? 0)) -
+      (b.slotId === null ? Number.MAX_SAFE_INTEGER : (order.get(b.slotId) ?? 0));
+    return byLabel !== 0 ? byLabel : a.createdAt.localeCompare(b.createdAt);
+  });
 }
 
 interface EditorProps {
   date: string;
-  slotId: string;
   entry: PlanEntry | undefined;
   days: string[];
   slots: MealSlot[];
@@ -48,7 +49,6 @@ interface EditorProps {
 
 function EntryEditor({
   date,
-  slotId,
   entry,
   days,
   slots,
@@ -61,7 +61,7 @@ function EntryEditor({
   const [value, setValue] = useState(entry?.link ?? entry?.text ?? '');
   const [cookId, setCookId] = useState(entry?.cookId ?? '');
   const [targetDate, setTargetDate] = useState(date);
-  const [targetSlot, setTargetSlot] = useState(slotId);
+  const [targetSlot, setTargetSlot] = useState(entry?.slotId ?? '');
   const [error, setError] = useState<string>();
   // Cooked-recipes memory (#88): previously planned meals as type-ahead.
   const [suggestions, setSuggestions] = useState<RecipeSuggestion[]>([]);
@@ -143,7 +143,7 @@ function EntryEditor({
       if (entry === undefined) {
         const created = await createPlanEntry({
           date: targetDate,
-          slotId: targetSlot,
+          ...(targetSlot === '' ? {} : { slotId: targetSlot }),
           ...(isUrl(trimmed)
             ? { link: trimmed }
             : {
@@ -158,14 +158,15 @@ function EntryEditor({
         const patch: PlanEntryPatch = {
           ...content,
           date: targetDate,
+          // '' clears the label back to "none".
           slotId: targetSlot,
           cookId,
         };
         onSaved(await patchPlanEntry(entry.id, patch), entry.id);
       }
       onClose();
-    } catch (err) {
-      setError(saveErrorMessage(err, t));
+    } catch {
+      setError(t.common.error);
     }
   }
 
@@ -226,6 +227,18 @@ function EntryEditor({
           </option>
         ))}
       </select>
+      <select
+        aria-label={t.plan.moveSlot}
+        value={targetSlot}
+        onChange={(event) => setTargetSlot(event.target.value)}
+      >
+        <option value="">{t.plan.noSlot}</option>
+        {slots.map((slot) => (
+          <option key={slot.id} value={slot.id}>
+            {slot.name}
+          </option>
+        ))}
+      </select>
       {entry !== undefined && (
         <div className="plan-move">
           <select
@@ -236,17 +249,6 @@ function EntryEditor({
             {(days.includes(entry.date) ? days : [entry.date, ...days]).map((day) => (
               <option key={day} value={day}>
                 {formatDay(day)}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label={t.plan.moveSlot}
-            value={targetSlot}
-            onChange={(event) => setTargetSlot(event.target.value)}
-          >
-            {slots.map((slot) => (
-              <option key={slot.id} value={slot.id}>
-                {slot.name}
               </option>
             ))}
           </select>
@@ -272,7 +274,8 @@ function EntryEditor({
 
 interface EditorTarget {
   date: string;
-  slotId: string;
+  /** undefined = adding a new entry on that day. */
+  entryId?: string;
 }
 
 export function PlanPage() {
@@ -340,8 +343,17 @@ export function PlanPage() {
     return <p className="placeholder">{t.common.loading}</p>;
   }
 
-  const byCell = new Map(entries.map((entry) => [cellKey(entry.date, entry.slotId), entry]));
+  const byDay = new Map<string, PlanEntry[]>();
+  for (const entry of entries) {
+    const group = byDay.get(entry.date);
+    if (group === undefined) {
+      byDay.set(entry.date, [entry]);
+    } else {
+      group.push(entry);
+    }
+  }
   const cookNames = new Map(members.map((member) => [member.userId, member.displayName]));
+  const slotNames = new Map(slots.map((slot) => [slot.id, slot.name]));
 
   function handleSaved(saved: PlanEntry, previousId?: string): void {
     setEntries((previous) => [
@@ -380,68 +392,87 @@ export function PlanPage() {
       </header>
 
       <div className="plan-days">
-        {days.map((day) => (
-          <div key={day} className="plan-day">
-            <h2>{formatDay(day)}</h2>
-            <div className="plan-slots">
-              {slots.map((slot) => {
-                const entry = byCell.get(cellKey(day, slot.id));
-                const editing = editor?.date === day && editor.slotId === slot.id;
-                return (
-                  <div key={slot.id} className="plan-cell">
-                    <span className="plan-slot-name">{slot.name}</span>
-                    {editing ? (
-                      <EntryEditor
-                        date={day}
-                        slotId={slot.id}
-                        entry={entry}
-                        days={days}
-                        slots={slots}
-                        members={members}
-                        onClose={() => setEditor(undefined)}
-                        onSaved={handleSaved}
-                        onDeleted={handleDeleted}
-                      />
-                    ) : entry !== undefined ? (
-                      <button
-                        type="button"
-                        className="plan-entry"
-                        onClick={() => setEditor({ date: day, slotId: slot.id })}
-                      >
-                        <span className="plan-entry-text">
-                          {entry.text ?? (entry.link === null ? '' : sourceLabel(entry.link))}
-                        </span>
-                        {entry.cookId !== null && (
-                          <span className="plan-cook">{cookNames.get(entry.cookId) ?? ''}</span>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="plan-add"
-                        aria-label={`${t.plan.addEntry}: ${formatDay(day)}, ${slot.name}`}
-                        onClick={() => setEditor({ date: day, slotId: slot.id })}
-                      >
-                        +
-                      </button>
-                    )}
-                    {entry?.link != null && !editing && (
-                      <a
-                        className="plan-source"
-                        href={entry.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={t.plan.openLink}
-                      >
-                        ({sourceLabel(entry.link)})
-                      </a>
-                    )}
+        {days.map((day) => {
+          const dayEntries = sortDayEntries(byDay.get(day) ?? [], slots);
+          const adding = editor?.date === day && editor.entryId === undefined;
+          return (
+            <div key={day} className="plan-day">
+              <h2>{formatDay(day)}</h2>
+              <div className="plan-slots">
+                {dayEntries.map((entry) => {
+                  const editing = editor?.date === day && editor.entryId === entry.id;
+                  const label = entry.slotId === null ? undefined : slotNames.get(entry.slotId);
+                  return (
+                    <div key={entry.id} className="plan-cell">
+                      {editing ? (
+                        <EntryEditor
+                          date={day}
+                          entry={entry}
+                          days={days}
+                          slots={slots}
+                          members={members}
+                          onClose={() => setEditor(undefined)}
+                          onSaved={handleSaved}
+                          onDeleted={handleDeleted}
+                        />
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="plan-entry"
+                            onClick={() => setEditor({ date: day, entryId: entry.id })}
+                          >
+                            {label !== undefined && <span className="plan-slot-name">{label}</span>}
+                            <span className="plan-entry-text">
+                              {entry.text ?? (entry.link === null ? '' : sourceLabel(entry.link))}
+                            </span>
+                            {entry.cookId !== null && (
+                              <span className="plan-cook">{cookNames.get(entry.cookId) ?? ''}</span>
+                            )}
+                          </button>
+                          {entry.link !== null && (
+                            <a
+                              className="plan-source"
+                              href={entry.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={t.plan.openLink}
+                            >
+                              ({sourceLabel(entry.link)})
+                            </a>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                {adding ? (
+                  <div className="plan-cell">
+                    <EntryEditor
+                      date={day}
+                      entry={undefined}
+                      days={days}
+                      slots={slots}
+                      members={members}
+                      onClose={() => setEditor(undefined)}
+                      onSaved={handleSaved}
+                      onDeleted={handleDeleted}
+                    />
                   </div>
-                );
-              })}
+                ) : (
+                  <button
+                    type="button"
+                    className="plan-add"
+                    aria-label={`${t.plan.addEntry}: ${formatDay(day)}`}
+                    onClick={() => setEditor({ date: day })}
+                  >
+                    +
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

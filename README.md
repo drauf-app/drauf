@@ -11,7 +11,7 @@ Add items in seconds, share lists in real time, keep your data on your own serve
 - **Fast entry** – type, pick, tap a quantity, size or variety chip. Done.
 - **Smart merging** – the same item added twice shows up once; quantities with the same unit add up.
 - **Store-aware sorting** – define your stores and their aisle order; the list sorts itself for the store you are in.
-- **Weekly meal plan** – several slots per day, free text or a recipe link, and who is cooking.
+- **Weekly meal plan** – any number of entries per day with optional meal labels (Frühstück, Abendessen, …), free text or a recipe link, and who is cooking.
 - **Recipe import** – pluggable recipe providers: put a recipe on the plan and its ingredients on a list, deselecting what you already have.
 - **Works offline** – check off items without signal; changes sync when you are back online.
 

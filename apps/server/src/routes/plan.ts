@@ -7,7 +7,6 @@ import {
   createPlanEntry,
   deleteMealSlot,
   deletePlanEntry,
-  findPlanEntryForSlot,
   getMealSlot,
   getPlanEntry,
   isHouseholdMember,
@@ -45,9 +44,10 @@ const slotPatchBody = {
 
 const entryBody = {
   type: 'object',
-  required: ['date', 'slotId'],
+  required: ['date'],
   properties: {
     date: { type: 'string', pattern: DATE_PATTERN },
+    /** Optional meal label; '' = none. */
     slotId: { type: 'string', maxLength: 64 },
     text: { type: 'string', maxLength: 500 },
     link: { type: 'string', maxLength: 1024 },
@@ -314,7 +314,7 @@ export function planRoutes(
       householdId: string,
       input: {
         date?: string | undefined;
-        slotId?: string | undefined;
+        slotId?: string | null | undefined;
         link?: string | null | undefined;
         imageUrl?: string | null | undefined;
         cookId?: string | null | undefined;
@@ -323,7 +323,7 @@ export function planRoutes(
       if (input.date !== undefined && !isValidDate(input.date)) {
         return 'invalid_date';
       }
-      if (input.slotId !== undefined) {
+      if (typeof input.slotId === 'string') {
         const slot = await getMealSlot(database, householdId, input.slotId);
         if (slot === undefined) {
           return 'invalid_slot';
@@ -356,6 +356,7 @@ export function planRoutes(
         let imageUrl = normalized(request.body.imageUrl) ?? null;
         const link = normalized(request.body.link) ?? null;
         const cookId = normalized(request.body.cookId) ?? null;
+        const slotId = normalized(request.body.slotId) ?? null;
         if (text === null && link === null) {
           return reply.code(400).send({ error: 'text_or_link_required' });
         }
@@ -366,7 +367,7 @@ export function planRoutes(
         }
         const error = await validateEntryInput(home.id, {
           date: request.body.date,
-          slotId: request.body.slotId,
+          slotId,
           link,
           imageUrl,
           cookId,
@@ -374,31 +375,17 @@ export function planRoutes(
         if (error !== null) {
           return reply.code(400).send({ error });
         }
-        const occupied = await findPlanEntryForSlot(
-          database,
-          home.id,
-          request.body.date,
-          request.body.slotId,
-        );
-        if (occupied !== undefined) {
-          return reply.code(409).send({ error: 'slot_occupied' });
-        }
-        try {
-          const entry = await createPlanEntry(database, {
-            householdId: home.id,
-            date: request.body.date,
-            slotId: request.body.slotId,
-            text,
-            link,
-            imageUrl,
-            cookId,
-          });
-          hub.publish(planTopic(home.id), { type: 'plan.entry.created', data: entry });
-          return reply.code(201).send(entry);
-        } catch {
-          // Unique(household, date, slot) race between check and insert.
-          return reply.code(409).send({ error: 'slot_occupied' });
-        }
+        const entry = await createPlanEntry(database, {
+          householdId: home.id,
+          date: request.body.date,
+          slotId,
+          text,
+          link,
+          imageUrl,
+          cookId,
+        });
+        hub.publish(planTopic(home.id), { type: 'plan.entry.created', data: entry });
+        return reply.code(201).send(entry);
       },
     );
 
@@ -420,9 +407,11 @@ export function planRoutes(
         const link = normalized(request.body.link);
         const imageUrl = normalized(request.body.imageUrl);
         const cookId = normalized(request.body.cookId);
+        // '' clears the label, like the other optional fields.
+        const slotId = normalized(request.body.slotId);
         const error = await validateEntryInput(home.id, {
           date: request.body.date,
-          slotId: request.body.slotId,
+          slotId,
           link,
           imageUrl,
           cookId,
@@ -433,7 +422,7 @@ export function planRoutes(
 
         const patch = {
           ...(request.body.date === undefined ? {} : { date: request.body.date }),
-          ...(request.body.slotId === undefined ? {} : { slotId: request.body.slotId }),
+          ...(slotId === undefined ? {} : { slotId }),
           ...(text === undefined ? {} : { text }),
           ...(link === undefined ? {} : { link }),
           ...(imageUrl === undefined ? {} : { imageUrl }),
@@ -454,16 +443,7 @@ export function planRoutes(
             next.imageUrl = preview.imageUrl;
           }
         }
-        // Moving (W6): the target day/slot must be free, ignoring the entry itself.
-        const occupied = await findPlanEntryForSlot(database, home.id, next.date, next.slotId);
-        if (occupied !== undefined && occupied.id !== entry.id) {
-          return reply.code(409).send({ error: 'slot_occupied' });
-        }
-        try {
-          await updatePlanEntry(database, entry.id, patch);
-        } catch {
-          return reply.code(409).send({ error: 'slot_occupied' });
-        }
+        await updatePlanEntry(database, entry.id, patch);
         hub.publish(planTopic(home.id), { type: 'plan.entry.updated', data: next });
         return next;
       },

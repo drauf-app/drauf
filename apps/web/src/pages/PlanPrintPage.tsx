@@ -129,17 +129,37 @@ export function PlanPrintPage() {
     return <p className="placeholder">{t.common.loading}</p>;
   }
 
-  const byCell = new Map(entries.map((entry) => [`${entry.date}|${entry.slotId}`, entry]));
+  const byDay = new Map<string, PlanEntry[]>();
+  for (const entry of entries) {
+    const group = byDay.get(entry.date);
+    if (group === undefined) {
+      byDay.set(entry.date, [entry]);
+    } else {
+      group.push(entry);
+    }
+  }
   const cookNames = new Map(members.map((member) => [member.userId, member.displayName]));
+  const slotOrder = new Map(slots.map((slot) => [slot.id, slot.sortOrder]));
+  const slotNames = new Map(slots.map((slot) => [slot.id, slot.name]));
 
-  function cell(day: string, slot: MealSlot) {
-    const entry = byCell.get(`${day}|${slot.id}`);
-    const cook = entry?.cookId == null ? undefined : cookNames.get(entry.cookId);
+  function dayEntries(day: string): PlanEntry[] {
+    return [...(byDay.get(day) ?? [])].sort((a, b) => {
+      const byLabel =
+        (a.slotId === null ? Number.MAX_SAFE_INTEGER : (slotOrder.get(a.slotId) ?? 0)) -
+        (b.slotId === null ? Number.MAX_SAFE_INTEGER : (slotOrder.get(b.slotId) ?? 0));
+      return byLabel !== 0 ? byLabel : a.createdAt.localeCompare(b.createdAt);
+    });
+  }
+
+  function row(entry: PlanEntry) {
+    const cook = entry.cookId === null ? undefined : cookNames.get(entry.cookId);
+    const label = entry.slotId === null ? undefined : slotNames.get(entry.slotId);
     return (
-      <>
+      <div key={entry.id} className="print-slot">
+        {label !== undefined && <span className="print-slot-name">{label}</span>}
         <span className="print-entry">{entryLabel(entry)}</span>
         {cook !== undefined && <span className="print-cook">{cook}</span>}
-      </>
+      </div>
     );
   }
 
@@ -219,12 +239,7 @@ export function PlanPrintPage() {
           {days.map((day) => (
             <section key={day} className="print-day">
               <h2>{formatDay(day)}</h2>
-              {slots.map((slot) => (
-                <div key={slot.id} className="print-slot">
-                  <span className="print-slot-name">{slot.name}</span>
-                  {cell(day, slot)}
-                </div>
-              ))}
+              {dayEntries(day).map(row)}
             </section>
           ))}
         </div>
@@ -233,21 +248,17 @@ export function PlanPrintPage() {
           <table key={week[0]} className="print-calendar">
             <thead>
               <tr>
-                <th />
                 {week.map((day) => (
                   <th key={day}>{formatDay(day)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {slots.map((slot) => (
-                <tr key={slot.id}>
-                  <th>{slot.name}</th>
-                  {week.map((day) => (
-                    <td key={day}>{cell(day, slot)}</td>
-                  ))}
-                </tr>
-              ))}
+              <tr>
+                {week.map((day) => (
+                  <td key={day}>{dayEntries(day).map(row)}</td>
+                ))}
+              </tr>
             </tbody>
           </table>
         ))

@@ -198,7 +198,7 @@ export const mealSlots = pgTable('meal_slots', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
-/** One plan entry per day and slot: free text or a recipe link, plus who cooks. */
+/** Plan entries: free text or a recipe link, plus who cooks; 1..n per day. */
 export const planEntries = pgTable(
   'plan_entries',
   {
@@ -208,9 +208,8 @@ export const planEntries = pgTable(
       .references(() => households.id, { onDelete: 'cascade' }),
     /** ISO calendar date (YYYY-MM-DD); text keeps it identical across dialects. */
     date: text('date').notNull(),
-    slotId: text('slot_id')
-      .notNull()
-      .references(() => mealSlots.id, { onDelete: 'cascade' }),
+    /** Optional meal label (Frühstück, Abendessen, …); days hold 1..n entries. */
+    slotId: text('slot_id').references(() => mealSlots.id, { onDelete: 'set null' }),
     text: text('text'),
     link: text('link'),
     /** Preview image of the linked recipe (W4); always shown via the proxy. */
@@ -218,7 +217,7 @@ export const planEntries = pgTable(
     cookId: text('cook_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
   },
-  (t) => [uniqueIndex('plan_entries_day_slot_idx').on(t.householdId, t.date, t.slotId)],
+  (t) => [index('plan_entries_day_idx').on(t.householdId, t.date)],
 );
 
 /**
