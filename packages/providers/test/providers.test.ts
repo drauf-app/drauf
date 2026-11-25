@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  allProviders,
   cookidooProvider,
   extractFirstUrl,
   matchProvider,
   parseCookidooHtml,
+  schemaOrgProvider,
 } from '../src/index.js';
 
 /** Synthetic fixture mirroring the structure of the public recipe page. */
@@ -19,6 +21,50 @@ const RECIPE_HTML = `<!doctype html>
  "recipeIngredient":["1 Knoblauchzehe","50 g Zwiebeln","700 g Tomaten","Salz","1,5 l Wasser"]}
 </script>
 </head><body></body></html>`;
+
+describe('schemaOrgProvider (#72)', () => {
+  /** Synthetic fixture mirroring WordPress recipe plugins: @graph-wrapped. */
+  const BLOG_HTML = `<!doctype html>
+<html><head>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebPage","name":"Irgendein Foodblog"},
+ {"@type":"Recipe","name":"Kartoffelgratin","recipeYield":["4","4 Portionen"],
+  "image":{"@type":"ImageObject","url":"https://blog.example/gratin.jpg"},
+  "recipeIngredient":["1 kg Kartoffeln","200 ml Sahne","&frac12; TL Muskat"]}
+]}
+</script>
+</head><body></body></html>`;
+
+  it('stays the lowest-priority fallback behind site providers', () => {
+    const cookidoo = matchProvider(allProviders, 'https://cookidoo.de/recipes/recipe/de-DE/r1');
+    expect(cookidoo?.provider.id).toBe('cookidoo');
+    const blog = matchProvider(allProviders, 'Schau mal: https://blog.example/gratin/ !');
+    expect(blog?.provider.id).toBe('schema-org');
+    expect(blog?.url).toBe('https://blog.example/gratin/');
+    expect(matchProvider(allProviders, 'kein Link weit und breit')).toBeUndefined();
+  });
+
+  it('parses @graph-wrapped recipes like WordPress plugins emit', async () => {
+    const preview = await schemaOrgProvider.fetch('https://blog.example/gratin/', {
+      fetchText: async () => BLOG_HTML,
+    });
+    expect(preview).toEqual({
+      title: 'Kartoffelgratin',
+      imageUrl: 'https://blog.example/gratin.jpg',
+      servings: 4,
+      ingredients: ['1 kg Kartoffeln', '200 ml Sahne', '½ TL Muskat'],
+    });
+  });
+
+  it('refuses pages without any recipe signal', async () => {
+    await expect(
+      schemaOrgProvider.fetch('https://blog.example/impressum/', {
+        fetchText: async () => '<html><head><title>Impressum</title></head></html>',
+      }),
+    ).rejects.toThrow('no schema.org recipe');
+  });
+});
 
 describe('entity decoding', () => {
   const ENTITY_HTML = `<!doctype html>

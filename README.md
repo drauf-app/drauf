@@ -127,11 +127,14 @@ CATEGORIZE_LLM=anthropic ANTHROPIC_API_KEY=sk-ant-… CATEGORIZE_MODEL=claude-ha
 CATEGORIZE_LLM=openai CATEGORIZE_BASE_URL=http://ollama:11434/v1 CATEGORIZE_MODEL=qwen3:8b
 ```
 
-Recipe providers live in `packages/providers` (one folder per provider;
-Cookidoo is the first). They run server-side only, fetch public addresses
-only, and store nothing beyond title, link, image URL and the imported
-ingredient lines. Individual providers can be disabled via
-`IMPORT_DISABLED_PROVIDERS`. Recipe images are proxied through the server so
+Recipe providers live in `packages/providers` (one file per provider).
+Cookidoo has a dedicated provider; a **generic schema.org provider** covers
+everything else — most recipe sites and food blogs embed a schema.org
+Recipe as JSON-LD, so sharing almost any recipe link just works. Providers
+run server-side only, fetch public addresses only, and store nothing beyond
+title, link, image URL and the imported ingredient lines. Individual
+providers can be switched off at runtime on the admin settings page or
+pinned off via `IMPORT_DISABLED_PROVIDERS`. Recipe images are proxied through the server so
 clients never contact third parties.
 
 The server stores its data in an SQLite file under `./data` by default; set
