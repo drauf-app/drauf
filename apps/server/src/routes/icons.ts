@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AuthGuards } from '../auth/guard.js';
 import type { IconsService } from '../icons/service.js';
+import type { SettingsService } from '../settings/service.js';
 
 /**
  * Keeps a directly navigated SVG from running scripts or being framed; as a
@@ -18,20 +19,26 @@ const ICON_FILE_CSP = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
  * live outside /api/ so the service worker's default cache branch covers them
  * offline.
  */
-export function iconRoutes(icons: IconsService, guards: AuthGuards): FastifyPluginAsync {
+export function iconRoutes(
+  icons: IconsService,
+  guards: AuthGuards,
+  settings: SettingsService,
+): FastifyPluginAsync {
   return async (app) => {
     app.get('/api/icons', { preHandler: guards.authenticate }, async (request, reply) => {
       const registry = await icons.registry();
-      const etag = `"${registry.etag}"`;
+      const defaultPack = String(await settings.effective('icons.pack'));
+      const etag = `"${registry.etag}-${defaultPack}"`;
       reply.header('cache-control', 'no-cache');
       reply.header('etag', etag);
       if (request.headers['if-none-match'] === etag) {
         return reply.code(304).send();
       }
       return {
-        defaultPack: 'openmoji',
+        defaultPack,
         packs: [
           { id: 'openmoji', kind: 'mono', source: 'bundled' },
+          { id: 'fluent', kind: 'color', source: 'bundled' },
           { id: 'custom', kind: 'mixed', source: 'instance' },
         ],
         icons: registry.icons.map((icon) => ({

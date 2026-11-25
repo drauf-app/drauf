@@ -17,6 +17,8 @@ export interface SettingDefinition {
   default: SettingValue;
   /** Present when an environment variable pins this setting. */
   envLock?: SettingValue;
+  /** Allowed values for a string setting; the UI renders a select then. */
+  values?: readonly string[];
   /** Context for the UI (e.g. the configured LLM provider). */
   info?: string;
 }
@@ -88,6 +90,14 @@ export function buildSettingDefinitions(
     // the manual button works regardless.
     default: false,
     ...(config.updateCheck === undefined ? {} : { envLock: config.updateCheck }),
+  });
+  definitions.push({
+    // How bare emoji icons render (#83): OpenMoji line art or Fluent color.
+    // Namespaced ids always use their own pack; this only picks the default.
+    key: 'icons.pack',
+    type: 'string',
+    default: 'openmoji',
+    values: ['openmoji', 'fluent'],
   });
   return definitions;
 }
@@ -165,6 +175,9 @@ export function createSettingsService(
         throw new SettingError('invalid_value');
       }
       if (definition.type === 'string' && (value as string).length > 200) {
+        throw new SettingError('invalid_value');
+      }
+      if (definition.values !== undefined && !definition.values.includes(value as string)) {
         throw new SettingError('invalid_value');
       }
       await upsertInstanceSetting(database, key, JSON.stringify(value));

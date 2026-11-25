@@ -78,6 +78,42 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/Nicht konfiguriert/)).toBeDefined();
   });
 
+  it('offers the icon pack as a select and saves the choice (#83)', async () => {
+    const puts: string[] = [];
+    stubFetch((url, init) => {
+      const method = init?.method ?? 'GET';
+      if (url === '/api/admin/settings' && method === 'GET')
+        return settingsResponse([
+          {
+            key: 'icons.pack',
+            type: 'string',
+            default: 'openmoji',
+            values: ['openmoji', 'fluent'],
+            effective: 'openmoji',
+          },
+        ]);
+      if (url === '/api/admin/settings' && method === 'PUT') {
+        puts.push(String(init?.body));
+        return fakeResponse(200, {
+          key: 'icons.pack',
+          type: 'string',
+          default: 'openmoji',
+          values: ['openmoji', 'fluent'],
+          stored: 'fluent',
+          effective: 'fluent',
+        });
+      }
+      return undefined;
+    });
+    render(<SettingsPage />);
+    const user = userEvent.setup();
+
+    const select = (await screen.findByLabelText('Icon-Stil')) as HTMLSelectElement;
+    expect(select.value).toBe('openmoji');
+    await user.selectOptions(select, 'Fluent (farbig)');
+    expect(JSON.parse(puts[0] ?? '{}')).toEqual({ key: 'icons.pack', value: 'fluent' });
+  });
+
   it('renders env-pinned settings locked', async () => {
     stubFetch((url) =>
       url === '/api/admin/settings'

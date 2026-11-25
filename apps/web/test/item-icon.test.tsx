@@ -45,11 +45,11 @@ describe('ItemIcon', () => {
       localStorage.clear();
     });
 
-    async function loadRegistry() {
+    async function loadRegistry(defaultPack = 'openmoji') {
       stubFetch((url) =>
         url === '/api/icons'
           ? fakeResponse(200, {
-              defaultPack: 'openmoji',
+              defaultPack,
               packs: [],
               icons: [
                 { id: 'custom:spices', kind: 'mono', url: '/icons/custom/spices.svg' },
@@ -77,6 +77,29 @@ describe('ItemIcon', () => {
       expect(img.getAttribute('src')).toBe('/icons/custom/tomato.png');
       expect(img.getAttribute('alt')).toBe('');
       expect(img.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('renders bare emoji from Fluent when it is the default pack (#83)', async () => {
+      await loadRegistry('fluent');
+      const milk = render(<ItemIcon icon="🥛" />);
+      const img = milk.container.querySelector('img.icon-img') as HTMLImageElement;
+      expect(img).not.toBeNull();
+      expect(img.getAttribute('src')).toBe('/fluent/1F95B.svg');
+      // An emoji in neither bundle still falls back to the platform glyph.
+      const shrug = render(<ItemIcon icon="🤷" />);
+      expect(shrug.container.querySelector('img.icon-img')).toBeNull();
+      expect(shrug.container.textContent).toBe('🤷');
+    });
+
+    it('renders explicit fluent ids as images regardless of the default pack (#83)', async () => {
+      await loadRegistry('openmoji');
+      const { container } = render(<ItemIcon icon="fluent:1F345" />);
+      const img = container.querySelector('img.icon-img') as HTMLImageElement;
+      expect(img).not.toBeNull();
+      expect(img.getAttribute('src')).toBe('/fluent/1F345.svg');
+      // And bare emoji keep the mono mask while openmoji is the default.
+      const milk = render(<ItemIcon icon="🥛" />);
+      expect(milk.container.querySelector('.openmoji')).not.toBeNull();
     });
   });
 });

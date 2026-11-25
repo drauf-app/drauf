@@ -1,12 +1,17 @@
 import { BASE_CATEGORIES } from '@drauf/shared';
 import { describe, expect, it } from 'vitest';
+import { fluentUrlForHex } from '../src/lib/fluent';
 import { emojiToHex, openMojiUrl } from '../src/lib/openmoji';
 
 describe('openmoji mapping', () => {
-  it('bundles every base-category default icon (#71)', () => {
-    // Guards the sync between BASE_CATEGORIES and the fetch script's UI_ICONS.
+  it('bundles every base-category default icon in both packs (#71, #83)', () => {
+    // Guards the sync between BASE_CATEGORIES and the fetch scripts' UI_ICONS.
     for (const category of BASE_CATEGORIES) {
       expect(openMojiUrl(category.icon), `${category.key} (${category.icon})`).toBeDefined();
+      expect(
+        fluentUrlForHex(emojiToHex(category.icon)),
+        `${category.key} (${category.icon}) in fluent`,
+      ).toBeDefined();
     }
   });
 

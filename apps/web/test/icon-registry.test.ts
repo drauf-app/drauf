@@ -33,18 +33,27 @@ describe('icon registry', () => {
     await loadIconRegistry();
     await loadIconRegistry(); // deduped
     expect(requests.filter((request) => request.url === '/api/icons')).toHaveLength(1);
-    expect(JSON.parse(localStorage.getItem('drauf.icon-registry') as string)).toEqual(
-      MANIFEST.icons,
-    );
+    expect(JSON.parse(localStorage.getItem('drauf.icon-registry') as string)).toEqual({
+      defaultPack: 'openmoji',
+      icons: MANIFEST.icons,
+    });
   });
 
   it('hydrates from localStorage when the server is unreachable', async () => {
-    localStorage.setItem('drauf.icon-registry', JSON.stringify(MANIFEST.icons));
+    localStorage.setItem(
+      'drauf.icon-registry',
+      JSON.stringify({ defaultPack: 'fluent', icons: MANIFEST.icons }),
+    );
     resetIconRegistryForTests(); // simulates a fresh (offline) start
     stubFetch(() => undefined); // network error
     await loadIconRegistry(); // must not throw
     // The hydrated entries are visible to components; covered in item-icon tests.
     expect(localStorage.getItem('drauf.icon-registry')).not.toBeNull();
+  });
+
+  it('reads the pre-#83 stored shape (a bare icon array)', () => {
+    localStorage.setItem('drauf.icon-registry', JSON.stringify(MANIFEST.icons));
+    expect(() => resetIconRegistryForTests()).not.toThrow();
   });
 
   it('ignores malformed stored data', () => {

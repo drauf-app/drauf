@@ -31,7 +31,7 @@ describe('instance icons (#71)', () => {
       username: 'christian',
       password: PASSWORD,
       displayName: 'christian',
-      isAdmin: false,
+      isAdmin: true, // The pack test flips the icons.pack admin setting.
     });
     if (!created.ok) throw new Error('fixture user not created');
     const login = await ctx.app.inject({
@@ -62,7 +62,7 @@ describe('instance icons (#71)', () => {
 
     const manifest = (await getManifest()).json() as Manifest;
     expect(manifest.defaultPack).toBe('openmoji');
-    expect(manifest.packs.map((pack) => pack.id)).toEqual(['openmoji', 'custom']);
+    expect(manifest.packs.map((pack) => pack.id)).toEqual(['openmoji', 'fluent', 'custom']);
     expect(manifest.icons).toEqual([
       { id: 'custom:herbs', kind: 'color', url: '/icons/custom/herbs.png' },
       { id: 'custom:spices', kind: 'mono', url: '/icons/custom/spices.svg' },
@@ -132,6 +132,22 @@ describe('instance icons (#71)', () => {
     expect(etag).toBeTruthy();
     const second = await getManifest({ 'if-none-match': etag });
     expect(second.statusCode).toBe(304);
+  });
+
+  it('reflects the icons.pack setting as defaultPack, busting the ETag (#83)', async () => {
+    const before = await getManifest();
+    const etag = before.headers.etag as string;
+    const switched = await ctx.app.inject({
+      method: 'PUT',
+      url: '/api/admin/settings',
+      headers: { authorization: `Bearer ${user.token}` },
+      payload: { key: 'icons.pack', value: 'fluent' },
+    });
+    expect(switched.statusCode).toBe(200);
+
+    const after = await getManifest({ 'if-none-match': etag });
+    expect(after.statusCode).toBe(200); // The old ETag no longer matches.
+    expect((after.json() as Manifest).defaultPack).toBe('fluent');
   });
 });
 

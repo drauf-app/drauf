@@ -3,6 +3,7 @@ import { fetchSettings, type InstanceSetting, updateSetting } from '../api/setti
 import { fetchVersion, releasesUrl, type ServerVersion } from '../api/version';
 import { apiJson } from '../auth/store';
 import { useT } from '../i18n';
+import { refreshIconRegistry } from '../lib/icon-registry';
 
 const PROVIDER_PREFIX = 'import.provider.';
 
@@ -49,11 +50,15 @@ export function SettingsPage() {
   function save(key: string, value: boolean | string): void {
     setError(false);
     updateSetting(key, value)
-      .then((updated) =>
+      .then((updated) => {
         setSettings((previous) =>
           (previous ?? []).map((item) => (item.key === updated.key ? updated : item)),
-        ),
-      )
+        );
+        if (key === 'icons.pack') {
+          // Icons on this page (and everywhere) follow the new pack right away.
+          void refreshIconRegistry();
+        }
+      })
       .catch(() => setError(true));
   }
 
@@ -73,6 +78,7 @@ export function SettingsPage() {
   }
   const categorizeEnabled = settings.find((setting) => setting.key === 'categorize.enabled');
   const categorizeModel = settings.find((setting) => setting.key === 'categorize.model');
+  const iconsPack = settings.find((setting) => setting.key === 'icons.pack');
 
   function renderToggle(setting: InstanceSetting, label: string) {
     const locked = setting.envLock !== undefined;
@@ -132,6 +138,33 @@ export function SettingsPage() {
             </label>
           )}
         </div>
+      )}
+
+      {iconsPack !== undefined && (
+        <>
+          <h2>{t.settings.iconsSection}</h2>
+          <div className="settings-group">
+            <label className="setting-row">
+              <span className="setting-label">
+                {t.settings.iconsPack}
+                {iconsPack.envLock !== undefined && (
+                  <span className="setting-locked">{t.settings.lockedByEnv}</span>
+                )}
+              </span>
+              <select
+                value={String(iconsPack.effective)}
+                disabled={iconsPack.envLock !== undefined}
+                onChange={(event) => save(iconsPack.key, event.target.value)}
+              >
+                {(iconsPack.values ?? []).map((value) => (
+                  <option key={value} value={value}>
+                    {t.settings.packNames[value as keyof typeof t.settings.packNames] ?? value}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </>
       )}
 
       <h2>{t.settings.updatesSection}</h2>
