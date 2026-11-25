@@ -107,7 +107,10 @@ Item icons in the web app render from a bundled subset of
 [OpenMoji](https://openmoji.org) line-art SVGs (CC BY-SA 4.0, like the
 catalogue), drawn in the text colour so they follow light and dark mode and
 look the same on every device; `apps/web/scripts/fetch-openmoji.mjs`
-refreshes the assets when catalogue icons change. Categories carry default
+refreshes the assets when catalogue icons change. A second bundled pack,
+[Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT) in color,
+can be chosen as the default style in the admin settings
+(`fetch-fluent.mjs` maintains those assets). Categories carry default
 icons too, overridable per household. Instances can add their own icons
 without a rebuild: files dropped into `DATA_DIR/icons/` (`tomato.svg` →
 usable as `custom:tomato`, also `.png`/`.webp`, SVGs are sanitized) appear

@@ -8,6 +8,8 @@ export interface InstanceSetting {
   type: 'boolean' | 'string';
   default: SettingValue;
   envLock?: SettingValue;
+  /** Allowed values for a string setting; rendered as a select. */
+  values?: string[];
   info?: string;
   stored?: SettingValue;
   effective: SettingValue;

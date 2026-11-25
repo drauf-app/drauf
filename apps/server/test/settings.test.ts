@@ -163,6 +163,41 @@ describe('admin settings (#73)', () => {
     expect(mistyped.json()).toEqual({ error: 'invalid_value' });
   });
 
+  it('switches the icon pack and rejects unknown packs (#83)', async () => {
+    const list = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/admin/settings',
+      headers: admin,
+    });
+    const pack = (list.json() as { settings: ResolvedSetting[] }).settings.find(
+      (s) => s.key === 'icons.pack',
+    );
+    expect(pack).toMatchObject({
+      type: 'string',
+      default: 'openmoji',
+      effective: 'openmoji',
+      values: ['openmoji', 'fluent'],
+    });
+
+    const switched = await ctx.app.inject({
+      method: 'PUT',
+      url: '/api/admin/settings',
+      headers: admin,
+      payload: { key: 'icons.pack', value: 'fluent' },
+    });
+    expect(switched.statusCode).toBe(200);
+    expect(switched.json()).toMatchObject({ effective: 'fluent' });
+
+    const unknownPack = await ctx.app.inject({
+      method: 'PUT',
+      url: '/api/admin/settings',
+      headers: admin,
+      payload: { key: 'icons.pack', value: 'comic-sans' },
+    });
+    expect(unknownPack.statusCode).toBe(400);
+    expect(unknownPack.json()).toEqual({ error: 'invalid_value' });
+  });
+
   it('switches the LLM guessing off at runtime', async () => {
     const calls: string[] = [];
     const withLlm = await createTestApp(

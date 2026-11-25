@@ -8,61 +8,19 @@
  * OpenMoji (https://openmoji.org) is licensed CC BY-SA 4.0 — the same license
  * as the catalogue. Assets are committed, so builds never need the network.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectIcons, emojiToHex } from './icon-set.mjs';
 
 const OPENMOJI_VERSION = '15.1.0';
 const BASE = `https://raw.githubusercontent.com/hfg-gmuend/openmoji/${OPENMOJI_VERSION}/black/svg`;
 
 const webRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const dataDir = join(webRoot, '..', '..', 'packages', 'catalog', 'data');
 const outDir = join(webRoot, 'public', 'openmoji');
 mkdirSync(outDir, { recursive: true });
 
-/**
- * OpenMoji file names: codepoints joined by '-', without variation selectors.
- * Copy of emojiToHex in packages/shared/src/icons.ts — the script must run
- * without a prior workspace build; keep the two in sync.
- */
-export function emojiToHex(emoji) {
-  return [...emoji]
-    .map((char) => char.codePointAt(0))
-    .filter((code) => code !== 0xfe0f)
-    .map((code) => code.toString(16).toUpperCase())
-    .join('-');
-}
-
-/** Icons the UI itself uses (e.g. the note marker), beyond the catalogue. */
-// 📝 is the note marker; the rest are the base-category defaults — keep in
-// sync with BASE_CATEGORIES in packages/shared/src/categories.ts (a web test
-// checks that every category default is bundled).
-const UI_ICONS = [
-  '📝',
-  '🥕',
-  '🥖',
-  '🥩',
-  '🥛',
-  '🧊',
-  '🍝',
-  '🧂',
-  '🥐',
-  '🥨',
-  '🥤',
-  '🧼',
-  '🧹',
-  '📦',
-];
-
-const icons = new Set(UI_ICONS);
-for (const file of readdirSync(dataDir)) {
-  if (!file.endsWith('.json')) continue;
-  for (const item of JSON.parse(readFileSync(join(dataDir, file), 'utf8'))) {
-    if (typeof item.icon === 'string' && item.icon !== '') {
-      icons.add(item.icon);
-    }
-  }
-}
+const icons = collectIcons(join(webRoot, '..', '..', 'packages', 'catalog', 'data'));
 
 /**
  * The web app renders these SVGs as CSS alpha masks painted with the text

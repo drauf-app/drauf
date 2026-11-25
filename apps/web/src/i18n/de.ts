@@ -118,6 +118,12 @@ export const de = {
     categorizeUnconfigured:
       'Nicht konfiguriert. Aktivierung über die Umgebungsvariablen CATEGORIZE_LLM & Co., siehe README.',
     lockedByEnv: 'über Umgebungsvariable festgelegt',
+    iconsSection: 'Icons',
+    iconsPack: 'Icon-Stil',
+    packNames: {
+      openmoji: 'OpenMoji (einfarbig)',
+      fluent: 'Fluent (farbig)',
+    },
     updatesSection: 'Version & Updates',
     versionLabel: 'Version',
     updatesToggle: 'Täglich automatisch auf Updates prüfen (fragt github.com an)',

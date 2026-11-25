@@ -132,7 +132,7 @@ export async function buildApp(
   await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
   // Absolute paths (/api/icons + /icons/custom/*): the files must live
   // outside /api/ so the service worker caches them for offline (#71).
-  await app.register(iconRoutes(createIconsService(config.iconsDir, app.log), guards));
+  await app.register(iconRoutes(createIconsService(config.iconsDir, app.log), guards, settings));
   await app.register(syncRoutes(database, config, guards, hub, catalogIndex, categorize), {
     prefix: '/api/sync',
   });
