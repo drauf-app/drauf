@@ -877,6 +877,35 @@ export async function listAllPlanEntries(
     .orderBy(asc(t.planEntries.date), asc(t.planEntries.createdAt));
 }
 
+/**
+ * Titled plan entries up to a date, newest first — the raw material for the
+ * cooked-recipes memory (#88). Link-only entries without a title carry
+ * nothing a type-ahead could show and are left out.
+ */
+export async function listCookedPlanEntries(
+  database: Database,
+  householdId: string,
+  until: string,
+): Promise<Array<Pick<PlanEntry, 'text' | 'link' | 'imageUrl' | 'date'>>> {
+  const { db, t } = unwrap(database);
+  return db
+    .select({
+      text: t.planEntries.text,
+      link: t.planEntries.link,
+      imageUrl: t.planEntries.imageUrl,
+      date: t.planEntries.date,
+    })
+    .from(t.planEntries)
+    .where(
+      and(
+        eq(t.planEntries.householdId, householdId),
+        isNotNull(t.planEntries.text),
+        lte(t.planEntries.date, until),
+      ),
+    )
+    .orderBy(desc(t.planEntries.date), desc(t.planEntries.createdAt));
+}
+
 export async function updatePlanEntry(
   database: Database,
   entryId: string,

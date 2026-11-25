@@ -190,6 +190,7 @@ export const de = {
     thisWeek: 'Heute',
     addEntry: 'Eintrag hinzufügen',
     entryPlaceholder: 'Gericht oder Link',
+    recipeSuggestions: 'Frühere Rezepte',
     cook: 'Wer kocht?',
     noCook: 'Niemand',
     moveDay: 'Tag',

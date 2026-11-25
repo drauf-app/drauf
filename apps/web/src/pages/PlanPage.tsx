@@ -1,13 +1,15 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import {
   createPlanEntry,
   deletePlanEntry,
   fetchHousehold,
   fetchPlanEntries,
+  fetchRecipeSuggestions,
   fetchSlots,
   type PlanEntryPatch,
   patchPlanEntry,
+  type RecipeSuggestion,
 } from '../api/plan';
 import type { HouseholdMember, MealSlot, PlanEntry } from '../api/types';
 import { ApiError } from '../auth/store';
@@ -15,7 +17,7 @@ import { type Messages, useT } from '../i18n';
 import { applyPlanEvent } from '../lib/plan-events';
 import { sourceLabel } from '../lib/source';
 import { type SyncEvent, useSync } from '../lib/sync';
-import { formatDay, formatWeek, weekDays } from '../lib/week';
+import { formatDay, formatLastCooked, formatWeek, weekDays } from '../lib/week';
 
 function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
@@ -61,6 +63,65 @@ function EntryEditor({
   const [targetDate, setTargetDate] = useState(date);
   const [targetSlot, setTargetSlot] = useState(slotId);
   const [error, setError] = useState<string>();
+  // Cooked-recipes memory (#88): previously planned meals as type-ahead.
+  const [suggestions, setSuggestions] = useState<RecipeSuggestion[]>([]);
+  const [picked, setPicked] = useState<RecipeSuggestion>();
+  const [highlighted, setHighlighted] = useState(-1);
+
+  const query = value.trim();
+  useEffect(() => {
+    if (query.length < 2 || isUrl(query) || query === picked?.text) {
+      setSuggestions([]);
+      setHighlighted(-1);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      fetchRecipeSuggestions(query)
+        .then((result) => {
+          if (!cancelled) {
+            setSuggestions(result);
+            setHighlighted(-1);
+          }
+        })
+        .catch(() => {
+          // Suggestions are a convenience; typing stays the source of truth.
+        });
+    }, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, picked]);
+
+  function pick(suggestion: RecipeSuggestion): void {
+    setPicked(suggestion);
+    setValue(suggestion.text);
+    setSuggestions([]);
+    setHighlighted(-1);
+  }
+
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+    if (suggestions.length === 0) {
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setHighlighted((previous) => (previous + 1) % suggestions.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setHighlighted((previous) => (previous <= 0 ? suggestions.length - 1 : previous - 1));
+    } else if (event.key === 'Escape') {
+      setSuggestions([]);
+      setHighlighted(-1);
+    } else if (event.key === 'Enter' && highlighted >= 0) {
+      event.preventDefault();
+      const target = suggestions[highlighted];
+      if (target !== undefined) {
+        pick(target);
+      }
+    }
+  }
 
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -69,13 +130,27 @@ function EntryEditor({
       return;
     }
     setError(undefined);
-    const content = isUrl(trimmed) ? { link: trimmed, text: '' } : { text: trimmed, link: '' };
+    // A picked suggestion carries its recipe link and image along (#88).
+    const fromMemory = picked !== undefined && trimmed === picked.text ? picked : undefined;
+    const content = isUrl(trimmed)
+      ? { link: trimmed, text: '' }
+      : {
+          text: trimmed,
+          link: fromMemory?.link ?? '',
+          ...(fromMemory?.imageUrl == null ? {} : { imageUrl: fromMemory.imageUrl }),
+        };
     try {
       if (entry === undefined) {
         const created = await createPlanEntry({
           date: targetDate,
           slotId: targetSlot,
-          ...(isUrl(trimmed) ? { link: trimmed } : { text: trimmed }),
+          ...(isUrl(trimmed)
+            ? { link: trimmed }
+            : {
+                text: trimmed,
+                ...(fromMemory?.link == null ? {} : { link: fromMemory.link }),
+                ...(fromMemory?.imageUrl == null ? {} : { imageUrl: fromMemory.imageUrl }),
+              }),
           ...(cookId === '' ? {} : { cookId }),
         });
         onSaved(created);
@@ -117,7 +192,28 @@ function EntryEditor({
         // biome-ignore lint/a11y/noAutofocus: the editor only opens on an explicit tap.
         autoFocus
         onChange={(event) => setValue(event.target.value)}
+        onKeyDown={onKeyDown}
       />
+      {suggestions.length > 0 && (
+        <ul className="plan-suggestions" aria-label={t.plan.recipeSuggestions}>
+          {suggestions.map((suggestion, index) => (
+            <li key={suggestion.text}>
+              <button
+                type="button"
+                className={
+                  index === highlighted ? 'plan-suggestion highlighted' : 'plan-suggestion'
+                }
+                onClick={() => pick(suggestion)}
+              >
+                <span className="plan-suggestion-text">{suggestion.text}</span>
+                <span className="plan-suggestion-when">
+                  {formatLastCooked(suggestion.lastCookedAt)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <select
         aria-label={t.plan.cook}
         value={cookId}

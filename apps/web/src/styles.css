@@ -1003,6 +1003,50 @@ button:disabled {
   padding: 0.3rem 0;
 }
 
+/* Cooked-recipes type-ahead in the plan editor (#88). */
+.plan-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.plan-suggestion {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+}
+
+.plan-suggestion.highlighted {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.plan-suggestion-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-suggestion-when {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
 .plan-move {
   display: flex;
   gap: 0.4rem;
