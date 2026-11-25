@@ -50,6 +50,8 @@ export interface Config {
   disabledProviders: string[];
   /** Directory with the built web app; served when it exists. */
   webDir: string;
+  /** Instance icons dropped into the data volume (#71): DATA_DIR/icons. */
+  iconsDir: string;
   /** LLM category guessing; undefined = off (the default). */
   categorize: CategorizeConfig | undefined;
   /** Baked into the image by the release workflow; "dev" otherwise (#74). */
@@ -231,6 +233,7 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
       .map((entry) => entry.trim())
       .filter((entry) => entry !== ''),
     webDir: env.WEB_DIR,
+    iconsDir: join(env.DATA_DIR, 'icons'),
     categorize: resolveCategorize(env),
     version: env.DRAUF_VERSION.replace(/^v/, ''),
     commit: env.DRAUF_COMMIT === '' ? undefined : env.DRAUF_COMMIT,

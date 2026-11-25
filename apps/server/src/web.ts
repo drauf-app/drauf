@@ -44,7 +44,12 @@ export async function registerWebApp(app: FastifyInstance, webDir: string): Prom
   });
 
   app.addHook('onSend', async (request, reply) => {
-    if (!request.url.startsWith('/api/') && request.url !== '/healthz') {
+    // Instance icon files set their own stricter headers (#71).
+    if (
+      !request.url.startsWith('/api/') &&
+      !request.url.startsWith('/icons/') &&
+      request.url !== '/healthz'
+    ) {
       reply.header('content-security-policy', CONTENT_SECURITY_POLICY);
       reply.header('x-content-type-options', 'nosniff');
       reply.header('referrer-policy', 'no-referrer');

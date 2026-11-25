@@ -17,6 +17,7 @@ describe('loadConfig', () => {
       oidc: undefined,
       disabledProviders: [],
       webDir: '../web/dist',
+      iconsDir: 'data/icons',
       categorize: undefined,
       version: 'dev',
       commit: undefined,

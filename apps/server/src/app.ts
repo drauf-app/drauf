@@ -10,12 +10,14 @@ import { type Categorizer, createCategorizer } from './categorize/index.js';
 import { createCategorizeService } from './categorize/service.js';
 import type { Config } from './config.js';
 import type { Database } from './db/index.js';
+import { createIconsService } from './icons/service.js';
 import { fetchGuarded } from './import/fetch.js';
 import { authRoutes } from './routes/auth.js';
 import { catalogRoutes } from './routes/catalog.js';
 import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
 import { householdRoutes } from './routes/households.js';
+import { iconRoutes } from './routes/icons.js';
 import { importRoutes } from './routes/import.js';
 import { listRoutes } from './routes/lists.js';
 import { oidcRoutes } from './routes/oidc.js';
@@ -128,6 +130,9 @@ export async function buildApp(
     prefix: '/api/admin/settings',
   });
   await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
+  // Absolute paths (/api/icons + /icons/custom/*): the files must live
+  // outside /api/ so the service worker caches them for offline (#71).
+  await app.register(iconRoutes(createIconsService(config.iconsDir, app.log), guards));
   await app.register(syncRoutes(database, config, guards, hub, catalogIndex, categorize), {
     prefix: '/api/sync',
   });
