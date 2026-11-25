@@ -7,6 +7,7 @@ export const de = {
     cancel: 'Abbrechen',
     save: 'Speichern',
     error: 'Das hat nicht geklappt. Bitte erneut versuchen.',
+    customIcons: 'Eigene Icons',
   },
   nav: {
     lists: 'Listen',
