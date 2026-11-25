@@ -26,6 +26,7 @@ export function Layout() {
           <NavLink to="/plan">{t.nav.plan}</NavLink>
           <NavLink to="/stores">{t.nav.stores}</NavLink>
           <NavLink to="/import">{t.nav.import}</NavLink>
+          {auth.user?.isAdmin === true && <NavLink to="/settings">{t.nav.settings}</NavLink>}
         </nav>
         <div className="user-menu">
           <span className="user-name">{auth.user?.displayName}</span>

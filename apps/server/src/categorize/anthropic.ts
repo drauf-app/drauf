@@ -4,7 +4,8 @@ import { buildUserPrompt, type Categorizer, SYSTEM_PROMPT } from './index.js';
 /** One small classification call; callers treat every failure as "none". */
 export function anthropicCategorizer(config: {
   apiKey: string;
-  model: string;
+  /** Resolved per call: the model is a runtime setting (#73). */
+  model: () => Promise<string>;
   /** Test seam for the SDK's HTTP layer. */
   fetch?: typeof globalThis.fetch;
 }): Categorizer {
@@ -16,7 +17,7 @@ export function anthropicCategorizer(config: {
   return {
     async guess(name, options) {
       const response = await client.messages.create({
-        model: config.model,
+        model: await config.model(),
         // Room for adaptive thinking; the answer itself is a single token.
         max_tokens: 1024,
         output_config: { effort: 'low' },

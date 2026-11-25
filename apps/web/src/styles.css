@@ -634,6 +634,34 @@ button:disabled {
   color: var(--error);
 }
 
+/* Admin settings: one quiet row per setting; locked ones explain why. */
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+}
+
+.setting-row-text {
+  flex-wrap: wrap;
+}
+
+.setting-row-text input[type="text"] {
+  max-width: 18rem;
+}
+
+.setting-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.setting-locked {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
 /* Staples (import preselection) as a wrapping row of removable pills. */
 .staples {
   list-style: none;

@@ -51,7 +51,7 @@ describe('anthropic categorizer', () => {
     };
     const categorizer = anthropicCategorizer({
       apiKey: 'test-key',
-      model: 'claude-opus-5-5',
+      model: async () => 'claude-opus-5-5',
       fetch: fakeFetch,
     });
 
@@ -86,7 +86,7 @@ describe('openai-compatible categorizer', () => {
     const categorizer = openAiCategorizer({
       baseUrl: 'http://ollama.local:11434/v1',
       apiKey: undefined,
-      model: 'qwen3:8b',
+      model: async () => 'qwen3:8b',
     });
 
     const answer = await categorizer.guess('Spezi', ['drinks', 'snacks']);
@@ -103,7 +103,7 @@ describe('openai-compatible categorizer', () => {
     const categorizer = openAiCategorizer({
       baseUrl: 'http://ollama.local:11434/v1',
       apiKey: undefined,
-      model: 'qwen3:8b',
+      model: async () => 'qwen3:8b',
     });
     await expect(categorizer.guess('Spezi', ['drinks'])).rejects.toThrow('500');
   });
@@ -126,7 +126,19 @@ describe('categorization service (via the add path)', () => {
   beforeEach(async () => {
     calls = [];
     answer = () => Promise.resolve('drinks');
-    ctx = await createTestApp({}, { categorizer: fake });
+    ctx = await createTestApp(
+      // The fake replaces the client; the config declares the feature on,
+      // so the settings registry does not pin categorize.enabled off.
+      {
+        categorize: {
+          provider: 'anthropic',
+          apiKey: 'k',
+          model: 'test-model',
+          modelFromEnv: false,
+        },
+      },
+      { categorizer: fake },
+    );
     await createLocalUser(ctx.database, {
       username: 'christian',
       password: PASSWORD,
