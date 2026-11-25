@@ -232,6 +232,65 @@ describe('list entry routes', () => {
     expect((cleared.json() as EntryView).icon).toBe('🥛');
   });
 
+  it('persists an icon picked for an item without a usage row, e.g. after a rename (#71)', async () => {
+    const created = (await addItem({ name: 'Apfelmus' })).json() as EntryView;
+    // Renaming leaves the new normalized name without a catalog_usage row.
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { name: 'Apfelkompott' },
+    });
+    const picked = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { icon: '🧪' },
+    });
+    expect(picked.statusCode).toBe(200);
+    expect((picked.json() as EntryView).icon).toBe('🧪');
+
+    // The pick created the household row, so it survives delete + re-add.
+    await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+    });
+    const readded = (await addItem({ name: 'Apfelkompott' })).json() as EntryView;
+    expect(readded.icon).toBe('🧪');
+  });
+
+  it('accepts namespaced icon ids and rejects malformed ones (#71)', async () => {
+    const created = (await addItem({ name: 'Zauberstab' })).json() as EntryView;
+
+    const namespaced = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { icon: 'custom:zauberstab' },
+    });
+    expect(namespaced.statusCode).toBe(200);
+    expect((namespaced.json() as EntryView).icon).toBe('custom:zauberstab');
+
+    const malformed = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { icon: 'custom:not a key' },
+    });
+    expect(malformed.statusCode).toBe(400);
+    expect(malformed.json()).toMatchObject({ error: 'invalid_icon' });
+
+    // Over the length limit is caught by the schema.
+    const overlong = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/lists/${listId}/entries/${created.id}`,
+      headers: as(christian),
+      payload: { icon: `custom:${'k'.repeat(64)}` },
+    });
+    expect(overlong.statusCode).toBe(400);
+  });
+
   it('deletes entries', async () => {
     const created = (await (await addItem({ name: 'Milch' })).json()) as { id: string };
     const deleted = await ctx.app.inject({

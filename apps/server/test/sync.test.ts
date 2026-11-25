@@ -226,6 +226,41 @@ describe('sync', () => {
       expect(entry).toMatchObject({ note: 'Vollkorn', variant: 'Sauerteig' });
     });
 
+    it('applies namespaced icon ids and rejects malformed ones (#71)', async () => {
+      const [added] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.add',
+          time: new Date().toISOString(),
+          data: { listId, name: 'Safran' },
+        },
+      ]);
+      const entryId = added?.entryId as string;
+
+      const longIcon = `custom:${'k'.repeat(48)}`; // 55 chars — over the old 16 limit
+      const [applied] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.setFields',
+          time: new Date().toISOString(),
+          data: { listId, entryId, fields: { icon: longIcon } },
+        },
+      ]);
+      expect(applied).toMatchObject({ status: 'applied' });
+      const [entry] = await getEntries();
+      expect(entry?.icon).toBe(longIcon);
+
+      const [rejected] = await runOps([
+        {
+          id: randomUUID(),
+          type: 'entry.setFields',
+          time: new Date().toISOString(),
+          data: { listId, entryId, fields: { icon: 'custom:not a key' } },
+        },
+      ]);
+      expect(rejected).toMatchObject({ status: 'rejected' });
+    });
+
     it('lets a check-off win over an older uncheck, edits keep checked state', async () => {
       const [added] = await runOps([
         {
