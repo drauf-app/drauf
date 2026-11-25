@@ -10,6 +10,36 @@ function settingsResponse(settings: InstanceSetting[]) {
 }
 
 describe('SettingsPage', () => {
+  it('checks for updates on demand and shows the badge', async () => {
+    stubFetch((url, init) => {
+      const method = init?.method ?? 'GET';
+      if (url === '/api/admin/settings' && method === 'GET')
+        return settingsResponse([
+          { key: 'updates.check', type: 'boolean', default: false, effective: false },
+        ]);
+      if (url === '/api/admin/settings/update-check' && method === 'GET')
+        return fakeResponse(200, { enabled: false, result: null });
+      if (url === '/api/admin/settings/update-check' && method === 'POST')
+        return fakeResponse(200, {
+          enabled: false,
+          result: {
+            currentVersion: '0.1.3',
+            latestVersion: '9.9.9',
+            latestUrl: 'https://github.com/drauf-app/drauf/releases/tag/v9.9.9',
+            updateAvailable: true,
+            checkedAt: '2026-11-25T00:00:00.000Z',
+          },
+        });
+      return undefined;
+    });
+    render(<SettingsPage />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Jetzt prüfen' }));
+    const badge = await screen.findByRole('link', { name: '9.9.9 verfügbar' });
+    expect(badge.getAttribute('href')).toContain('/releases/tag/v9.9.9');
+  });
+
   it('shows provider toggles and saves a change', async () => {
     const puts: string[] = [];
     stubFetch((url, init) => {

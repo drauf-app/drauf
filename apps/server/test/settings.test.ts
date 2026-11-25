@@ -1,6 +1,7 @@
 import type { RecipeProvider } from '@drauf/providers';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createLocalUser } from '../src/users/service.js';
+import { isNewer, type UpdateChecker } from '../src/version/update-check.js';
 import { createTestApp, type TestApp } from './helpers.js';
 
 const PASSWORD = 'correct-horse-battery';
@@ -23,6 +24,17 @@ interface ResolvedSetting {
   stored?: unknown;
   effective: unknown;
 }
+
+describe('isNewer', () => {
+  it('orders releases and never nags dev builds', () => {
+    expect(isNewer('v0.1.4', '0.1.3')).toBe(true);
+    expect(isNewer('0.2.0', '0.10.0')).toBe(false);
+    expect(isNewer('1.0.0', '0.9.9')).toBe(true);
+    expect(isNewer('0.1.3', '0.1.3')).toBe(false);
+    expect(isNewer('0.2.0', 'dev')).toBe(false);
+    expect(isNewer('0.2.0', 'main@abc123')).toBe(false);
+  });
+});
 
 describe('admin settings (#73)', () => {
   let ctx: TestApp;
@@ -215,6 +227,81 @@ describe('admin settings (#73)', () => {
       expect(calls).toHaveLength(0);
     } finally {
       await withLlm.close();
+    }
+  });
+
+  it('serves the version publicly and gates the update check (#74)', async () => {
+    const checks: number[] = [];
+    const checker: UpdateChecker = {
+      cached: () => undefined,
+      check: async (maxAgeMs = 0) => {
+        checks.push(maxAgeMs);
+        return {
+          currentVersion: 'dev',
+          latestVersion: '9.9.9',
+          latestUrl: 'https://github.com/drauf-app/drauf/releases/tag/v9.9.9',
+          updateAvailable: false,
+          checkedAt: new Date().toISOString(),
+        };
+      },
+    };
+    const app = await createTestApp({}, { updateChecker: checker });
+    try {
+      const version = await app.app.inject({ method: 'GET', url: '/api/version' });
+      expect(version.statusCode).toBe(200);
+      expect(version.json()).toEqual({ version: 'dev', commit: null });
+
+      await createLocalUser(app.database, {
+        username: 'root',
+        password: PASSWORD,
+        displayName: 'root',
+        isAdmin: true,
+      });
+      const auth = await app.app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username: 'root', password: PASSWORD },
+      });
+      const headers = {
+        authorization: `Bearer ${(auth.json() as { accessToken: string }).accessToken}`,
+      };
+
+      // Disabled (the default): GET never phones home.
+      const idle = await app.app.inject({
+        method: 'GET',
+        url: '/api/admin/settings/update-check',
+        headers,
+      });
+      expect(idle.json()).toEqual({ enabled: false, result: null });
+      expect(checks).toHaveLength(0);
+
+      // The manual button always may.
+      const manual = await app.app.inject({
+        method: 'POST',
+        url: '/api/admin/settings/update-check',
+        headers,
+      });
+      expect((manual.json() as { result: { latestVersion: string } }).result.latestVersion).toBe(
+        '9.9.9',
+      );
+      expect(checks).toEqual([0]);
+
+      // Enabled: GET refreshes with the daily max age.
+      await app.app.inject({
+        method: 'PUT',
+        url: '/api/admin/settings',
+        headers,
+        payload: { key: 'updates.check', value: true },
+      });
+      await app.app.inject({
+        method: 'GET',
+        url: '/api/admin/settings/update-check',
+        headers,
+      });
+      expect(checks).toHaveLength(2);
+      expect(checks[1]).toBeGreaterThan(0);
+    } finally {
+      await app.close();
     }
   });
 

@@ -114,6 +114,12 @@ export const de = {
     categorizeUnconfigured:
       'Nicht konfiguriert. Aktivierung über die Umgebungsvariablen CATEGORIZE_LLM & Co., siehe README.',
     lockedByEnv: 'über Umgebungsvariable festgelegt',
+    updatesSection: 'Version & Updates',
+    versionLabel: 'Version',
+    updatesToggle: 'Täglich automatisch auf Updates prüfen (fragt github.com an)',
+    checkNow: 'Jetzt prüfen',
+    upToDate: 'Auf dem neuesten Stand.',
+    updateAvailable: 'verfügbar',
   },
   backup: {
     title: 'Sicherung',

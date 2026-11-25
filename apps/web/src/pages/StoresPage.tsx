@@ -21,6 +21,7 @@ import {
   setStoreCategoryOrder,
 } from '../api/stores';
 import type { Category, StoreWithOrder } from '../api/types';
+import { VersionLine } from '../components/VersionLine';
 import { useT } from '../i18n';
 import { dropTargetIndex, moveItem } from '../lib/reorder';
 
@@ -494,6 +495,7 @@ export function StoresPage() {
       {error && <p className="error">{t.common.error}</p>}
       <StaplesSection />
       <ExportSection />
+      <VersionLine />
       {editingStore !== undefined && (
         <StoreEditDialog
           store={editingStore}

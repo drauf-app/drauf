@@ -19,6 +19,9 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     disabledProviders: [],
     webDir: './test-no-web-dist',
     categorize: undefined,
+    version: 'dev',
+    commit: undefined,
+    updateCheck: undefined,
     ...overrides,
   };
 }

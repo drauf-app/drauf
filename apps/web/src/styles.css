@@ -662,6 +662,24 @@ button:disabled {
   color: var(--text-muted);
 }
 
+/* Version footer and update badge (#74). */
+.version-line {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.version-line a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.update-available {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 /* Staples (import preselection) as a wrapping row of removable pills. */
 .staples {
   list-style: none;

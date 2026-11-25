@@ -30,7 +30,12 @@ COPY packages/catalog/package.json packages/catalog/
 RUN pnpm install --frozen-lockfile --prod
 
 FROM node:24-slim
+# Baked by the release workflow; local builds show "dev" (#74).
+ARG DRAUF_VERSION=dev
+ARG DRAUF_COMMIT=""
 ENV NODE_ENV=production
+ENV DRAUF_VERSION=$DRAUF_VERSION
+ENV DRAUF_COMMIT=$DRAUF_COMMIT
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules node_modules
 COPY --from=prod-deps /app/apps/server/node_modules apps/server/node_modules

@@ -81,6 +81,14 @@ export function buildSettingDefinitions(
       },
     );
   }
+  definitions.push({
+    key: 'updates.check',
+    type: 'boolean',
+    // Privacy by default: the daily check is an explicit admin choice;
+    // the manual button works regardless.
+    default: false,
+    ...(config.updateCheck === undefined ? {} : { envLock: config.updateCheck }),
+  });
   return definitions;
 }
 

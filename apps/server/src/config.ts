@@ -52,6 +52,11 @@ export interface Config {
   webDir: string;
   /** LLM category guessing; undefined = off (the default). */
   categorize: CategorizeConfig | undefined;
+  /** Baked into the image by the release workflow; "dev" otherwise (#74). */
+  version: string;
+  commit: string | undefined;
+  /** Env pin for the update-check setting; undefined = admin-controlled. */
+  updateCheck: boolean | undefined;
 }
 
 interface Env {
@@ -77,6 +82,9 @@ interface Env {
   CATEGORIZE_BASE_URL: string;
   CATEGORIZE_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;
+  DRAUF_VERSION: string;
+  DRAUF_COMMIT?: string;
+  UPDATE_CHECK_ENABLED?: boolean;
 }
 
 const schema = {
@@ -105,6 +113,9 @@ const schema = {
     CATEGORIZE_BASE_URL: { type: 'string', default: 'https://api.openai.com/v1' },
     CATEGORIZE_API_KEY: { type: 'string' },
     ANTHROPIC_API_KEY: { type: 'string' },
+    DRAUF_VERSION: { type: 'string', default: 'dev' },
+    DRAUF_COMMIT: { type: 'string' },
+    UPDATE_CHECK_ENABLED: { type: 'boolean' },
   },
 } as const;
 
@@ -221,5 +232,8 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
       .filter((entry) => entry !== ''),
     webDir: env.WEB_DIR,
     categorize: resolveCategorize(env),
+    version: env.DRAUF_VERSION,
+    commit: env.DRAUF_COMMIT === '' ? undefined : env.DRAUF_COMMIT,
+    updateCheck: env.UPDATE_CHECK_ENABLED,
   };
 }
