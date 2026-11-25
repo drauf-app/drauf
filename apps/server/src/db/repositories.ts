@@ -10,6 +10,7 @@ import type {
   EntryPortion,
   Household,
   HouseholdMember,
+  InstanceSetting,
   List,
   ListEntry,
   ListMember,
@@ -886,6 +887,26 @@ export async function updatePlanEntry(
 export async function deletePlanEntry(database: Database, entryId: string): Promise<void> {
   const { db, t } = unwrap(database);
   await db.delete(t.planEntries).where(eq(t.planEntries.id, entryId));
+}
+
+export async function listInstanceSettings(database: Database): Promise<InstanceSetting[]> {
+  const { db, t } = unwrap(database);
+  return db.select().from(t.instanceSettings);
+}
+
+export async function upsertInstanceSetting(
+  database: Database,
+  key: string,
+  value: string,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .insert(t.instanceSettings)
+    .values({ key, value, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: t.instanceSettings.key,
+      set: { value, updatedAt: new Date() },
+    });
 }
 
 /** Records a processed sync operation id; returns false when it was already known. */

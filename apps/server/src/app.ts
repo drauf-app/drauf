@@ -20,9 +20,11 @@ import { importRoutes } from './routes/import.js';
 import { listRoutes } from './routes/lists.js';
 import { oidcRoutes } from './routes/oidc.js';
 import { planRoutes } from './routes/plan.js';
+import { settingsRoutes } from './routes/settings.js';
 import { storeRoutes } from './routes/stores.js';
 import { syncRoutes } from './routes/sync.js';
 import { userRoutes } from './routes/users.js';
+import { buildSettingDefinitions, createSettingsService } from './settings/service.js';
 import { SyncHub } from './sync/hub.js';
 import { registerWebApp } from './web.js';
 
@@ -68,9 +70,10 @@ export async function buildApp(
       : undefined;
 
   const catalogIndex = buildCatalogIndex(options.catalog ?? loadCatalog());
-  const providers = (options.providers ?? allProviders).filter(
-    (provider) => !config.disabledProviders.includes(provider.id),
-  );
+  // The full provider list stays registered; env-disabled ones surface as
+  // locked-off settings and the routes gate at request time (#73).
+  const providers = options.providers ?? allProviders;
+  const settings = createSettingsService(database, buildSettingDefinitions(config, providers));
   const providerContext: ProviderContext = options.providerContext ?? {
     fetchText: async (url) => {
       const result = await fetchGuarded(url, {
@@ -83,7 +86,11 @@ export async function buildApp(
     },
   };
 
-  const categorizer = options.categorizer ?? createCategorizer(config.categorize);
+  const categorizer =
+    options.categorizer ??
+    createCategorizer(config.categorize, async () =>
+      String(await settings.effective('categorize.model')),
+    );
   const categorize =
     categorizer === undefined
       ? undefined
@@ -93,6 +100,7 @@ export async function buildApp(
           categorizer,
           catalog: catalogIndex,
           log: app.log,
+          enabled: async () => (await settings.effective('categorize.enabled')) === true,
         });
 
   await app.register(authRoutes(database, config, guards), { prefix: '/api/auth' });
@@ -105,16 +113,26 @@ export async function buildApp(
   });
   await app.register(categoryRoutes(database, guards), { prefix: '/api/categories' });
   await app.register(storeRoutes(database, guards), { prefix: '/api/stores' });
-  await app.register(planRoutes(database, guards, hub, providers, providerContext), {
+  await app.register(planRoutes(database, guards, hub, providers, providerContext, settings), {
     prefix: '/api/plan',
   });
+  await app.register(settingsRoutes(settings, guards), { prefix: '/api/admin/settings' });
   await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
   await app.register(syncRoutes(database, config, guards, hub, catalogIndex, categorize), {
     prefix: '/api/sync',
   });
 
   await app.register(
-    importRoutes(database, guards, hub, providers, providerContext, catalogIndex, categorize),
+    importRoutes(
+      database,
+      guards,
+      hub,
+      providers,
+      providerContext,
+      catalogIndex,
+      categorize,
+      settings,
+    ),
     {
       prefix: '/api/import',
     },

@@ -8,7 +8,8 @@ import { buildUserPrompt, type Categorizer, SYSTEM_PROMPT } from './index.js';
 export function openAiCategorizer(config: {
   baseUrl: string;
   apiKey: string | undefined;
-  model: string;
+  /** Resolved per call: the model is a runtime setting (#73). */
+  model: () => Promise<string>;
 }): Categorizer {
   return {
     async guess(name, options) {
@@ -22,7 +23,7 @@ export function openAiCategorizer(config: {
             : {}),
         },
         body: JSON.stringify({
-          model: config.model,
+          model: await config.model(),
           temperature: 0,
           max_tokens: 64,
           messages: [

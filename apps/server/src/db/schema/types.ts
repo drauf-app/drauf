@@ -138,6 +138,13 @@ export interface CatalogUsage {
   updatedAt: Date;
 }
 
+export interface InstanceSetting {
+  key: string;
+  /** JSON-encoded value; the registry knows each key's type. */
+  value: string;
+  updatedAt: Date;
+}
+
 export type PortionOrigin = 'manual' | 'recipe';
 
 export interface ListEntry {
@@ -237,10 +244,14 @@ type _SqliteOidcTransaction = Assert<
 type _SqliteLoginCode = Assert<Eq<typeof sqlite.loginCodes.$inferSelect, LoginCode>>;
 type _PgRefreshToken = Assert<Eq<typeof pg.refreshTokens.$inferSelect, RefreshToken>>;
 type _PgHousehold = Assert<Eq<typeof pg.households.$inferSelect, Household>>;
+type _PgInstanceSetting = Assert<Eq<typeof pg.instanceSettings.$inferSelect, InstanceSetting>>;
 type _PgHouseholdMember = Assert<Eq<typeof pg.householdMembers.$inferSelect, HouseholdMember>>;
 type _SqliteUser = Assert<Eq<typeof sqlite.users.$inferSelect, User>>;
 type _SqliteRefreshToken = Assert<Eq<typeof sqlite.refreshTokens.$inferSelect, RefreshToken>>;
 type _SqliteHousehold = Assert<Eq<typeof sqlite.households.$inferSelect, Household>>;
+type _SqliteInstanceSetting = Assert<
+  Eq<typeof sqlite.instanceSettings.$inferSelect, InstanceSetting>
+>;
 type _SqliteHouseholdMember = Assert<
   Eq<typeof sqlite.householdMembers.$inferSelect, HouseholdMember>
 >;

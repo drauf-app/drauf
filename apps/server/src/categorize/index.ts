@@ -37,9 +37,15 @@ export function pickAnswer(text: string, options: string[]): string | null {
 
 export { SYSTEM_PROMPT };
 
-export function createCategorizer(config: CategorizeConfig | undefined): Categorizer | undefined {
+export function createCategorizer(
+  config: CategorizeConfig | undefined,
+  model?: () => Promise<string>,
+): Categorizer | undefined {
   if (config === undefined) {
     return undefined;
   }
-  return config.provider === 'anthropic' ? anthropicCategorizer(config) : openAiCategorizer(config);
+  const resolveModel = model ?? (() => Promise.resolve(config.model));
+  return config.provider === 'anthropic'
+    ? anthropicCategorizer({ apiKey: config.apiKey, model: resolveModel })
+    : openAiCategorizer({ baseUrl: config.baseUrl, apiKey: config.apiKey, model: resolveModel });
 }

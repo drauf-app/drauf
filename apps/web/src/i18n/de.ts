@@ -13,6 +13,7 @@ export const de = {
     plan: 'Wochenplan',
     stores: 'Läden',
     import: 'Import',
+    settings: 'Einstellungen',
   },
   login: {
     title: 'Anmelden',
@@ -101,6 +102,18 @@ export const de = {
     done: 'Fertig',
     moveUp: 'Nach oben',
     moveDown: 'Nach unten',
+  },
+  settings: {
+    title: 'Einstellungen',
+    intro:
+      'Einstellungen der Instanz, nur für Admins. Werte, die per Umgebungsvariable gesetzt sind, lassen sich hier nicht ändern.',
+    importSection: 'Rezept-Import',
+    categorizeSection: 'Kategorie-Raten (LLM)',
+    categorizeEnabled: 'Aktiviert',
+    categorizeModel: 'Modell',
+    categorizeUnconfigured:
+      'Nicht konfiguriert. Aktivierung über die Umgebungsvariablen CATEGORIZE_LLM & Co., siehe README.',
+    lockedByEnv: 'über Umgebungsvariable festgelegt',
   },
   backup: {
     title: 'Sicherung',

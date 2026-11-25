@@ -41,6 +41,8 @@ export function createCategorizeService(deps: {
   categorizer: Categorizer;
   catalog: CatalogIndex;
   log: FastifyBaseLogger;
+  /** Runtime switch (#73); undefined means always on. */
+  enabled?: () => Promise<boolean>;
 }): CategorizeService {
   const inFlight = new Set<string>();
 
@@ -118,6 +120,9 @@ export function createCategorizeService(deps: {
 
   return {
     async schedule(entry) {
+      if (deps.enabled !== undefined && !(await deps.enabled())) {
+        return false;
+      }
       const householdId = await getListHouseholdId(deps.database, entry.listId);
       if (householdId === undefined) {
         return false;

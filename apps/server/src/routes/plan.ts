@@ -17,6 +17,7 @@ import {
   updatePlanEntry,
 } from '../db/repositories.js';
 import { getHouseholdForMember } from '../households/service.js';
+import type { SettingsService } from '../settings/service.js';
 import { planTopic, type SyncHub } from '../sync/hub.js';
 
 const DATE_PATTERN = '^\\d{4}-\\d{2}-\\d{2}$';
@@ -152,6 +153,7 @@ export function planRoutes(
   hub: SyncHub,
   providers: RecipeProvider[],
   providerContext: ProviderContext,
+  settings: SettingsService,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
@@ -161,7 +163,13 @@ export function planRoutes(
      * when the entry has none. Every failure degrades to the bare link.
      */
     async function previewForLink(link: string): Promise<{ text?: string; imageUrl?: string }> {
-      const match = matchProvider(providers, link);
+      const active: RecipeProvider[] = [];
+      for (const provider of providers) {
+        if (await settings.providerEnabled(provider.id)) {
+          active.push(provider);
+        }
+      }
+      const match = matchProvider(active, link);
       if (match === undefined) {
         return {};
       }

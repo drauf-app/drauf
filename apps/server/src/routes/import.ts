@@ -17,6 +17,7 @@ import { DEFAULT_STAPLES, stapleSet } from '../households/staples.js';
 import { FetchGuardError, fetchGuarded } from '../import/fetch.js';
 import { addItemToList, type EntryView, getEntryView } from '../lists/items.js';
 import { getListForMember } from '../lists/service.js';
+import type { SettingsService } from '../settings/service.js';
 import { listTopic, planTopic, type SyncHub } from '../sync/hub.js';
 
 const previewBody = {
@@ -123,6 +124,7 @@ export function importRoutes(
   context: ProviderContext,
   catalog: CatalogIndex,
   categorize: CategorizeService | undefined,
+  settings: SettingsService,
 ): FastifyPluginAsync {
   return async (app) => {
     app.addHook('preHandler', guards.authenticate);
@@ -135,7 +137,14 @@ export function importRoutes(
       },
       async (request, reply) => {
         const auth = requireAuthUser(reply, request.authUser);
-        const match = matchProvider(providers, request.body.input);
+        // Runtime toggles (#73): the admin can switch providers off.
+        const active: RecipeProvider[] = [];
+        for (const provider of providers) {
+          if (await settings.providerEnabled(provider.id)) {
+            active.push(provider);
+          }
+        }
+        const match = matchProvider(active, request.body.input);
         if (match === undefined) {
           return reply.code(422).send({ error: 'no_provider' });
         }

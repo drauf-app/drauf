@@ -41,7 +41,12 @@ describe('loadConfig', () => {
     expect(loadConfig({ ...BASE_ENV }).categorize).toBeUndefined();
     expect(
       loadConfig({ ...BASE_ENV, CATEGORIZE_LLM: 'anthropic', ANTHROPIC_API_KEY: 'k' }).categorize,
-    ).toEqual({ provider: 'anthropic', apiKey: 'k', model: 'claude-opus-5-5' });
+    ).toEqual({
+      provider: 'anthropic',
+      apiKey: 'k',
+      model: 'claude-opus-5-5',
+      modelFromEnv: false,
+    });
     expect(() => loadConfig({ ...BASE_ENV, CATEGORIZE_LLM: 'anthropic' })).toThrow(
       /ANTHROPIC_API_KEY/,
     );
@@ -57,6 +62,7 @@ describe('loadConfig', () => {
       baseUrl: 'http://ollama:11434/v1',
       apiKey: undefined,
       model: 'qwen3:8b',
+      modelFromEnv: true,
     });
     expect(() => loadConfig({ ...BASE_ENV, CATEGORIZE_LLM: 'openai' })).toThrow(/CATEGORIZE_MODEL/);
   });

@@ -25,8 +25,14 @@ export interface OidcConfig {
  * means item names are sent to the configured endpoint.
  */
 export type CategorizeConfig =
-  | { provider: 'anthropic'; apiKey: string; model: string }
-  | { provider: 'openai'; baseUrl: string; apiKey: string | undefined; model: string };
+  | { provider: 'anthropic'; apiKey: string; model: string; modelFromEnv: boolean }
+  | {
+      provider: 'openai';
+      baseUrl: string;
+      apiKey: string | undefined;
+      model: string;
+      modelFromEnv: boolean;
+    };
 
 export interface Config {
   host: string;
@@ -148,6 +154,7 @@ function resolveCategorize(env: Env): CategorizeConfig | undefined {
       provider: 'anthropic',
       apiKey: env.ANTHROPIC_API_KEY,
       model: env.CATEGORIZE_MODEL ?? 'claude-opus-5-5',
+      modelFromEnv: env.CATEGORIZE_MODEL !== undefined,
     };
   }
   // 'openai' also covers local models: Ollama, LM Studio and vLLM expose
@@ -161,6 +168,7 @@ function resolveCategorize(env: Env): CategorizeConfig | undefined {
     baseUrl: env.CATEGORIZE_BASE_URL.replace(/\/$/, ''),
     apiKey: env.CATEGORIZE_API_KEY,
     model: env.CATEGORIZE_MODEL,
+    modelFromEnv: true,
   };
 }
 

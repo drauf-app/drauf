@@ -290,6 +290,14 @@ export const entryPortions = sqliteTable('entry_portions', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }),
 });
 
+/** Instance-wide runtime settings (#73); env-pinned keys never get rows. */
+export const instanceSettings = sqliteTable('instance_settings', {
+  key: text('key').primaryKey(),
+  /** JSON-encoded value; the registry knows each key's type. */
+  value: text('value').notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
 /** Processed sync operation ids: replaying a queued operation is a no-op. */
 export const appliedOperations = sqliteTable('applied_operations', {
   id: text('id').primaryKey(),
