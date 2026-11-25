@@ -8,6 +8,8 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:3000', ws: true },
       '/healthz': { target: 'http://localhost:3000' },
+      // Instance icon files (#71) are served by the API server.
+      '/icons': { target: 'http://localhost:3000' },
     },
   },
   test: {

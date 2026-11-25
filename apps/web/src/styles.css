@@ -1388,6 +1388,14 @@ button:disabled {
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
+/* Section label inside the grid, e.g. "Eigene Icons" (#71). */
+.icon-picker-section {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding-top: 0.2rem;
+}
+
 .entry-edit-actions {
   grid-column: 1 / -1;
   display: flex;
@@ -1787,6 +1795,15 @@ button:disabled {
   -webkit-mask-size: contain;
   -webkit-mask-position: center;
   -webkit-mask-repeat: no-repeat;
+}
+
+/* Colored instance icons render as plain images, sized like the mask icons (#71). */
+.icon-img {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+  object-fit: contain;
 }
 
 .list-preview {
