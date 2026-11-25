@@ -115,6 +115,8 @@ describe('PlanPage', () => {
     if (firstDay === undefined) throw new Error('no day cell found');
     await user.click(firstDay);
 
+    // The editor opens as a dialog instead of squeezing into the day column.
+    expect(screen.getByRole('dialog')).toBeDefined();
     await user.type(screen.getByLabelText('Gericht oder Link'), 'Flammkuchen');
     await user.selectOptions(screen.getByLabelText('Wer kocht?'), 'u1');
     await user.selectOptions(screen.getByLabelText('Mahlzeit'), 's2');
