@@ -99,6 +99,14 @@ export function fetchCategories(): Promise<Category[]> {
   return apiJson<Category[]>('/api/categories');
 }
 
+/** Sets a category's icon override; '' clears back to the base default (#71). */
+export function patchCategoryIcon(categoryId: string, icon: string): Promise<Category> {
+  return apiJson<Category>(`/api/categories/${encodeURIComponent(categoryId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ icon }),
+  });
+}
+
 export function fetchSuggestions(q: string, limit = 8): Promise<Suggestion[]> {
   const query = new URLSearchParams({ q, limit: String(limit) });
   return apiJson<Suggestion[]>(`/api/catalog/suggest?${query.toString()}`);

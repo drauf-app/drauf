@@ -147,6 +147,8 @@ export const categories = sqliteTable(
       .references(() => households.id, { onDelete: 'cascade' }),
     key: text('key'),
     name: text('name').notNull(),
+    /** Icon id override; base categories fall back to their default (#71). */
+    icon: text('icon'),
     sortOrder: integer('sort_order').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },

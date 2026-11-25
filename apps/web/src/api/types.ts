@@ -41,6 +41,8 @@ export interface Category {
   /** Stable identifier of seeded base categories; null for household-created ones. */
   key: string | null;
   name: string;
+  /** Resolved icon id: the household's override or the base default (#71). */
+  icon: string | null;
   sortOrder: number;
   createdAt: string;
 }

@@ -74,6 +74,8 @@ export interface Category {
   /** Stable identifier of seeded base categories; null for household-created ones. */
   key: string | null;
   name: string;
+  /** Icon id override; null = the base category's default, if any (#71). */
+  icon: string | null;
   sortOrder: number;
   createdAt: Date;
 }

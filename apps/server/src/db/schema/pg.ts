@@ -150,6 +150,8 @@ export const categories = pgTable(
       .references(() => households.id, { onDelete: 'cascade' }),
     key: text('key'),
     name: text('name').notNull(),
+    /** Icon id override; base categories fall back to their default (#71). */
+    icon: text('icon'),
     sortOrder: integer('sort_order').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
   },
