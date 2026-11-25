@@ -18,6 +18,9 @@ describe('loadConfig', () => {
       disabledProviders: [],
       webDir: '../web/dist',
       categorize: undefined,
+      version: 'dev',
+      commit: undefined,
+      updateCheck: undefined,
     });
   });
 

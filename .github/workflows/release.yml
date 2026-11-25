@@ -38,6 +38,9 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            DRAUF_VERSION=${{ github.ref_type == 'tag' && github.ref_name || format('main@{0}', github.sha) }}
+            DRAUF_COMMIT=${{ github.sha }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

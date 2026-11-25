@@ -26,6 +26,7 @@ import { syncRoutes } from './routes/sync.js';
 import { userRoutes } from './routes/users.js';
 import { buildSettingDefinitions, createSettingsService } from './settings/service.js';
 import { SyncHub } from './sync/hub.js';
+import { createUpdateChecker, type UpdateChecker } from './version/update-check.js';
 import { registerWebApp } from './web.js';
 
 export interface BuildAppOptions {
@@ -37,6 +38,8 @@ export interface BuildAppOptions {
   providerContext?: ProviderContext;
   /** Test seam: injects an LLM categorizer without network or config. */
   categorizer?: Categorizer;
+  /** Test seam: replaces the GitHub release lookup. */
+  updateChecker?: UpdateChecker;
 }
 
 export async function buildApp(
@@ -63,6 +66,9 @@ export async function buildApp(
   const hub = new SyncHub();
 
   app.get('/healthz', async (): Promise<HealthResponse> => ({ status: 'ok' }));
+  // Which build is running (#74): public like the health check; the values
+  // say nothing the public repository does not.
+  app.get('/api/version', async () => ({ version: config.version, commit: config.commit ?? null }));
 
   const oidcService =
     config.oidc !== undefined && config.publicUrl !== undefined
@@ -116,7 +122,11 @@ export async function buildApp(
   await app.register(planRoutes(database, guards, hub, providers, providerContext, settings), {
     prefix: '/api/plan',
   });
-  await app.register(settingsRoutes(settings, guards), { prefix: '/api/admin/settings' });
+  const updateChecker =
+    options.updateChecker ?? createUpdateChecker({ currentVersion: config.version });
+  await app.register(settingsRoutes(settings, guards, updateChecker), {
+    prefix: '/api/admin/settings',
+  });
   await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
   await app.register(syncRoutes(database, config, guards, hub, catalogIndex, categorize), {
     prefix: '/api/sync',

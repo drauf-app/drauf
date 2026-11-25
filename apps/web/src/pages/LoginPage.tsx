@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import type { AuthProviders } from '../api/types';
 import { ApiError, deviceName, loginLocal, useAuth } from '../auth/store';
+import { VersionLine } from '../components/VersionLine';
 import { type Messages, useT } from '../i18n';
 
 const KNOWN_LOGIN_ERRORS = [
@@ -120,6 +121,7 @@ export function LoginPage() {
         )}
         {error !== undefined && <p className="error">{error}</p>}
       </div>
+      <VersionLine />
     </div>
   );
 }

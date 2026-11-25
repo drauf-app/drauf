@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchSettings, type InstanceSetting, updateSetting } from '../api/settings';
+import { fetchVersion, releasesUrl, type ServerVersion } from '../api/version';
+import { apiJson } from '../auth/store';
 import { useT } from '../i18n';
 
 const PROVIDER_PREFIX = 'import.provider.';
@@ -18,9 +20,20 @@ export function SettingsPage() {
   const t = useT();
   const [settings, setSettings] = useState<InstanceSetting[]>();
   const [error, setError] = useState(false);
+  const [version, setVersion] = useState<ServerVersion>();
+  const [update, setUpdate] = useState<UpdateState>();
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    void fetchVersion().then((result) => {
+      if (!cancelled) setVersion(result);
+    });
+    apiJson<UpdateState>('/api/admin/settings/update-check')
+      .then((state) => {
+        if (!cancelled) setUpdate(state);
+      })
+      .catch(() => {});
     fetchSettings()
       .then((result) => {
         if (!cancelled) setSettings(result);
@@ -49,6 +62,15 @@ export function SettingsPage() {
   }
 
   const providers = settings.filter((setting) => setting.key.startsWith(PROVIDER_PREFIX));
+  const updatesToggle = settings.find((setting) => setting.key === 'updates.check');
+
+  function checkNow(): void {
+    setChecking(true);
+    apiJson<UpdateState>('/api/admin/settings/update-check', { method: 'POST' })
+      .then(setUpdate)
+      .catch(() => setError(true))
+      .finally(() => setChecking(false));
+  }
   const categorizeEnabled = settings.find((setting) => setting.key === 'categorize.enabled');
   const categorizeModel = settings.find((setting) => setting.key === 'categorize.model');
 
@@ -110,7 +132,50 @@ export function SettingsPage() {
         </>
       )}
 
+      <h2>{t.settings.updatesSection}</h2>
+      {version !== undefined && (
+        <p className="setting-row">
+          <span className="setting-label">
+            {t.settings.versionLabel}:{' '}
+            <a href={releasesUrl(version.version)} target="_blank" rel="noreferrer">
+              {version.version}
+              {version.commit !== null ? ` (${version.commit.slice(0, 7)})` : ''}
+            </a>
+          </span>
+        </p>
+      )}
+      {updatesToggle !== undefined && renderToggle(updatesToggle, t.settings.updatesToggle)}
+      <div className="setting-row">
+        <button type="button" disabled={checking} onClick={checkNow}>
+          {t.settings.checkNow}
+        </button>
+        {update?.result != null &&
+          (update.result.updateAvailable ? (
+            <a
+              className="update-available"
+              href={update.result.latestUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {update.result.latestVersion} {t.settings.updateAvailable}
+            </a>
+          ) : (
+            <span className="setting-locked">{t.settings.upToDate}</span>
+          ))}
+      </div>
+
       {error && <p className="error">{t.common.error}</p>}
     </section>
   );
+}
+
+interface UpdateState {
+  enabled: boolean;
+  result: {
+    currentVersion: string;
+    latestVersion: string;
+    latestUrl: string;
+    updateAvailable: boolean;
+    checkedAt: string;
+  } | null;
 }
