@@ -997,10 +997,18 @@ button:disabled {
 
 .plan-editor {
   flex: 1;
+  /* Shrinks inside narrow plan cells instead of spilling out of the card. */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   padding: 0.3rem 0;
+}
+
+.plan-editor input,
+.plan-editor select {
+  width: 100%;
+  min-width: 0;
 }
 
 /* Cooked-recipes type-ahead in the plan editor (#88). */
@@ -1058,6 +1066,7 @@ button:disabled {
 
 .plan-editor-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
