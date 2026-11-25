@@ -16,7 +16,7 @@ import { useT } from '../i18n';
 import { applyPlanEvent } from '../lib/plan-events';
 import { sourceLabel } from '../lib/source';
 import { type SyncEvent, useSync } from '../lib/sync';
-import { formatDay, formatLastCooked, formatWeek, weekDays } from '../lib/week';
+import { formatDay, formatLastCooked, formatWeek, isoDate, weekDays } from '../lib/week';
 
 function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
@@ -421,7 +421,7 @@ export function PlanPage() {
         {days.map((day) => {
           const dayEntries = sortDayEntries(byDay.get(day) ?? [], slots);
           return (
-            <div key={day} className="plan-day">
+            <div key={day} className={day === isoDate(new Date()) ? 'plan-day today' : 'plan-day'}>
               <h2>{formatDay(day)}</h2>
               <div className="plan-slots">
                 {dayEntries.map((entry) => {
