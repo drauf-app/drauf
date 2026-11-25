@@ -242,6 +242,53 @@ describe('meal plan routes', () => {
       expect(empty.json()).toEqual({ error: 'text_or_link_required' });
     });
 
+    it('remembers cooked recipes with last-cooked info (#88)', async () => {
+      // Three past Lasagne entries in mixed spelling, one other meal, one
+      // planned in the future (not cooked yet) and one link-only entry.
+      await addEntry({ date: '2026-01-05', slotId: lunch.id, text: 'Lasagne' });
+      await addEntry({
+        date: '2026-02-10',
+        slotId: dinner.id,
+        text: '  lasagne ',
+        link: 'https://example.com/r/lasagne',
+      });
+      await addEntry({ date: '2026-03-03', slotId: lunch.id, text: 'Lasagne' });
+      await addEntry({ date: '2026-03-04', slotId: lunch.id, text: 'Kartoffelsuppe' });
+      await addEntry({ date: '2099-01-01', slotId: lunch.id, text: 'Lasagne' });
+      await addEntry({ date: '2026-03-05', slotId: lunch.id, link: 'https://example.com/r/x' });
+
+      const all = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/plan/recipes',
+        headers: as(christian),
+      });
+      expect(all.statusCode).toBe(200);
+      const suggestions = all.json() as Array<Record<string, unknown>>;
+      // Newest first; the future entry and the title-less link don't count.
+      expect(suggestions.map((s) => s.text)).toEqual(['Kartoffelsuppe', 'Lasagne']);
+      expect(suggestions[1]).toMatchObject({
+        text: 'Lasagne',
+        timesCooked: 3,
+        lastCookedAt: '2026-03-03',
+        // The link sticks even though the newest entry has none.
+        link: 'https://example.com/r/lasagne',
+      });
+
+      const filtered = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/plan/recipes?q=lasa&limit=5',
+        headers: as(christian),
+      });
+      expect((filtered.json() as Array<{ text: string }>).map((s) => s.text)).toEqual(['Lasagne']);
+
+      const none = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/plan/recipes?q=Pizza',
+        headers: as(christian),
+      });
+      expect(none.json()).toEqual([]);
+    });
+
     it('deletes entries and validates the query range', async () => {
       const entry = (await (
         await addEntry({ date: '2026-11-16', slotId: lunch.id, text: 'Pasta' })

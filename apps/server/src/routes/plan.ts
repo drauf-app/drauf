@@ -11,12 +11,14 @@ import {
   getMealSlot,
   getPlanEntry,
   isHouseholdMember,
+  listCookedPlanEntries,
   listMealSlots,
   listPlanEntries,
   updateMealSlot,
   updatePlanEntry,
 } from '../db/repositories.js';
 import { getHouseholdForMember } from '../households/service.js';
+import { recipeSuggestions } from '../plan/recipes.js';
 import type { SettingsService } from '../settings/service.js';
 import { planTopic, type SyncHub } from '../sync/hub.js';
 
@@ -75,6 +77,15 @@ const rangeQuery = {
   properties: {
     from: { type: 'string', pattern: DATE_PATTERN },
     to: { type: 'string', pattern: DATE_PATTERN },
+  },
+  additionalProperties: false,
+} as const;
+
+const recipesQuery = {
+  type: 'object',
+  properties: {
+    q: { type: 'string', maxLength: 100 },
+    limit: { type: 'integer', minimum: 1, maximum: 20, default: 8 },
   },
   additionalProperties: false,
 } as const;
@@ -277,6 +288,24 @@ export function planRoutes(
           return reply.code(400).send({ error: 'invalid_range' });
         }
         return listPlanEntries(database, home.id, from, to);
+      },
+    );
+
+    /**
+     * Cooked-recipes memory (#88): previously planned meals as type-ahead
+     * suggestions, each with when it was last cooked. Derived from past plan
+     * entries (date up to today, server clock in UTC) — no extra table.
+     */
+    app.get<{ Querystring: { q?: string; limit: number } }>(
+      '/recipes',
+      { schema: { querystring: recipesQuery } },
+      async (request, reply) => {
+        const auth = requireAuthUser(reply, request.authUser);
+        const home = await household(reply, auth);
+        if (home === undefined) return reply;
+        const today = new Date().toISOString().slice(0, 10);
+        const rows = await listCookedPlanEntries(database, home.id, today);
+        return recipeSuggestions(rows, request.query.q ?? '', request.query.limit);
       },
     );
 

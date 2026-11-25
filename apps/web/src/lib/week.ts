@@ -67,6 +67,27 @@ export function formatDay(iso: string): string {
   return `${DAY_FORMAT.format(date)}, ${DATE_FORMAT.format(date)}`;
 }
 
+/**
+ * Short "when was this last cooked" label (#88): "heute", "gestern",
+ * "vor 5 Tagen", "vor 3 Wochen", and for anything older "am 01.02.2026".
+ */
+export function formatLastCooked(iso: string, today: Date = new Date()): string {
+  const days = Math.round((atNoon(isoDate(today)).getTime() - atNoon(iso).getTime()) / 86_400_000);
+  if (days <= 0) {
+    return 'heute';
+  }
+  if (days === 1) {
+    return 'gestern';
+  }
+  if (days < 14) {
+    return `vor ${days} Tagen`;
+  }
+  if (days < 8 * 7) {
+    return `vor ${Math.round(days / 7)} Wochen`;
+  }
+  return `am ${RANGE_FORMAT.format(atNoon(iso))}`;
+}
+
 /** "10.11. – 16.11.2026" */
 export function formatWeek(days: string[]): string {
   const first = days[0];

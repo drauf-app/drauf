@@ -6,6 +6,7 @@ export interface PlanEntryInput {
   slotId: string;
   text?: string;
   link?: string;
+  imageUrl?: string;
   cookId?: string;
 }
 
@@ -15,7 +16,18 @@ export interface PlanEntryPatch {
   /** '' clears an optional field. */
   text?: string;
   link?: string;
+  imageUrl?: string;
   cookId?: string;
+}
+
+/** A previously cooked meal from the plan history (#88). */
+export interface RecipeSuggestion {
+  text: string;
+  link: string | null;
+  imageUrl: string | null;
+  /** ISO calendar date of the most recent time this was on the plan. */
+  lastCookedAt: string;
+  timesCooked: number;
 }
 
 export function fetchHousehold(): Promise<HouseholdInfo> {
@@ -29,6 +41,11 @@ export function fetchSlots(): Promise<MealSlot[]> {
 export function fetchPlanEntries(from: string, to: string): Promise<PlanEntry[]> {
   const query = new URLSearchParams({ from, to });
   return apiJson<PlanEntry[]>(`/api/plan/entries?${query.toString()}`);
+}
+
+export function fetchRecipeSuggestions(q: string): Promise<RecipeSuggestion[]> {
+  const query = new URLSearchParams({ q });
+  return apiJson<RecipeSuggestion[]>(`/api/plan/recipes?${query.toString()}`);
 }
 
 export function createPlanEntry(input: PlanEntryInput): Promise<PlanEntry> {

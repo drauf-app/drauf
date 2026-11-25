@@ -38,7 +38,12 @@ function planEntry(overrides: Partial<PlanEntry>): PlanEntry {
   };
 }
 
-function stubPlanApi(entries: PlanEntry[], onPost?: (body: string) => PlanEntry) {
+interface StubOptions {
+  onPost?: (body: string) => PlanEntry;
+  recipes?: unknown[];
+}
+
+function stubPlanApi(entries: PlanEntry[], options: StubOptions = {}) {
   stubFetch((url, init) => {
     const method = init?.method ?? 'GET';
     if (url === '/api/plan/slots') return fakeResponse(200, SLOTS);
@@ -46,8 +51,11 @@ function stubPlanApi(entries: PlanEntry[], onPost?: (body: string) => PlanEntry)
     if (url.startsWith('/api/plan/entries?') && method === 'GET') {
       return fakeResponse(200, entries);
     }
+    if (url.startsWith('/api/plan/recipes?') && method === 'GET') {
+      return fakeResponse(200, options.recipes ?? []);
+    }
     if (url === '/api/plan/entries' && method === 'POST') {
-      const view = onPost?.(String(init?.body));
+      const view = options.onPost?.(String(init?.body));
       return view === undefined ? fakeResponse(500, {}) : fakeResponse(201, view);
     }
     return undefined;
@@ -87,9 +95,11 @@ describe('PlanPage', () => {
 
   it('creates an entry with text and cook in an empty slot', async () => {
     const posted: string[] = [];
-    stubPlanApi([], (body) => {
-      posted.push(body);
-      return planEntry({ id: 'p9', text: 'Flammkuchen', cookId: 'u1', slotId: 's2' });
+    stubPlanApi([], {
+      onPost: (body) => {
+        posted.push(body);
+        return planEntry({ id: 'p9', text: 'Flammkuchen', cookId: 'u1', slotId: 's2' });
+      },
     });
     render(
       <MemoryRouter>
@@ -116,6 +126,57 @@ describe('PlanPage', () => {
       slotId: 's2',
       text: 'Flammkuchen',
       cookId: 'u1',
+    });
+  });
+
+  it('offers cooked recipes while typing and carries the link on pick (#88)', async () => {
+    const threeWeeksAgo = new Date();
+    threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
+    const lastCookedAt = `${threeWeeksAgo.getFullYear()}-${String(
+      threeWeeksAgo.getMonth() + 1,
+    ).padStart(2, '0')}-${String(threeWeeksAgo.getDate()).padStart(2, '0')}`;
+    const posted: string[] = [];
+    stubPlanApi([], {
+      recipes: [
+        {
+          text: 'Lasagne',
+          link: 'https://example.com/r/lasagne',
+          imageUrl: null,
+          lastCookedAt,
+          timesCooked: 2,
+        },
+      ],
+      onPost: (body) => {
+        posted.push(body);
+        return planEntry({ id: 'p9', text: 'Lasagne', cookId: null, slotId: 's1' });
+      },
+    });
+    render(
+      <MemoryRouter>
+        <PlanPage />
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+
+    const addButtons = await screen.findAllByRole('button', { name: /Eintrag hinzufügen/ });
+    const firstCell = addButtons[0];
+    if (firstCell === undefined) throw new Error('no plan cell found');
+    await user.click(firstCell);
+    await user.type(screen.getByLabelText('Gericht oder Link'), 'Lasa');
+
+    // The suggestion shows the short last-cooked label.
+    const suggestion = await screen.findByRole('button', { name: /Lasagne.*vor 3 Wochen/ });
+    await user.click(suggestion);
+    const input = screen.getByLabelText('Gericht oder Link') as HTMLInputElement;
+    expect(input.value).toBe('Lasagne');
+
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(await screen.findByText('Lasagne')).toBeDefined();
+    expect(JSON.parse(posted[0] ?? '{}')).toEqual({
+      date: DAYS[0],
+      slotId: 's1',
+      text: 'Lasagne',
+      link: 'https://example.com/r/lasagne',
     });
   });
 });

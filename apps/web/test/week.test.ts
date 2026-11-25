@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daysFrom, isoDate, mondayOf, weekDays } from '../src/lib/week';
+import { daysFrom, formatLastCooked, isoDate, mondayOf, weekDays } from '../src/lib/week';
 
 describe('week helpers', () => {
   it('finds the Monday of a mid-week date', () => {
@@ -45,5 +45,14 @@ describe('daysFrom', () => {
   it('shifts by whole weeks', () => {
     expect(daysFrom(5, 1, 7, new Date(2026, 10, 12))[0]).toBe('2026-11-13');
     expect(daysFrom(5, -1, 7, new Date(2026, 10, 12))[0]).toBe('2026-10-30');
+  });
+
+  it('formats short last-cooked labels (#88)', () => {
+    const today = new Date(2026, 10, 25); // 2026-11-25
+    expect(formatLastCooked('2026-11-25', today)).toBe('heute');
+    expect(formatLastCooked('2026-11-24', today)).toBe('gestern');
+    expect(formatLastCooked('2026-11-20', today)).toBe('vor 5 Tagen');
+    expect(formatLastCooked('2026-11-04', today)).toBe('vor 3 Wochen');
+    expect(formatLastCooked('2026-02-01', today)).toBe('am 1.2.2026');
   });
 });
