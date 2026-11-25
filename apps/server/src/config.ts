@@ -232,7 +232,7 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
       .filter((entry) => entry !== ''),
     webDir: env.WEB_DIR,
     categorize: resolveCategorize(env),
-    version: env.DRAUF_VERSION,
+    version: env.DRAUF_VERSION.replace(/^v/, ''),
     commit: env.DRAUF_COMMIT === '' ? undefined : env.DRAUF_COMMIT,
     updateCheck: env.UPDATE_CHECK_ENABLED,
   };

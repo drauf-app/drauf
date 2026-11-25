@@ -78,16 +78,16 @@ export function SettingsPage() {
     const locked = setting.envLock !== undefined;
     return (
       <label key={setting.key} className="setting-row">
+        <span className="setting-label">
+          {label}
+          {locked && <span className="setting-locked">{t.settings.lockedByEnv}</span>}
+        </span>
         <input
           type="checkbox"
           checked={setting.effective === true}
           disabled={locked}
           onChange={(event) => save(setting.key, event.target.checked)}
         />
-        <span className="setting-label">
-          {label}
-          {locked && <span className="setting-locked">{t.settings.lockedByEnv}</span>}
-        </span>
       </label>
     );
   }
@@ -98,13 +98,15 @@ export function SettingsPage() {
       <p className="placeholder">{t.settings.intro}</p>
 
       <h2>{t.settings.importSection}</h2>
-      {providers.map((setting) => renderToggle(setting, providerLabel(setting)))}
+      <div className="settings-group">
+        {providers.map((setting) => renderToggle(setting, providerLabel(setting)))}
+      </div>
 
       <h2>{t.settings.categorizeSection}</h2>
       {categorizeEnabled !== undefined && categorizeEnabled.envLock === false ? (
         <p className="placeholder">{t.settings.categorizeUnconfigured}</p>
       ) : (
-        <>
+        <div className="settings-group">
           {categorizeEnabled !== undefined &&
             renderToggle(categorizeEnabled, t.settings.categorizeEnabled)}
           {categorizeModel !== undefined && (
@@ -129,39 +131,39 @@ export function SettingsPage() {
               />
             </label>
           )}
-        </>
+        </div>
       )}
 
       <h2>{t.settings.updatesSection}</h2>
-      {version !== undefined && (
-        <p className="setting-row">
-          <span className="setting-label">
-            {t.settings.versionLabel}:{' '}
+      <div className="settings-group">
+        {version !== undefined && (
+          <p className="setting-row">
+            <span className="setting-label">{t.settings.versionLabel}</span>
             <a href={releasesUrl(version.version)} target="_blank" rel="noreferrer">
               {version.version}
               {version.commit !== null ? ` (${version.commit.slice(0, 7)})` : ''}
             </a>
-          </span>
-        </p>
-      )}
-      {updatesToggle !== undefined && renderToggle(updatesToggle, t.settings.updatesToggle)}
-      <div className="setting-row">
-        <button type="button" disabled={checking} onClick={checkNow}>
-          {t.settings.checkNow}
-        </button>
-        {update?.result != null &&
-          (update.result.updateAvailable ? (
-            <a
-              className="update-available"
-              href={update.result.latestUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {update.result.latestVersion} {t.settings.updateAvailable}
-            </a>
-          ) : (
-            <span className="setting-locked">{t.settings.upToDate}</span>
-          ))}
+          </p>
+        )}
+        {updatesToggle !== undefined && renderToggle(updatesToggle, t.settings.updatesToggle)}
+        <div className="setting-row">
+          <button type="button" disabled={checking} onClick={checkNow}>
+            {t.settings.checkNow}
+          </button>
+          {update?.result != null &&
+            (update.result.updateAvailable ? (
+              <a
+                className="update-available"
+                href={update.result.latestUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {update.result.latestVersion} {t.settings.updateAvailable}
+              </a>
+            ) : (
+              <span className="setting-locked">{t.settings.upToDate}</span>
+            ))}
+        </div>
       </div>
 
       {error && <p className="error">{t.common.error}</p>}

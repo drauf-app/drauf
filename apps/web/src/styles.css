@@ -634,12 +634,29 @@ button:disabled {
   color: var(--error);
 }
 
-/* Admin settings: one quiet row per setting; locked ones explain why. */
+/* Admin settings: grouped cards, one row per setting, switch-style
+   toggles (the global stacked-label style is overridden here). */
+.settings-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
 .setting-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.35rem 0;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.setting-row + .setting-row {
+  border-top: 1px solid var(--border);
 }
 
 .setting-row-text {
@@ -647,19 +664,62 @@ button:disabled {
 }
 
 .setting-row-text input[type="text"] {
-  max-width: 18rem;
+  max-width: 14rem;
 }
 
 .setting-label {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
 .setting-locked {
   font-size: 0.75rem;
   font-style: italic;
   color: var(--text-muted);
+}
+
+/* The checkbox drawn as a switch: large enough for thumbs, obvious state. */
+.setting-row input[type="checkbox"] {
+  appearance: none;
+  flex-shrink: 0;
+  width: 2.7rem;
+  height: 1.6rem;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.setting-row input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  left: 0.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: transform 0.15s ease;
+}
+
+.setting-row input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.setting-row input[type="checkbox"]:checked::after {
+  transform: translateX(1.05rem);
+  border-color: var(--accent);
+}
+
+.setting-row input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Version footer and update badge (#74). */
