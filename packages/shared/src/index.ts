@@ -1,4 +1,4 @@
-export { BASE_CATEGORIES, BASE_CATEGORY_KEYS } from './categories.js';
+export { BASE_CATEGORIES, BASE_CATEGORY_KEYS, baseCategoryIcon } from './categories.js';
 export type { HealthResponse } from './health.js';
 export {
   emojiToHex,

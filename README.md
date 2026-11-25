@@ -107,7 +107,12 @@ Item icons in the web app render from a bundled subset of
 [OpenMoji](https://openmoji.org) line-art SVGs (CC BY-SA 4.0, like the
 catalogue), drawn in the text colour so they follow light and dark mode and
 look the same on every device; `apps/web/scripts/fetch-openmoji.mjs`
-refreshes the assets when catalogue icons change.
+refreshes the assets when catalogue icons change. Categories carry default
+icons too, overridable per household. Instances can add their own icons
+without a rebuild: files dropped into `DATA_DIR/icons/` (`tomato.svg` →
+usable as `custom:tomato`, also `.png`/`.webp`, SVGs are sanitized) appear
+in the icon picker within seconds; single-colour SVGs follow the text colour
+like the bundled set, everything else renders in its own colours.
 
 Items without a category are guessed deterministically (history, then the
 catalogue). An **optional** third tier asks a language model — off by

@@ -1,3 +1,4 @@
+import { baseCategoryIcon, ICON_ID_MAX_LENGTH, isValidIconId } from '@drauf/shared';
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { AuthGuards, AuthUser } from '../auth/guard.js';
 import type { Database } from '../db/index.js';
@@ -8,7 +9,16 @@ import {
   listCategories,
   updateCategory,
 } from '../db/repositories.js';
+import type { Category } from '../db/schema/types.js';
 import { getHouseholdForMember } from '../households/service.js';
+
+/**
+ * The stored icon is the household's override; base categories fall back to
+ * their default, so every install gets icons without a data migration (#71).
+ */
+function withIcon(category: Category): Category {
+  return { ...category, icon: category.icon ?? baseCategoryIcon(category.key) ?? null };
+}
 
 const createBody = {
   type: 'object',
@@ -24,6 +34,8 @@ const patchBody = {
   minProperties: 1,
   properties: {
     name: { type: 'string', minLength: 1, maxLength: 100 },
+    /** '' clears the override back to the base category's default. */
+    icon: { type: 'string', maxLength: ICON_ID_MAX_LENGTH },
     sortOrder: { type: 'integer', minimum: 0, maximum: 1_000_000 },
   },
   additionalProperties: false,
@@ -41,6 +53,7 @@ interface CreateInput {
 
 interface PatchInput {
   name?: string;
+  icon?: string;
   sortOrder?: number;
 }
 
@@ -66,7 +79,7 @@ export function categoryRoutes(database: Database, guards: AuthGuards): FastifyP
       if (household === undefined) {
         return reply.code(404).send({ error: 'not_found' });
       }
-      return listCategories(database, household.id);
+      return (await listCategories(database, household.id)).map(withIcon);
     });
 
     app.post<{ Body: CreateInput }>(
@@ -86,7 +99,7 @@ export function categoryRoutes(database: Database, guards: AuthGuards): FastifyP
           name: request.body.name.trim(),
           sortOrder: maxOrder + 10,
         });
-        return reply.code(201).send(category);
+        return reply.code(201).send(withIcon(category));
       },
     );
 
@@ -103,12 +116,17 @@ export function categoryRoutes(database: Database, guards: AuthGuards): FastifyP
         if (household === undefined || category === undefined) {
           return reply.code(404).send({ error: 'not_found' });
         }
+        const icon = request.body.icon?.trim();
+        if (icon !== undefined && icon !== '' && !isValidIconId(icon)) {
+          return reply.code(400).send({ error: 'invalid_icon' });
+        }
         const patch = {
           ...(request.body.name === undefined ? {} : { name: request.body.name.trim() }),
+          ...(icon === undefined ? {} : { icon: icon === '' ? null : icon }),
           ...(request.body.sortOrder === undefined ? {} : { sortOrder: request.body.sortOrder }),
         };
         await updateCategory(database, category.id, patch);
-        return { ...category, ...patch };
+        return withIcon({ ...category, ...patch });
       },
     );
 

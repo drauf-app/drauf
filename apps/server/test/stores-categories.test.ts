@@ -92,6 +92,52 @@ describe('categories and stores', () => {
       expect(deleted.json()).toEqual({ error: 'base_category' });
     });
 
+    it('resolves default icons, stores overrides and clears them (#71)', async () => {
+      const categories = await getCategories();
+      const fruit = categories.find((category) => category.key === 'fruit-vegetables');
+      expect(fruit?.icon).toBe('🥕');
+
+      const overridden = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/categories/${fruit?.id}`,
+        headers: as(christian),
+        payload: { icon: 'custom:gemuese' },
+      });
+      expect(overridden.statusCode).toBe(200);
+      expect(overridden.json()).toMatchObject({ icon: 'custom:gemuese' });
+      const listed = await getCategories();
+      expect(listed.find((category) => category.key === 'fruit-vegetables')?.icon).toBe(
+        'custom:gemuese',
+      );
+
+      // '' clears the override back to the base default.
+      const cleared = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/categories/${fruit?.id}`,
+        headers: as(christian),
+        payload: { icon: '' },
+      });
+      expect(cleared.json()).toMatchObject({ icon: '🥕' });
+
+      const invalid = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/categories/${fruit?.id}`,
+        headers: as(christian),
+        payload: { icon: 'custom:not a key' },
+      });
+      expect(invalid.statusCode).toBe(400);
+      expect(invalid.json()).toMatchObject({ error: 'invalid_icon' });
+
+      // Household-created categories start without an icon.
+      const created = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/categories',
+        headers: as(christian),
+        payload: { name: 'Baumarkt' },
+      });
+      expect((created.json() as Category).icon).toBeNull();
+    });
+
     it('deletes custom categories and clears them from entries', async () => {
       const custom = (await (
         await ctx.app.inject({

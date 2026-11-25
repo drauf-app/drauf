@@ -15,6 +15,7 @@ function category(id: string, name: string, sortOrder: number): Category {
     householdId: 'h1',
     key: null,
     name,
+    icon: null,
     sortOrder,
     createdAt: '2026-11-12T00:00:00.000Z',
   };

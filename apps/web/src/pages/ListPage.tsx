@@ -607,7 +607,14 @@ export function ListPage() {
       {groups.length === 0 && <p className="placeholder">{t.list.empty}</p>}
       {groups.map((group) => (
         <div key={group.category?.id ?? 'uncategorized'} className="category-group">
-          <h2>{group.category?.name ?? t.list.uncategorized}</h2>
+          <h2>
+            {group.category?.icon != null && (
+              <>
+                <ItemIcon icon={group.category.icon} />{' '}
+              </>
+            )}
+            {group.category?.name ?? t.list.uncategorized}
+          </h2>
           <ul className={entriesClass}>{group.entries.map(renderEntry)}</ul>
         </div>
       ))}

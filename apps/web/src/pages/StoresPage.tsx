@@ -12,7 +12,7 @@ import {
   resetStaples,
   saveStaples,
 } from '../api/households';
-import { fetchCategories } from '../api/lists';
+import { fetchCategories, patchCategoryIcon } from '../api/lists';
 import {
   createStore,
   deleteStore,
@@ -21,6 +21,8 @@ import {
   setStoreCategoryOrder,
 } from '../api/stores';
 import type { Category, StoreWithOrder } from '../api/types';
+import { IconPicker } from '../components/IconPicker';
+import { ItemIcon } from '../components/ItemIcon';
 import { VersionLine } from '../components/VersionLine';
 import { useT } from '../i18n';
 import { dropTargetIndex, moveItem } from '../lib/reorder';
@@ -207,7 +209,14 @@ function StoreEditDialog({ store, categories, onChanged, onError, onClose }: Sto
                 >
                   ⠿
                 </button>
-                <span className="category-order-name">{category.name}</span>
+                <span className="category-order-name">
+                  {category.icon !== null && (
+                    <>
+                      <ItemIcon icon={category.icon} />{' '}
+                    </>
+                  )}
+                  {category.name}
+                </span>
                 <button
                   type="button"
                   aria-label={`${t.stores.moveUp}: ${category.name}`}
@@ -365,6 +374,41 @@ function ExportSection() {
   );
 }
 
+interface CategoriesSectionProps {
+  categories: Category[];
+  onChanged: (category: Category) => void;
+  onError: () => void;
+}
+
+/** Household categories with their icons; picking stores an override (#71). */
+function CategoriesSection({ categories, onChanged, onError }: CategoriesSectionProps) {
+  const t = useT();
+  if (categories.length === 0) {
+    return null;
+  }
+  const ordered = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+  return (
+    <section>
+      <h2>{t.stores.categoriesTitle}</h2>
+      <ul className="category-icons">
+        {ordered.map((category) => (
+          <li key={category.id}>
+            <IconPicker
+              value={category.icon ?? ''}
+              clearLabel={t.stores.iconAuto}
+              pickLabel={`${t.stores.pickIcon}: ${category.name}`}
+              onChange={(icon) => {
+                patchCategoryIcon(category.id, icon).then(onChanged).catch(onError);
+              }}
+            />
+            <span className="category-icons-name">{category.name}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function StoresPage() {
   const t = useT();
   const [stores, setStores] = useState<StoreWithOrder[]>();
@@ -493,6 +537,15 @@ export function StoresPage() {
         </button>
       </form>
       {error && <p className="error">{t.common.error}</p>}
+      <CategoriesSection
+        categories={categories}
+        onChanged={(changed) =>
+          setCategories((previous) =>
+            previous.map((item) => (item.id === changed.id ? changed : item)),
+          )
+        }
+        onError={() => setError(true)}
+      />
       <StaplesSection />
       <ExportSection />
       <VersionLine />

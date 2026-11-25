@@ -25,6 +25,7 @@ const CATEGORIES: Category[] = [
     householdId: 'h1',
     key: 'fruit-vegetables',
     name: 'Obst & Gemüse',
+    icon: '🥕',
     sortOrder: 0,
     createdAt: '2026-11-12T00:00:00.000Z',
   },
@@ -33,6 +34,7 @@ const CATEGORIES: Category[] = [
     householdId: 'h1',
     key: 'pasta-rice-canned',
     name: 'Nudeln, Reis & Konserven',
+    icon: '🍝',
     sortOrder: 5,
     createdAt: '2026-11-12T00:00:00.000Z',
   },
@@ -138,6 +140,17 @@ describe('ListPage', () => {
     expect(await screen.findByText('Milch')).toBeDefined();
     expect(screen.getByText('Obst & Gemüse')).toBeDefined();
     expect(screen.getByRole('heading', { name: 'Wocheneinkauf' })).toBeDefined();
+  });
+
+  it('shows the category icon in the group header (#71)', async () => {
+    stubListApi();
+    renderListPage();
+
+    await screen.findByText('Milch');
+    const header = screen.getByText('Obst & Gemüse').closest('h2') as HTMLElement;
+    const icon = header.querySelector('.openmoji') as HTMLElement;
+    expect(icon).not.toBeNull();
+    expect(icon.style.getPropertyValue('--openmoji-url')).toBe('url(/openmoji/1F955.svg)');
   });
 
   it('adds a tapped suggestion bare and adjusts it via drawer chips', async () => {
@@ -554,7 +567,8 @@ describe('tile view', () => {
 
     expect(localStorage.getItem('drauf.list-view')).toBe('tiles');
     expect(document.querySelector('.entries.tiles')).not.toBeNull();
-    const icon = document.querySelector('.openmoji') as HTMLElement;
+    // Scoped to the tile: the category header carries its own icon now (#71).
+    const icon = document.querySelector('.entries.tiles .openmoji') as HTMLElement;
     expect(icon.style.getPropertyValue('--openmoji-url')).toBe('url(/openmoji/1F95B.svg)');
 
     await user.click(screen.getByRole('button', { name: 'Abhaken: Milch' }));

@@ -34,7 +34,25 @@ export function emojiToHex(emoji) {
 }
 
 /** Icons the UI itself uses (e.g. the note marker), beyond the catalogue. */
-const UI_ICONS = ['📝'];
+// 📝 is the note marker; the rest are the base-category defaults — keep in
+// sync with BASE_CATEGORIES in packages/shared/src/categories.ts (a web test
+// checks that every category default is bundled).
+const UI_ICONS = [
+  '📝',
+  '🥕',
+  '🥖',
+  '🥩',
+  '🥛',
+  '🧊',
+  '🍝',
+  '🧂',
+  '🥐',
+  '🥨',
+  '🥤',
+  '🧼',
+  '🧹',
+  '📦',
+];
 
 const icons = new Set(UI_ICONS);
 for (const file of readdirSync(dataDir)) {

@@ -626,7 +626,9 @@ export async function createCategory(
   input: { householdId: string; key: string | null; name: string; sortOrder: number },
 ): Promise<Category> {
   const { db, t } = unwrap(database);
-  const category: Category = { id: newId(), createdAt: new Date(), ...input };
+  // No stored icon at creation: base categories resolve their default at
+  // read time, household-created ones start without one (#71).
+  const category: Category = { id: newId(), createdAt: new Date(), icon: null, ...input };
   await db.insert(t.categories).values(category);
   return category;
 }
@@ -657,7 +659,7 @@ export async function getCategory(
 export async function updateCategory(
   database: Database,
   categoryId: string,
-  patch: Partial<Pick<Category, 'name' | 'sortOrder'>>,
+  patch: Partial<Pick<Category, 'name' | 'icon' | 'sortOrder'>>,
 ): Promise<void> {
   const { db, t } = unwrap(database);
   await db.update(t.categories).set(patch).where(eq(t.categories.id, categoryId));

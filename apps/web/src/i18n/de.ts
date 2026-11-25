@@ -103,6 +103,9 @@ export const de = {
     done: 'Fertig',
     moveUp: 'Nach oben',
     moveDown: 'Nach unten',
+    categoriesTitle: 'Kategorien',
+    pickIcon: 'Icon wählen',
+    iconAuto: 'Automatisch',
   },
   settings: {
     title: 'Einstellungen',

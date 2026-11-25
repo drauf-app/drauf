@@ -1396,6 +1396,23 @@ button:disabled {
   padding-top: 0.2rem;
 }
 
+/* Household categories with their icon pickers on the stores page (#71). */
+.category-icons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.category-icons li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .entry-edit-actions {
   grid-column: 1 / -1;
   display: flex;

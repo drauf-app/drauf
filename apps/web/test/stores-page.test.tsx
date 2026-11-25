@@ -6,9 +6,25 @@ import { StoresPage } from '../src/pages/StoresPage';
 import { fakeResponse, stubFetch } from './fake-fetch';
 
 const CATEGORIES: Category[] = [
-  { id: 'c1', householdId: 'h1', key: null, name: 'Obst', sortOrder: 0, createdAt: '' },
-  { id: 'c2', householdId: 'h1', key: null, name: 'Getränke', sortOrder: 1, createdAt: '' },
-  { id: 'c3', householdId: 'h1', key: null, name: 'Haushalt', sortOrder: 2, createdAt: '' },
+  { id: 'c1', householdId: 'h1', key: null, name: 'Obst', icon: null, sortOrder: 0, createdAt: '' },
+  {
+    id: 'c2',
+    householdId: 'h1',
+    key: null,
+    name: 'Getränke',
+    icon: null,
+    sortOrder: 1,
+    createdAt: '',
+  },
+  {
+    id: 'c3',
+    householdId: 'h1',
+    key: null,
+    name: 'Haushalt',
+    icon: null,
+    sortOrder: 2,
+    createdAt: '',
+  },
 ];
 
 function store(overrides: Partial<StoreWithOrder> = {}): StoreWithOrder {
@@ -45,8 +61,33 @@ describe('StoresPage', () => {
       name: 'Zurücksetzen: Supermarkt Ost',
     }) as HTMLButtonElement;
     expect(resetDefault.disabled).toBe(true);
-    // The category lists stay out of the overview until a dialog opens.
-    expect(screen.queryByText('Obst')).toBeNull();
+    // The categories appear once, in their own icon section (#71).
+    expect(screen.getAllByText('Obst')).toHaveLength(1);
+  });
+
+  it('stores a category icon override from the Kategorien section (#71)', async () => {
+    const patches: string[] = [];
+    stubFetch((url, init) => {
+      const method = init?.method ?? 'GET';
+      if (url === '/api/stores') return fakeResponse(200, []);
+      if (url === '/api/categories' && method === 'GET') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/households/staples') return fakeResponse(200, DEFAULT_STAPLES);
+      if (url === '/api/categories/c1' && method === 'PATCH') {
+        patches.push(String(init?.body));
+        return fakeResponse(200, { ...CATEGORIES[0], icon: '🥛' });
+      }
+      return undefined;
+    });
+    render(<StoresPage />);
+
+    await screen.findByText('Kategorien');
+    await userEvent.click(screen.getByRole('button', { name: 'Icon wählen: Obst' }));
+    await userEvent.click(screen.getByRole('button', { name: '🥛' }));
+
+    expect(patches).toEqual(['{"icon":"🥛"}']);
+    // The toggle now shows the picked icon as the bundled mask asset.
+    const toggle = screen.getByRole('button', { name: 'Icon wählen: Obst' });
+    expect(toggle.querySelector('.openmoji')).not.toBeNull();
   });
 
   it('edits the order in a dialog and PUTs the full order', async () => {
