@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import type { Category, EntryView, ListDetail, StoreWithOrder } from '../src/api/types';
-import { ListPrintPage } from '../src/pages/ListPrintPage';
+import type { CategoryGroup } from '../src/lib/entries';
+import { ListPrintPage, splitGroups } from '../src/pages/ListPrintPage';
 import { fakeResponse, stubFetch } from './fake-fetch';
 
 const LIST: ListDetail = {
@@ -124,6 +125,43 @@ describe('ListPrintPage', () => {
     await user.click(screen.getByLabelText('Erledigte zeigen'));
     expect(screen.getByText('Haferflocken')).toBeTruthy();
     expect(screen.getByText('Zuletzt gekauft')).toBeTruthy();
+  });
+
+  it('renders two explicit column stacks when two columns are selected', async () => {
+    localStorage.setItem(
+      'drauf.list-print-settings',
+      JSON.stringify({ showRecent: false, columns: 2 }),
+    );
+    stubListApi();
+    const { container } = renderPrint();
+
+    await screen.findByText('Zwiebeln');
+    const columns = [...container.querySelectorAll('.print-list .print-column')];
+    expect(columns).toHaveLength(2);
+    // One group per stack; store order (Getränke first) is preserved.
+    expect(columns[0]?.textContent).toContain('Getränke');
+    expect(columns[1]?.textContent).toContain('Obst');
+  });
+
+  it('splits groups into stacks of roughly equal line count', () => {
+    const group = (id: string, items: number): CategoryGroup => ({
+      category: {
+        id,
+        householdId: 'h1',
+        key: null,
+        name: id,
+        icon: null,
+        sortOrder: 0,
+        createdAt: '',
+      },
+      entries: Array.from({ length: items }, (_, index) =>
+        entry({ id: `${id}-${index}`, name: `${id}-${index}` }),
+      ),
+    });
+    const [left, right] = splitGroups([group('a', 5), group('b', 4), group('c', 3), group('d', 2)]);
+    // Weights 6+5 | 4+3: the halves stay in order and are nearly balanced.
+    expect(left.map((item) => item.category?.id)).toEqual(['a', 'b']);
+    expect(right.map((item) => item.category?.id)).toEqual(['c', 'd']);
   });
 
   it('prints merged quantities side by side', async () => {

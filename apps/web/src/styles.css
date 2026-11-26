@@ -1612,12 +1612,16 @@ button:disabled {
   gap: 0.4rem;
 }
 
-.print-list {
+/* Two explicit stacks, not CSS multicol: column balancing in paged media
+   is engine-dependent and collapsed to one column in real print previews. */
+.print-list.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   column-gap: 2.5rem;
 }
 
-.print-list.two-columns {
-  columns: 2;
+.print-column {
+  min-width: 0;
 }
 
 .print-group {
