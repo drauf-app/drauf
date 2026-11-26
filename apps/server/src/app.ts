@@ -6,6 +6,7 @@ import websocket from '@fastify/websocket';
 import { type FastifyInstance, fastify } from 'fastify';
 import { createAuthGuards } from './auth/guard.js';
 import { createOidcService } from './auth/oidc.js';
+import { createAvatarService } from './avatars/service.js';
 import { type Categorizer, createCategorizer } from './categorize/index.js';
 import { createCategorizeService } from './categorize/service.js';
 import type { Config } from './config.js';
@@ -14,6 +15,7 @@ import { createIconsService } from './icons/service.js';
 import { fetchGuarded } from './import/fetch.js';
 import { apiTokenRoutes } from './routes/api-tokens.js';
 import { authRoutes } from './routes/auth.js';
+import { avatarRoutes } from './routes/avatars.js';
 import { catalogRoutes } from './routes/catalog.js';
 import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
@@ -75,7 +77,11 @@ export async function buildApp(
 
   const oidcService =
     config.oidc !== undefined && config.publicUrl !== undefined
-      ? createOidcService(config.oidc, config.publicUrl)
+      ? createOidcService(
+          config.oidc,
+          config.publicUrl,
+          createAvatarService(config.avatarsDir, config.oidc.issuer, app.log),
+        )
       : undefined;
 
   const catalogIndex = buildCatalogIndex(options.catalog ?? loadCatalog());
@@ -135,6 +141,8 @@ export async function buildApp(
   // Absolute paths (/api/icons + /icons/custom/*): the files must live
   // outside /api/ so the service worker caches them for offline (#71).
   await app.register(iconRoutes(createIconsService(config.iconsDir, app.log), guards, settings));
+  // Absolute path /avatars/:key — outside /api/ for the same offline reason.
+  await app.register(avatarRoutes(database, config.avatarsDir));
   await app.register(syncRoutes(database, config, guards, hub, catalogIndex, categorize), {
     prefix: '/api/sync',
   });

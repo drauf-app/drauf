@@ -52,6 +52,8 @@ export interface Config {
   webDir: string;
   /** Instance icons dropped into the data volume (#71): DATA_DIR/icons. */
   iconsDir: string;
+  /** Cached IdP profile pictures (#98): DATA_DIR/avatars. */
+  avatarsDir: string;
   /** LLM category guessing; undefined = off (the default). */
   categorize: CategorizeConfig | undefined;
   /** Baked into the image by the release workflow; "dev" otherwise (#74). */
@@ -234,6 +236,7 @@ export function loadConfig(data: NodeJS.ProcessEnv = process.env): Config {
       .filter((entry) => entry !== ''),
     webDir: env.WEB_DIR,
     iconsDir: join(env.DATA_DIR, 'icons'),
+    avatarsDir: join(env.DATA_DIR, 'avatars'),
     categorize: resolveCategorize(env),
     version: env.DRAUF_VERSION.replace(/^v/, ''),
     commit: env.DRAUF_COMMIT === '' ? undefined : env.DRAUF_COMMIT,

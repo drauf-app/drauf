@@ -146,6 +146,13 @@ export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<
   return (await response.json()) as T;
 }
 
+/** Reflects profile edits (#98) in the header without a full refetch. */
+export function setCurrentUser(user: PublicUser): void {
+  if (state.status === 'signedIn') {
+    setState({ status: 'signedIn', user });
+  }
+}
+
 async function adoptSession(pair: TokenPair & { user: PublicUser }): Promise<void> {
   accessToken = pair.accessToken;
   writeStoredRefreshToken(pair.refreshToken);

@@ -24,6 +24,12 @@ export const users = pgTable('users', {
   failedLogins: integer('failed_logins').notNull(),
   lockedUntil: timestamp('locked_until', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  /**
+   * Random filename of the cached IdP profile picture (#98), e.g. "x…y.webp".
+   * Rotated whenever the image changes, so avatar URLs are unguessable and
+   * cache-bust themselves. Null = no avatar, render initials.
+   */
+  avatarKey: text('avatar_key').unique(),
 });
 
 export const refreshTokens = pgTable('refresh_tokens', {

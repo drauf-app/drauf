@@ -19,6 +19,7 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     disabledProviders: [],
     webDir: './test-no-web-dist',
     iconsDir: './test-no-icons',
+    avatarsDir: './test-no-avatars',
     categorize: undefined,
     version: 'dev',
     commit: undefined,

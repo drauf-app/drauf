@@ -127,6 +127,107 @@ h1 {
   font-size: 0.9rem;
 }
 
+.user-link {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  border-radius: var(--radius);
+}
+
+.user-link:hover .user-name {
+  color: var(--text);
+}
+
+/* Avatars (#98): IdP picture or an initial on a per-user color. */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  object-fit: cover;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.avatar-large {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1.6rem;
+}
+
+.profile {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.profile h2 {
+  margin: 0;
+}
+
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.profile-head strong {
+  font-size: 1.1rem;
+}
+
+.profile-username {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.profile-form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 24rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.profile-form h3 {
+  margin: 0;
+}
+
+.profile-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.profile-form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.profile-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.profile-form-actions button {
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.profile-ok {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
 .app-main {
   flex: 1;
   width: 100%;

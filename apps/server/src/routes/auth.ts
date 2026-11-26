@@ -1,9 +1,10 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AuthGuards } from '../auth/guard.js';
+import { hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from '../auth/passwords.js';
 import { login, logout, refresh } from '../auth/service.js';
 import type { Config } from '../config.js';
 import type { Database } from '../db/index.js';
-import { getUserById } from '../db/repositories.js';
+import { getUserById, updateUserDisplayName, updateUserPassword } from '../db/repositories.js';
 import { toPublicUser } from '../users/service.js';
 
 const credentialsBody = {
@@ -34,6 +35,34 @@ interface CredentialsInput {
 
 interface RefreshInput {
   refreshToken: string;
+}
+
+const profileBody = {
+  type: 'object',
+  required: ['displayName'],
+  properties: {
+    displayName: { type: 'string', maxLength: 128 },
+  },
+  additionalProperties: false,
+} as const;
+
+interface ProfileInput {
+  displayName: string;
+}
+
+const passwordBody = {
+  type: 'object',
+  required: ['currentPassword', 'newPassword'],
+  properties: {
+    currentPassword: { type: 'string', maxLength: 1024 },
+    newPassword: { type: 'string', maxLength: 1024 },
+  },
+  additionalProperties: false,
+} as const;
+
+interface PasswordInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export function authRoutes(
@@ -105,5 +134,52 @@ export function authRoutes(
       }
       return toPublicUser(user);
     });
+
+    /** Profile edits (#98). The display name is only seeded from the IdP once. */
+    app.patch<{ Body: ProfileInput }>(
+      '/me',
+      { preHandler: [guards.authenticate], schema: { body: profileBody } },
+      async (request, reply) => {
+        const userId = request.authUser?.id ?? '';
+        const user = await getUserById(database, userId);
+        if (user === undefined) {
+          return reply.code(401).send({ error: 'unauthorized' });
+        }
+        const displayName = request.body.displayName.trim();
+        if (displayName.length === 0) {
+          return reply.code(400).send({ error: 'invalid_display_name' });
+        }
+        await updateUserDisplayName(database, userId, displayName);
+        return toPublicUser({ ...user, displayName });
+      },
+    );
+
+    /** Own-password change for local accounts (#98); admins set initial ones. */
+    app.put<{ Body: PasswordInput }>(
+      '/password',
+      {
+        preHandler: [guards.authenticate],
+        schema: { body: passwordBody },
+        config: { rateLimit: { max: 10, timeWindow: 60_000 } },
+      },
+      async (request, reply) => {
+        const userId = request.authUser?.id ?? '';
+        const user = await getUserById(database, userId);
+        if (user === undefined) {
+          return reply.code(401).send({ error: 'unauthorized' });
+        }
+        if (user.passwordHash === null) {
+          return reply.code(400).send({ error: 'no_local_password' });
+        }
+        if (!(await verifyPassword(user.passwordHash, request.body.currentPassword))) {
+          return reply.code(403).send({ error: 'invalid_password' });
+        }
+        if (request.body.newPassword.length < MIN_PASSWORD_LENGTH) {
+          return reply.code(400).send({ error: 'password_too_short' });
+        }
+        await updateUserPassword(database, userId, await hashPassword(request.body.newPassword));
+        return reply.code(204).send();
+      },
+    );
   };
 }

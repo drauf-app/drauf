@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { logout, useAuth } from '../auth/store';
 import { useT } from '../i18n';
+import { Avatar } from './Avatar';
 
 export function Layout() {
   const t = useT();
@@ -29,7 +30,16 @@ export function Layout() {
           {auth.user?.isAdmin === true && <NavLink to="/settings">{t.nav.settings}</NavLink>}
         </nav>
         <div className="user-menu">
-          <span className="user-name">{auth.user?.displayName}</span>
+          {auth.user !== undefined && (
+            <NavLink className="user-link" to="/profile" title={t.profile.title}>
+              <Avatar
+                name={auth.user.displayName}
+                userId={auth.user.id}
+                url={auth.user.avatarUrl}
+              />
+              <span className="user-name">{auth.user.displayName}</span>
+            </NavLink>
+          )}
           <button type="button" onClick={() => void onLogout()}>
             {t.common.logout}
           </button>

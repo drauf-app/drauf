@@ -5,6 +5,10 @@ export interface PublicUser {
   displayName: string;
   isAdmin: boolean;
   createdAt: string;
+  /** Cached IdP profile picture (#98); null = render initials. */
+  avatarUrl: string | null;
+  /** OIDC-only accounts have no local password to change. */
+  hasPassword: boolean;
 }
 
 export interface TokenPair {
@@ -141,6 +145,7 @@ export interface HouseholdMember {
   userId: string;
   username: string;
   displayName: string;
+  avatarUrl: string | null;
 }
 
 export interface HouseholdInfo {

@@ -58,6 +58,7 @@ export async function createUser(
     failedLogins: 0,
     lockedUntil: null,
     createdAt: new Date(),
+    avatarKey: null,
   };
   await db.insert(t.users).values(user);
   return user;
@@ -87,6 +88,42 @@ export async function countUsers(database: Database): Promise<number> {
   const { db, t } = unwrap(database);
   const rows = await db.select({ id: t.users.id }).from(t.users);
   return rows.length;
+}
+
+export async function getUserByAvatarKey(
+  database: Database,
+  avatarKey: string,
+): Promise<User | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db.select().from(t.users).where(eq(t.users.avatarKey, avatarKey));
+  return rows[0];
+}
+
+export async function setUserAvatarKey(
+  database: Database,
+  userId: string,
+  avatarKey: string | null,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.users).set({ avatarKey }).where(eq(t.users.id, userId));
+}
+
+export async function updateUserDisplayName(
+  database: Database,
+  userId: string,
+  displayName: string,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.users).set({ displayName }).where(eq(t.users.id, userId));
+}
+
+export async function updateUserPassword(
+  database: Database,
+  userId: string,
+  passwordHash: string,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.users).set({ passwordHash }).where(eq(t.users.id, userId));
 }
 
 export async function updateUserLoginState(
@@ -438,6 +475,14 @@ export interface ListMemberUser {
   userId: string;
   username: string;
   displayName: string;
+  avatarUrl: string | null;
+}
+
+function withAvatarUrl(rows: (Omit<ListMemberUser, 'avatarUrl'> & { avatarKey: string | null })[]) {
+  return rows.map(({ avatarKey, ...rest }) => ({
+    ...rest,
+    avatarUrl: avatarKey === null ? null : `/avatars/${avatarKey}`,
+  }));
 }
 
 export async function listHouseholdMemberUsers(
@@ -445,16 +490,18 @@ export async function listHouseholdMemberUsers(
   householdId: string,
 ): Promise<ListMemberUser[]> {
   const { db, t } = unwrap(database);
-  return db
+  const rows = await db
     .select({
       userId: t.householdMembers.userId,
       username: t.users.username,
       displayName: t.users.displayName,
+      avatarKey: t.users.avatarKey,
     })
     .from(t.householdMembers)
     .innerJoin(t.users, eq(t.householdMembers.userId, t.users.id))
     .where(eq(t.householdMembers.householdId, householdId))
     .orderBy(asc(t.householdMembers.createdAt));
+  return withAvatarUrl(rows);
 }
 
 export async function listListMemberUsers(
@@ -462,16 +509,18 @@ export async function listListMemberUsers(
   listId: string,
 ): Promise<ListMemberUser[]> {
   const { db, t } = unwrap(database);
-  return db
+  const rows = await db
     .select({
       userId: t.listMembers.userId,
       username: t.users.username,
       displayName: t.users.displayName,
+      avatarKey: t.users.avatarKey,
     })
     .from(t.listMembers)
     .innerJoin(t.users, eq(t.listMembers.userId, t.users.id))
     .where(eq(t.listMembers.listId, listId))
     .orderBy(asc(t.listMembers.createdAt));
+  return withAvatarUrl(rows);
 }
 
 /** Open (unchecked) entry names per list, oldest first — for overview rows. */

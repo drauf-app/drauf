@@ -44,7 +44,7 @@ describe('household routes', () => {
     };
     expect(body.id).toBe(DEFAULT_HOUSEHOLD_ID);
     expect(body.members).toEqual([
-      { userId: expect.any(String), username: 'kathrin', displayName: 'Kathrin' },
+      { userId: expect.any(String), username: 'kathrin', displayName: 'Kathrin', avatarUrl: null },
     ]);
   });
 
