@@ -1603,6 +1603,94 @@ button:disabled {
   }
 }
 
+/* Admin editor for learned/custom catalog items (#111) */
+
+.catalog-admin-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin: 0.8rem 0;
+}
+
+.catalog-admin-controls input[type="search"] {
+  flex: 1;
+  min-width: 12rem;
+}
+
+/* The checkbox reads as one line despite the global column-label rule. */
+.catalog-admin-custom {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.catalog-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.catalog-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.catalog-item-icon {
+  width: 1.6rem;
+  display: inline-flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.catalog-item-text {
+  flex: 1;
+  min-width: 10rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.catalog-item-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.catalog-item-badge {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  white-space: nowrap;
+}
+
+.catalog-item-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.catalog-item-edit {
+  display: flex;
+  /* The global form rule stacks fields; this one is an inline row. */
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.catalog-item-edit input[type="text"] {
+  flex: 1;
+  min-width: 10rem;
+}
+
 /* Printable shopping list */
 
 /* The checkbox control reads as one line, unlike the stacked selects. */
