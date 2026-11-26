@@ -167,7 +167,8 @@ export function planRoutes(
   settings: SettingsService,
 ): FastifyPluginAsync {
   return async (app) => {
-    app.addHook('preHandler', guards.authenticate);
+    // API tokens with the matching plan:read / plan:write scope may call this group (#97).
+    app.addHook('preHandler', guards.forArea('plan'));
 
     /**
      * Link preview (W4): a provider-matching link fills in title and image

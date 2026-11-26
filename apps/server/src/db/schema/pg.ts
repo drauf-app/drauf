@@ -39,6 +39,22 @@ export const refreshTokens = pgTable('refresh_tokens', {
   expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
+export const apiTokens = pgTable('api_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  /** User-chosen label, e.g. the integration the token was made for. */
+  name: text('name').notNull(),
+  // Only the SHA-256 hash is stored; the token is shown once at creation.
+  tokenHash: text('token_hash').notNull().unique(),
+  /** JSON array of granted scopes, e.g. ["plan:read"]. */
+  scopes: text('scopes').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
+  /** Coarse on purpose: updated at most once per hour, not per request. */
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true, mode: 'date' }),
+});
+
 export const households = pgTable(
   'households',
   {

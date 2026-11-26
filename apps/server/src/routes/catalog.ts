@@ -53,7 +53,8 @@ export function catalogRoutes(
   index: CatalogIndex,
 ): FastifyPluginAsync {
   return async (app) => {
-    app.addHook('preHandler', guards.authenticate);
+    // API tokens with the matching catalog:read / catalog:write scope may call this group (#97).
+    app.addHook('preHandler', guards.forArea('catalog'));
 
     app.get<{ Querystring: SuggestInput }>(
       '/suggest',

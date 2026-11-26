@@ -36,6 +36,22 @@ export const refreshTokens = sqliteTable('refresh_tokens', {
   expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
+export const apiTokens = sqliteTable('api_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  /** User-chosen label, e.g. the integration the token was made for. */
+  name: text('name').notNull(),
+  // Only the SHA-256 hash is stored; the token is shown once at creation.
+  tokenHash: text('token_hash').notNull().unique(),
+  /** JSON array of granted scopes, e.g. ["plan:read"]. */
+  scopes: text('scopes').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  /** Coarse on purpose: updated at most once per hour, not per request. */
+  lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
+});
+
 export const households = sqliteTable(
   'households',
   {

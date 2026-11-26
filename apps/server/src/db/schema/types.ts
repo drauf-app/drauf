@@ -26,6 +26,19 @@ export interface RefreshToken {
   expiresAt: Date;
 }
 
+export interface ApiToken {
+  id: string;
+  userId: string;
+  /** User-chosen label, e.g. the integration the token was made for. */
+  name: string;
+  tokenHash: string;
+  /** JSON array of granted scopes, e.g. ["plan:read"]. */
+  scopes: string;
+  createdAt: Date;
+  /** Coarse on purpose: updated at most once per hour, not per request. */
+  lastUsedAt: Date | null;
+}
+
 export interface UserIdentity {
   id: string;
   userId: string;
@@ -245,6 +258,8 @@ type _SqliteOidcTransaction = Assert<
   Eq<typeof sqlite.oidcTransactions.$inferSelect, OidcTransaction>
 >;
 type _SqliteLoginCode = Assert<Eq<typeof sqlite.loginCodes.$inferSelect, LoginCode>>;
+type _PgApiToken = Assert<Eq<typeof pg.apiTokens.$inferSelect, ApiToken>>;
+type _SqliteApiToken = Assert<Eq<typeof sqlite.apiTokens.$inferSelect, ApiToken>>;
 type _PgRefreshToken = Assert<Eq<typeof pg.refreshTokens.$inferSelect, RefreshToken>>;
 type _PgHousehold = Assert<Eq<typeof pg.households.$inferSelect, Household>>;
 type _PgInstanceSetting = Assert<Eq<typeof pg.instanceSettings.$inferSelect, InstanceSetting>>;

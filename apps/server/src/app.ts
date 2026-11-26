@@ -12,6 +12,7 @@ import type { Config } from './config.js';
 import type { Database } from './db/index.js';
 import { createIconsService } from './icons/service.js';
 import { fetchGuarded } from './import/fetch.js';
+import { apiTokenRoutes } from './routes/api-tokens.js';
 import { authRoutes } from './routes/auth.js';
 import { catalogRoutes } from './routes/catalog.js';
 import { categoryRoutes } from './routes/categories.js';
@@ -64,7 +65,7 @@ export async function buildApp(
   await app.register(rateLimit, { global: false });
   await app.register(websocket, { options: { maxPayload: 64 * 1024 } });
 
-  const guards = createAuthGuards(config.authSecret);
+  const guards = createAuthGuards(config.authSecret, database);
   const hub = new SyncHub();
 
   app.get('/healthz', async (): Promise<HealthResponse> => ({ status: 'ok' }));
@@ -112,6 +113,7 @@ export async function buildApp(
         });
 
   await app.register(authRoutes(database, config, guards), { prefix: '/api/auth' });
+  await app.register(apiTokenRoutes(database, guards), { prefix: '/api/auth/tokens' });
   await app.register(oidcRoutes(database, config, oidcService), { prefix: '/api/auth/oidc' });
   await app.register(userRoutes(database, guards), { prefix: '/api/users' });
   await app.register(householdRoutes(database, guards), { prefix: '/api/households' });
