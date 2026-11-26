@@ -1520,8 +1520,29 @@ button:disabled {
   height: 3.2rem;
 }
 
+/* Calendar cells are narrow: stack label, entry and cook instead of the
+   fixed-width flex row, and drop the dotted write-in line (cells already
+   have borders). */
+.print-calendar .print-slot {
+  display: block;
+  padding: 0 0 0.4rem;
+}
+
+.print-calendar .print-slot-name {
+  display: block;
+  width: auto;
+  font-size: 0.7rem;
+}
+
 .print-calendar .print-entry {
   display: block;
+  border-bottom: none;
+  min-height: 0;
+}
+
+.print-calendar .print-cook {
+  display: block;
+  white-space: normal;
 }
 
 /* A link that must read as an action: styled like a regular button. */
