@@ -17,6 +17,7 @@ import { apiTokenRoutes } from './routes/api-tokens.js';
 import { authRoutes } from './routes/auth.js';
 import { avatarRoutes } from './routes/avatars.js';
 import { catalogRoutes } from './routes/catalog.js';
+import { catalogItemRoutes } from './routes/catalog-items.js';
 import { categoryRoutes } from './routes/categories.js';
 import { entryRoutes } from './routes/entries.js';
 import { householdRoutes } from './routes/households.js';
@@ -138,6 +139,10 @@ export async function buildApp(
     prefix: '/api/admin/settings',
   });
   await app.register(catalogRoutes(database, guards, catalogIndex), { prefix: '/api/catalog' });
+  // Admin cleanup of learned/custom items — session-only, no token scope (#111).
+  await app.register(catalogItemRoutes(database, guards, catalogIndex), {
+    prefix: '/api/catalog/items',
+  });
   // Absolute paths (/api/icons + /icons/custom/*): the files must live
   // outside /api/ so the service worker caches them for offline (#71).
   await app.register(iconRoutes(createIconsService(config.iconsDir, app.log), guards, settings));

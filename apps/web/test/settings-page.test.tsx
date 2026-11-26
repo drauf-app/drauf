@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import type { InstanceSetting } from '../src/api/settings';
 import { SettingsPage } from '../src/pages/SettingsPage';
@@ -32,7 +33,11 @@ describe('SettingsPage', () => {
         });
       return undefined;
     });
-    render(<SettingsPage />);
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: 'Jetzt prüfen' }));
@@ -67,7 +72,11 @@ describe('SettingsPage', () => {
       }
       return undefined;
     });
-    render(<SettingsPage />);
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
     const user = userEvent.setup();
 
     const toggle = (await screen.findByLabelText('Cookidoo')) as HTMLInputElement;
@@ -105,7 +114,11 @@ describe('SettingsPage', () => {
       }
       return undefined;
     });
-    render(<SettingsPage />);
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
     const user = userEvent.setup();
 
     const select = (await screen.findByLabelText('Icon-Stil')) as HTMLSelectElement;
@@ -143,7 +156,11 @@ describe('SettingsPage', () => {
           ])
         : undefined,
     );
-    render(<SettingsPage />);
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
 
     const provider = (await screen.findByLabelText(/Cookidoo/)) as HTMLInputElement;
     expect(provider.disabled).toBe(true);

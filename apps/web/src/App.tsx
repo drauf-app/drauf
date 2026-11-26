@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { CatalogItemsPage } from './pages/CatalogItemsPage';
 import { ImportPage } from './pages/ImportPage';
 import { ListPage } from './pages/ListPage';
 import { ListPrintPage } from './pages/ListPrintPage';
@@ -27,6 +28,7 @@ export function App() {
             <Route path="/stores" element={<StoresPage />} />
             <Route path="/import" element={<ImportPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/items" element={<CatalogItemsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
           {/* No app chrome: these pages are meant for the printer. */}

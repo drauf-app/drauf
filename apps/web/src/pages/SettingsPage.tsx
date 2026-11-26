@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { fetchSettings, type InstanceSetting, updateSetting } from '../api/settings';
 import { fetchVersion, releasesUrl, type ServerVersion } from '../api/version';
 import { apiJson } from '../auth/store';
@@ -166,6 +167,14 @@ export function SettingsPage() {
           </div>
         </>
       )}
+
+      <h2>{t.settings.catalogSection}</h2>
+      <div className="settings-group">
+        <p className="setting-row">
+          <span className="setting-label">{t.settings.catalogIntro}</span>
+          <Link to="/settings/items">{t.settings.catalogLink}</Link>
+        </p>
+      </div>
 
       <h2>{t.settings.updatesSection}</h2>
       <div className="settings-group">

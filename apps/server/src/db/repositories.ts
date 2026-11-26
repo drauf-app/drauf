@@ -1260,6 +1260,131 @@ export async function setCatalogUsageIcon(
   await db.update(t.catalogUsage).set({ icon }).where(key);
 }
 
+/**
+ * Renames a history row (admin cleanup, #111). When the new normalized name
+ * already has a row, the two merge: counts add up, the newer row wins the
+ * last-used fields, learned category/icon survive from either side and the
+ * variant lists combine newest-first.
+ */
+export async function renameCatalogUsage(
+  database: Database,
+  householdId: string,
+  from: string,
+  to: { name: string; nameNormalized: string },
+): Promise<CatalogUsage | undefined> {
+  const source = await getCatalogUsage(database, householdId, from);
+  if (source === undefined) {
+    return undefined;
+  }
+  const { db, t } = unwrap(database);
+  const sourceKey = and(
+    eq(t.catalogUsage.householdId, householdId),
+    eq(t.catalogUsage.nameNormalized, from),
+  );
+  if (to.nameNormalized === from) {
+    await db.update(t.catalogUsage).set({ name: to.name }).where(sourceKey);
+    return getCatalogUsage(database, householdId, from);
+  }
+  const target = await getCatalogUsage(database, householdId, to.nameNormalized);
+  if (target === undefined) {
+    await db
+      .update(t.catalogUsage)
+      .set({ name: to.name, nameNormalized: to.nameNormalized })
+      .where(sourceKey);
+    return getCatalogUsage(database, householdId, to.nameNormalized);
+  }
+  const newer = source.updatedAt > target.updatedAt ? source : target;
+  const older = newer === source ? target : source;
+  const variants = [
+    ...new Set([...parseVariants(newer.variants), ...parseVariants(older.variants)]),
+  ].slice(0, MAX_LEARNED_VARIANTS);
+  await db
+    .update(t.catalogUsage)
+    .set({
+      name: to.name,
+      count: target.count + source.count,
+      categoryId: target.categoryId ?? source.categoryId,
+      icon: target.icon ?? source.icon,
+      lastQuantity: newer.lastQuantity,
+      lastUnit: newer.lastUnit,
+      lastCount: newer.lastCount,
+      lastVariant: newer.lastVariant,
+      lastNote: newer.lastNote,
+      variants: variants.length === 0 ? null : JSON.stringify(variants),
+      updatedAt: newer.updatedAt,
+    })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, to.nameNormalized),
+      ),
+    );
+  await db.delete(t.catalogUsage).where(sourceKey);
+  return getCatalogUsage(database, householdId, to.nameNormalized);
+}
+
+/** Admin edit of a history row's learned fields (#111). */
+export async function patchCatalogUsage(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+  patch: {
+    categoryId?: string | null | undefined;
+    icon?: string | null | undefined;
+    clearVariants?: boolean | undefined;
+    clearLastUsed?: boolean | undefined;
+  },
+): Promise<CatalogUsage | undefined> {
+  const existing = await getCatalogUsage(database, householdId, nameNormalized);
+  if (existing === undefined) {
+    return undefined;
+  }
+  const clearVariants = patch.clearVariants === true;
+  const clearLastUsed = patch.clearLastUsed === true;
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.catalogUsage)
+    .set({
+      categoryId: patch.categoryId === undefined ? existing.categoryId : patch.categoryId,
+      icon: patch.icon === undefined ? existing.icon : patch.icon,
+      variants: clearVariants ? null : existing.variants,
+      lastVariant: clearVariants || clearLastUsed ? null : existing.lastVariant,
+      lastQuantity: clearLastUsed ? null : existing.lastQuantity,
+      lastUnit: clearLastUsed ? null : existing.lastUnit,
+      lastCount: clearLastUsed ? null : existing.lastCount,
+      lastNote: clearLastUsed ? null : existing.lastNote,
+    })
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
+  return getCatalogUsage(database, householdId, nameNormalized);
+}
+
+/** Removes a history row (admin cleanup, #111); list entries stay untouched. */
+export async function deleteCatalogUsage(
+  database: Database,
+  householdId: string,
+  nameNormalized: string,
+): Promise<boolean> {
+  const existing = await getCatalogUsage(database, householdId, nameNormalized);
+  if (existing === undefined) {
+    return false;
+  }
+  const { db, t } = unwrap(database);
+  await db
+    .delete(t.catalogUsage)
+    .where(
+      and(
+        eq(t.catalogUsage.householdId, householdId),
+        eq(t.catalogUsage.nameNormalized, nameNormalized),
+      ),
+    );
+  return true;
+}
+
 /** The household's picked icons by normalized name; they override the matcher. */
 export async function getCatalogIcons(
   database: Database,
