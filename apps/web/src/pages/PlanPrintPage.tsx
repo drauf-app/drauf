@@ -153,12 +153,15 @@ export function PlanPrintPage() {
 
   function row(entry: PlanEntry) {
     const cook = entry.cookId === null ? undefined : cookNames.get(entry.cookId);
-    const label = entry.slotId === null ? undefined : slotNames.get(entry.slotId);
+    const label = entry.slotId === null ? '' : (slotNames.get(entry.slotId) ?? '');
     return (
       <div key={entry.id} className="print-slot">
-        {label !== undefined && <span className="print-slot-name">{label}</span>}
+        {/* Rendered even when empty so every entry line starts at the same x. */}
+        <span className="print-slot-name">{label}</span>
         <span className="print-entry">{entryLabel(entry)}</span>
-        {cook !== undefined && <span className="print-cook">{cook}</span>}
+        {cook !== undefined && (
+          <span className="print-cook">{`${t.plan.print.cookPrefix} ${cook}`}</span>
+        )}
       </div>
     );
   }

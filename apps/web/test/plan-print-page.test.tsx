@@ -58,11 +58,45 @@ describe('PlanPrintPage', () => {
     renderPrint();
 
     expect(await screen.findByText('Pizza')).toBeDefined();
-    expect(screen.getByText('Kathrin')).toBeDefined();
+    expect(screen.getByText('kocht: Kathrin')).toBeDefined();
     const headings = screen.getAllByRole('heading', { level: 2 });
     expect(headings).toHaveLength(8);
     expect(headings[0]?.textContent).toContain('Freitag');
     expect(headings[7]?.textContent).toContain('Freitag');
+  });
+
+  it('keeps the label column for entries without a slot', async () => {
+    const days = daysFrom(1, 0, 7);
+    stubPlanApi([
+      {
+        id: 'p1',
+        householdId: 'h1',
+        date: days[0] ?? '',
+        slotId: 's1',
+        text: 'Suppe',
+        link: null,
+        imageUrl: null,
+        cookId: null,
+        createdAt: '',
+      },
+      {
+        id: 'p2',
+        householdId: 'h1',
+        date: days[0] ?? '',
+        slotId: null,
+        text: 'Kuchen backen',
+        link: null,
+        imageUrl: null,
+        cookId: null,
+        createdAt: '',
+      },
+    ]);
+    const { container } = renderPrint();
+
+    await screen.findByText('Kuchen backen');
+    const labels = [...container.querySelectorAll('.print-slot .print-slot-name')];
+    // Both rows carry the label span so their lines start at the same x.
+    expect(labels.map((label) => label.textContent)).toEqual(['Mittagessen', '']);
   });
 
   it('switches to the calendar template with days as columns', async () => {

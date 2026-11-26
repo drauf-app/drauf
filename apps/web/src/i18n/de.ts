@@ -255,6 +255,7 @@ export const de = {
       previous: 'Vorherige Woche',
       next: 'Nächste Woche',
       today: 'Heute',
+      cookPrefix: 'kocht:',
     },
   },
 } as const;
