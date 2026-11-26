@@ -34,6 +34,33 @@ export const de = {
         password_too_short: 'Das neue Passwort ist zu kurz (mindestens 10 Zeichen).',
       },
     },
+    tokens: {
+      title: 'API-Tokens',
+      intro:
+        'Für Integrationen wie Home Assistant. Ein Token meldet sich als dein Konto an, kann aber nur die freigegebenen Bereiche nutzen.',
+      empty: 'Noch keine Tokens.',
+      name: 'Name',
+      namePlaceholder: 'z. B. Home Assistant',
+      scopes: 'Berechtigungen',
+      scopeLabels: {
+        'plan:read': 'Wochenplan lesen',
+        'plan:write': 'Wochenplan schreiben',
+        'lists:read': 'Listen lesen',
+        'lists:write': 'Listen schreiben',
+        'catalog:read': 'Katalog lesen',
+      },
+      create: 'Token erstellen',
+      created: 'Erstellt',
+      lastUsed: 'Zuletzt verwendet',
+      never: 'noch nie',
+      revoke: 'Widerrufen',
+      revealTitle: 'Neues Token',
+      revealHint:
+        'Dieses Token wird nur einmal angezeigt. Jetzt kopieren und in der Integration hinterlegen.',
+      copy: 'Kopieren',
+      copied: 'Kopiert.',
+      done: 'Fertig',
+    },
   },
   login: {
     title: 'Anmelden',

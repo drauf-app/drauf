@@ -25,7 +25,14 @@ async function signIn(user: PublicUser, extra: RouteHandler = () => undefined) {
     if (url === '/api/auth/login' && init?.method === 'POST') {
       return fakeResponse(200, { accessToken: 'at', refreshToken: 'rt', user });
     }
-    return extra(url, init);
+    const fromExtra = extra(url, init);
+    if (fromExtra !== undefined) {
+      return fromExtra;
+    }
+    if (url === '/api/auth/tokens' && (init?.method ?? 'GET') === 'GET') {
+      return fakeResponse(200, []);
+    }
+    return undefined;
   });
   await loginLocal('resi', 'correct-horse-battery');
   return requests;
@@ -92,6 +99,84 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     expect(screen.getByLabelText('Anzeigename')).toBeTruthy();
     expect(screen.queryByText('Passwort ändern')).toBeNull();
+  });
+});
+
+describe('ProfilePage API tokens', () => {
+  afterEach(() => {
+    resetAuthForTests();
+  });
+
+  const row = {
+    id: 'token-1',
+    name: 'Home Assistant',
+    scopes: ['plan:read'],
+    createdAt: '2026-11-20T10:00:00.000Z',
+    lastUsedAt: null,
+  };
+
+  it('lists tokens with German scope labels', async () => {
+    await signIn(publicUser(), (url, init) => {
+      if (url === '/api/auth/tokens' && (init?.method ?? 'GET') === 'GET') {
+        return fakeResponse(200, [row]);
+      }
+      return undefined;
+    });
+    const { container } = render(<ProfilePage />);
+    expect(await screen.findByText('Home Assistant')).toBeTruthy();
+    // The label shows up twice by design: on the row and as a checkbox.
+    expect(container.querySelector('.token-scopes')?.textContent).toBe('Wochenplan lesen');
+    expect(screen.getByText(/noch nie/)).toBeTruthy();
+  });
+
+  it('creates a token and reveals it exactly once', async () => {
+    const requests = await signIn(publicUser(), (url, init) => {
+      if (url === '/api/auth/tokens' && init?.method === 'POST') {
+        return fakeResponse(201, { ...row, id: 'token-2', token: 'drauf_secret-value' });
+      }
+      return undefined;
+    });
+    render(<ProfilePage />);
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText('Name'), 'Home Assistant');
+    await user.click(screen.getByLabelText('Wochenplan lesen'));
+    await user.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    expect(await screen.findByText('drauf_secret-value')).toBeTruthy();
+    const post = requests.find(
+      (request) => request.init?.method === 'POST' && request.url === '/api/auth/tokens',
+    );
+    expect(JSON.parse(String(post?.init?.body))).toEqual({
+      name: 'Home Assistant',
+      scopes: ['plan:read'],
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Fertig' }));
+    expect(screen.queryByText('drauf_secret-value')).toBeNull();
+  });
+
+  it('revokes a token and drops it from the list', async () => {
+    const requests = await signIn(publicUser(), (url, init) => {
+      if (url === '/api/auth/tokens' && (init?.method ?? 'GET') === 'GET') {
+        return fakeResponse(200, [row]);
+      }
+      if (url === '/api/auth/tokens/token-1' && init?.method === 'DELETE') {
+        return fakeResponse(204, {});
+      }
+      return undefined;
+    });
+    render(<ProfilePage />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Widerrufen' }));
+    expect(await screen.findByText('Noch keine Tokens.')).toBeTruthy();
+    expect(
+      requests.some(
+        (request) =>
+          request.url === '/api/auth/tokens/token-1' && request.init?.method === 'DELETE',
+      ),
+    ).toBe(true);
   });
 });
 
