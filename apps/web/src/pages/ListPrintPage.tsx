@@ -5,7 +5,7 @@ import { fetchCategories, fetchEntries, fetchList } from '../api/lists';
 import { fetchStores } from '../api/stores';
 import type { Category, EntryView, ListDetail, StoreWithOrder } from '../api/types';
 import { useT } from '../i18n';
-import { formatQuantities, groupEntries, recentEntries } from '../lib/entries';
+import { type CategoryGroup, formatQuantities, groupEntries, recentEntries } from '../lib/entries';
 import { fluentUrlForHex } from '../lib/fluent';
 import { useIconRegistry } from '../lib/icon-registry';
 import { openMojiUrl, openMojiUrlForHex } from '../lib/openmoji';
@@ -39,6 +39,33 @@ function loadSettings(): ListPrintSettings {
 }
 
 const DATE_FORMAT = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' });
+
+/** A group costs its items plus one line for the header. */
+function groupWeight(group: CategoryGroup): number {
+  return group.entries.length + 1;
+}
+
+/**
+ * Splits the groups into two stacks of roughly equal line count. Rendering
+ * two explicit stacks instead of CSS `columns` keeps the print output
+ * deterministic: multicol balancing in paged media differs between engines
+ * and collapsed to a single column in real print previews.
+ */
+export function splitGroups(groups: CategoryGroup[]): [CategoryGroup[], CategoryGroup[]] {
+  const total = groups.reduce((sum, group) => sum + groupWeight(group), 0);
+  const left: CategoryGroup[] = [];
+  const right: CategoryGroup[] = [];
+  let leftWeight = 0;
+  for (const group of groups) {
+    if (leftWeight < total / 2) {
+      left.push(group);
+      leftWeight += groupWeight(group);
+    } else {
+      right.push(group);
+    }
+  }
+  return [left, right];
+}
 
 /**
  * Category icon as a real <img>, not the usual CSS mask: masks paint via
@@ -141,6 +168,18 @@ export function ListPrintPage() {
   const columnCount =
     settings.columns === 'auto' ? (openCount >= TWO_COLUMN_THRESHOLD ? 2 : 1) : settings.columns;
 
+  function renderGroup(group: CategoryGroup) {
+    return (
+      <section key={group.category?.id ?? 'uncategorized'} className="print-group">
+        <h2>
+          {group.category?.icon != null && <PrintCategoryIcon icon={group.category.icon} />}
+          {group.category?.name ?? t.list.uncategorized}
+        </h2>
+        {group.entries.map((entry) => itemRow(entry, false))}
+      </section>
+    );
+  }
+
   return (
     <div className="print-page">
       <style>{'@page { size: A4 portrait; margin: 12mm; }'}</style>
@@ -204,17 +243,18 @@ export function ListPrintPage() {
       </header>
 
       {openCount === 0 && <p className="placeholder">{t.list.empty}</p>}
-      <div className={columnCount === 2 ? 'print-list two-columns' : 'print-list'}>
-        {groups.map((group) => (
-          <section key={group.category?.id ?? 'uncategorized'} className="print-group">
-            <h2>
-              {group.category?.icon != null && <PrintCategoryIcon icon={group.category.icon} />}
-              {group.category?.name ?? t.list.uncategorized}
-            </h2>
-            {group.entries.map((entry) => itemRow(entry, false))}
-          </section>
-        ))}
-      </div>
+      {columnCount === 2 ? (
+        <div className="print-list two-columns">
+          {splitGroups(groups).map((column, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: exactly two stable columns.
+            <div key={index} className="print-column">
+              {column.map(renderGroup)}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="print-list">{groups.map(renderGroup)}</div>
+      )}
 
       {settings.showRecent && recent.length > 0 && (
         <section className="print-recent">
