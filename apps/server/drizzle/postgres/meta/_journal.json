@@ -148,6 +148,13 @@
       "when": 1795639565606,
       "tag": "0020_luxuriant_the_captain",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1795681650823,
+      "tag": "0021_colorful_mandrill",
+      "breakpoints": true
     }
   ]
 }

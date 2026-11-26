@@ -5,6 +5,7 @@ import { newId } from './ids.js';
 import type { Database } from './index.js';
 import type * as pgSchema from './schema/pg.js';
 import type {
+  ApiToken,
   CatalogUsage,
   Category,
   EntryPortion,
@@ -135,6 +136,55 @@ export async function listRefreshTokensByUser(
     .from(t.refreshTokens)
     .where(eq(t.refreshTokens.userId, userId))
     .orderBy(asc(t.refreshTokens.createdAt));
+}
+
+export async function createApiToken(
+  database: Database,
+  input: { userId: string; name: string; tokenHash: string; scopes: string },
+): Promise<ApiToken> {
+  const { db, t } = unwrap(database);
+  const token: ApiToken = { id: newId(), createdAt: new Date(), lastUsedAt: null, ...input };
+  await db.insert(t.apiTokens).values(token);
+  return token;
+}
+
+export async function listApiTokensByUser(database: Database, userId: string): Promise<ApiToken[]> {
+  const { db, t } = unwrap(database);
+  return db
+    .select()
+    .from(t.apiTokens)
+    .where(eq(t.apiTokens.userId, userId))
+    .orderBy(asc(t.apiTokens.createdAt));
+}
+
+export async function getApiTokenByHash(
+  database: Database,
+  tokenHash: string,
+): Promise<ApiToken | undefined> {
+  const { db, t } = unwrap(database);
+  const rows = await db.select().from(t.apiTokens).where(eq(t.apiTokens.tokenHash, tokenHash));
+  return rows[0];
+}
+
+/** Scoped to the owner so one user can never revoke another user's token. */
+export async function deleteApiToken(
+  database: Database,
+  userId: string,
+  id: string,
+): Promise<boolean> {
+  const { db, t } = unwrap(database);
+  const owned = and(eq(t.apiTokens.id, id), eq(t.apiTokens.userId, userId));
+  const rows = await db.select({ id: t.apiTokens.id }).from(t.apiTokens).where(owned);
+  if (rows.length === 0) {
+    return false;
+  }
+  await db.delete(t.apiTokens).where(owned);
+  return true;
+}
+
+export async function touchApiToken(database: Database, id: string, when: Date): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.apiTokens).set({ lastUsedAt: when }).where(eq(t.apiTokens.id, id));
 }
 
 export async function createHousehold(

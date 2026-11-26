@@ -123,7 +123,8 @@ export function entryRoutes(
   categorize: CategorizeService | undefined,
 ): FastifyPluginAsync {
   return async (app) => {
-    app.addHook('preHandler', guards.authenticate);
+    // API tokens with the matching lists:read / lists:write scope may call this group (#97).
+    app.addHook('preHandler', guards.forArea('lists'));
 
     /** Resolves list (membership) and, when given, the entry scoped to that list. */
     async function resolve(reply: FastifyReply, userId: string, listId: string, entryId?: string) {

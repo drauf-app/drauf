@@ -104,7 +104,8 @@ export function listRoutes(
   catalog: CatalogIndex,
 ): FastifyPluginAsync {
   return async (app) => {
-    app.addHook('preHandler', guards.authenticate);
+    // API tokens with the matching lists:read / lists:write scope may call this group (#97).
+    app.addHook('preHandler', guards.forArea('lists'));
 
     /** Overview rows carry what is on each list: open count + icon preview. */
     app.get('/', async (request, reply) => {

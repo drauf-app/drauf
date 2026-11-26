@@ -1,3 +1,11 @@
+export {
+  API_TOKEN_AREAS,
+  API_TOKEN_NAME_MAX_LENGTH,
+  API_TOKEN_SCOPES,
+  type ApiTokenArea,
+  type ApiTokenScope,
+  isApiTokenScope,
+} from './api-tokens.js';
 export { BASE_CATEGORIES, BASE_CATEGORY_KEYS, baseCategoryIcon } from './categories.js';
 export type { HealthResponse } from './health.js';
 export {
