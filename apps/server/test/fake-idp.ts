@@ -12,6 +12,8 @@ export interface FakeIdp {
   clientId: string;
   /** Returns an authorization code whose token response will carry these claims. */
   createCode(claims: Record<string, unknown>): string;
+  /** What GET {issuer}/picture serves — for avatar tests (#98). */
+  setPicture(body: Buffer, contentType: string): void;
   close(): Promise<void>;
 }
 
@@ -42,6 +44,15 @@ export async function startFakeIdp(): Promise<FakeIdp> {
   }));
 
   app.get('/jwks', async () => ({ keys: [jwk] }));
+
+  let picture: { body: Buffer; contentType: string } = {
+    body: Buffer.from('fake-png-bytes'),
+    contentType: 'image/png',
+  };
+  app.get('/picture', async (_request, reply) => {
+    reply.header('content-type', picture.contentType);
+    return reply.send(picture.body);
+  });
 
   app.post('/token', async (request, reply) => {
     const body = request.body as Record<string, string>;
@@ -81,6 +92,9 @@ export async function startFakeIdp(): Promise<FakeIdp> {
       const code = randomUUID();
       codes.set(code, claims);
       return code;
+    },
+    setPicture(body, contentType) {
+      picture = { body, contentType };
     },
     close: () => app.close(),
   };

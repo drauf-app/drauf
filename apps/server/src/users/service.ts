@@ -17,6 +17,10 @@ export interface PublicUser {
   displayName: string;
   isAdmin: boolean;
   createdAt: Date;
+  /** Cached IdP profile picture (#98); null = clients render initials. */
+  avatarUrl: string | null;
+  /** Whether the password section applies; OIDC-only accounts have none. */
+  hasPassword: boolean;
 }
 
 export function toPublicUser(user: User): PublicUser {
@@ -26,6 +30,8 @@ export function toPublicUser(user: User): PublicUser {
     displayName: user.displayName,
     isAdmin: user.isAdmin,
     createdAt: user.createdAt,
+    avatarUrl: user.avatarKey === null ? null : `/avatars/${user.avatarKey}`,
+    hasPassword: user.passwordHash !== null,
   };
 }
 

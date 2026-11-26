@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import * as oidcClient from 'openid-client';
+import type { AvatarService } from '../avatars/service.js';
 import type { OidcConfig } from '../config.js';
 import type { Database } from '../db/index.js';
 import {
@@ -47,7 +48,11 @@ export interface OidcService {
   ): Promise<{ clientRedirect: string; loginCode: string }>;
 }
 
-export function createOidcService(oidc: OidcConfig, publicUrl: string): OidcService {
+export function createOidcService(
+  oidc: OidcConfig,
+  publicUrl: string,
+  avatars?: AvatarService,
+): OidcService {
   const callbackUrl = `${publicUrl}/api/auth/oidc/callback`;
   const issuerUrl = new URL(oidc.issuer);
   let cached: { configuration: oidcClient.Configuration; fetchedAt: number } | undefined;
@@ -146,6 +151,7 @@ export function createOidcService(oidc: OidcConfig, publicUrl: string): OidcServ
       }
       const configuration = await getConfiguration();
       let claims: oidcClient.IDToken;
+      let accessToken: string | undefined;
       try {
         const tokens = await oidcClient.authorizationCodeGrant(configuration, currentUrl, {
           pkceCodeVerifier: transaction.codeVerifier,
@@ -158,11 +164,22 @@ export function createOidcService(oidc: OidcConfig, publicUrl: string): OidcServ
           throw new Error('no id token claims');
         }
         claims = tokenClaims;
+        accessToken = tokens.access_token;
       } catch (cause) {
         throw new OidcError('exchange_failed', cause);
       }
 
       const user = await findOrCreateUser(database, claims);
+      if (avatars !== undefined) {
+        // The picture claim usually rides in the ID token; some IdPs only
+        // answer it via userinfo. sync() never throws — a missing or broken
+        // avatar must not break the login.
+        let picture = typeof claims.picture === 'string' ? claims.picture : undefined;
+        if (picture === undefined && accessToken !== undefined) {
+          picture = await fetchPictureFromUserinfo(configuration, accessToken, claims.sub);
+        }
+        await avatars.sync(database, user.id, picture);
+      }
       const loginCode = randomBytes(32).toString('base64url');
       await createLoginCode(database, {
         // Same construction as refresh tokens: only the SHA-256 hash is stored.
@@ -174,6 +191,20 @@ export function createOidcService(oidc: OidcConfig, publicUrl: string): OidcServ
       return { clientRedirect: transaction.clientRedirect, loginCode };
     },
   };
+}
+
+async function fetchPictureFromUserinfo(
+  configuration: oidcClient.Configuration,
+  accessToken: string,
+  subject: string,
+): Promise<string | undefined> {
+  try {
+    const info = await oidcClient.fetchUserInfo(configuration, accessToken, subject);
+    return typeof info.picture === 'string' ? info.picture : undefined;
+  } catch {
+    // No userinfo endpoint, or it refused the token: there is just no picture.
+    return undefined;
+  }
 }
 
 function sanitizeUsername(raw: string): string {

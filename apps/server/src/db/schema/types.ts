@@ -14,6 +14,8 @@ export interface User {
   failedLogins: number;
   lockedUntil: Date | null;
   createdAt: Date;
+  /** Random filename of the cached IdP profile picture (#98); null = initials. */
+  avatarKey: string | null;
 }
 
 export interface RefreshToken {

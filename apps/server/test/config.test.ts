@@ -18,6 +18,7 @@ describe('loadConfig', () => {
       disabledProviders: [],
       webDir: '../web/dist',
       iconsDir: 'data/icons',
+      avatarsDir: 'data/avatars',
       categorize: undefined,
       version: 'dev',
       commit: undefined,

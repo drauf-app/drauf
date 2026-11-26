@@ -16,6 +16,25 @@ export const de = {
     import: 'Import',
     settings: 'Einstellungen',
   },
+  profile: {
+    title: 'Profil',
+    username: 'Benutzername',
+    displayName: 'Anzeigename',
+    saved: 'Gespeichert.',
+    password: {
+      title: 'Passwort ändern',
+      current: 'Aktuelles Passwort',
+      new: 'Neues Passwort',
+      repeat: 'Neues Passwort wiederholen',
+      submit: 'Passwort ändern',
+      mismatch: 'Die Passwörter stimmen nicht überein.',
+      changed: 'Passwort geändert.',
+      errors: {
+        invalid_password: 'Das aktuelle Passwort ist falsch.',
+        password_too_short: 'Das neue Passwort ist zu kurz (mindestens 10 Zeichen).',
+      },
+    },
+  },
   login: {
     title: 'Anmelden',
     username: 'Benutzername',

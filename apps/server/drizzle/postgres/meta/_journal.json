@@ -155,6 +155,13 @@
       "when": 1795681650823,
       "tag": "0021_colorful_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1795691512079,
+      "tag": "0022_huge_dreaming_celestial",
+      "breakpoints": true
     }
   ]
 }
