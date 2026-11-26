@@ -131,6 +131,13 @@ export const de = {
     backToLists: 'Zurück zu den Listen',
     storePicker: 'Laden',
     householdOrder: 'Standard-Reihenfolge',
+    print: {
+      action: 'Drucken',
+      back: 'Zurück zur Liste',
+      showRecent: 'Erledigte zeigen',
+      columns: 'Spalten',
+      columnsAuto: 'Automatisch',
+    },
   },
   stores: {
     title: 'Läden',

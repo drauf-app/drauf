@@ -594,6 +594,9 @@ export function ListPage() {
           <button type="button" onClick={handleArchive}>
             {list.archived ? t.list.unarchive : t.list.archive}
           </button>
+          <Link className="plan-print-link" to={`/lists/${listId}/print`}>
+            🖨 {t.list.print.action}
+          </Link>
           {auth.user?.id === list.ownerId && (
             <button type="button" className="danger" onClick={handleDeleteList}>
               {t.list.delete}

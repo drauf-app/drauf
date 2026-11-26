@@ -4,6 +4,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { ImportPage } from './pages/ImportPage';
 import { ListPage } from './pages/ListPage';
+import { ListPrintPage } from './pages/ListPrintPage';
 import { ListsPage } from './pages/ListsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlanPage } from './pages/PlanPage';
@@ -28,8 +29,9 @@ export function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
-          {/* No app chrome: this page is meant for the printer. */}
+          {/* No app chrome: these pages are meant for the printer. */}
           <Route path="/plan/print" element={<PlanPrintPage />} />
+          <Route path="/lists/:id/print" element={<ListPrintPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
