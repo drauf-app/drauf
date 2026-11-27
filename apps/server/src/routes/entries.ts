@@ -26,6 +26,7 @@ import {
   addItemToList,
   getEntryView,
   getEntryViews,
+  moveEntryToList,
   normalizeItemName,
   replaceEntryQuantity,
 } from '../lists/items.js';
@@ -66,6 +67,13 @@ const patchBody = {
   additionalProperties: false,
 } as const;
 
+const moveBody = {
+  type: 'object',
+  required: ['targetListId'],
+  properties: { targetListId: { type: 'string', minLength: 1, maxLength: 64 } },
+  additionalProperties: false,
+} as const;
+
 const listParams = {
   type: 'object',
   required: ['id'],
@@ -96,6 +104,10 @@ interface PatchInput extends Partial<AddInput> {
   flags?: string;
   /** Household item icon ('' = back to the catalogue match), not an entry field. */
   icon?: string;
+}
+
+interface MoveInput {
+  targetListId: string;
 }
 
 interface ListParamsInput {
@@ -346,6 +358,37 @@ export function entryRoutes(
           data: { id: resolved.entry.id, listId: resolved.entry.listId },
         });
         return reply.code(204).send();
+      },
+    );
+
+    /** Moves an entry to another list, stats-clean (#116). */
+    app.post<{ Params: EntryParamsInput; Body: MoveInput }>(
+      '/:id/entries/:entryId/move',
+      { schema: { params: entryParams, body: moveBody } },
+      async (request, reply) => {
+        const auth = requireAuthUser(reply, request.authUser);
+        const resolved = await resolve(reply, auth.id, request.params.id, request.params.entryId);
+        if (resolved?.entry === undefined) return reply;
+        const { targetListId } = request.body;
+        if (targetListId === request.params.id) {
+          return reply.code(400).send({ error: 'same_list' });
+        }
+        // Membership on the target too; unknown and foreign lists answer alike.
+        if ((await getListForMember(database, targetListId, auth.id)) === undefined) {
+          return reply.code(404).send({ error: 'not_found' });
+        }
+        const sourceEntryId = resolved.entry.id;
+        const { entry, merged } = await moveEntryToList(database, resolved.entry, targetListId);
+        const view = await getEntryView(database, entry, catalog);
+        hub.publish(listTopic(request.params.id), {
+          type: 'entry.deleted',
+          data: { id: sourceEntryId, listId: request.params.id },
+        });
+        hub.publish(listTopic(targetListId), {
+          type: merged ? 'entry.updated' : 'entry.created',
+          data: view,
+        });
+        return view;
       },
     );
   };
