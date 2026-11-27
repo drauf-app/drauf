@@ -635,6 +635,29 @@ export async function setEntryChecked(
   await db.update(t.listEntries).set(checked).where(eq(t.listEntries.id, entryId));
 }
 
+/** Reassigns an entry to another list wholesale (entry.move without merge). */
+export async function setEntryList(
+  database: Database,
+  entryId: string,
+  listId: string,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.update(t.listEntries).set({ listId }).where(eq(t.listEntries.id, entryId));
+}
+
+/** Transfers all portions of one entry to another (entry.move with merge). */
+export async function movePortionsToEntry(
+  database: Database,
+  fromEntryId: string,
+  toEntryId: string,
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db
+    .update(t.entryPortions)
+    .set({ entryId: toEntryId })
+    .where(eq(t.entryPortions.entryId, fromEntryId));
+}
+
 export async function deleteListEntry(database: Database, entryId: string): Promise<void> {
   const { db, t } = unwrap(database);
   await db.delete(t.listEntries).where(eq(t.listEntries.id, entryId));

@@ -23,10 +23,12 @@ import type { EntryPortion, ListEntry } from '../db/schema/types.js';
 import {
   addItemToList,
   getEntryView,
+  moveEntryToList,
   normalizeItemName,
   replaceEntryQuantity,
 } from '../lists/items.js';
 import { getListForMember } from '../lists/service.js';
+import { parseFieldTimes, stampFieldTimes } from './field-times.js';
 import { listTopic, type SyncHub } from './hub.js';
 
 export const OPERATION_TYPES = [
@@ -35,6 +37,7 @@ export const OPERATION_TYPES = [
   'entry.check',
   'entry.uncheck',
   'entry.delete',
+  'entry.move',
   'portion.set',
   'portion.delete',
 ] as const;
@@ -59,34 +62,7 @@ export interface SyncResult {
   portionId?: string;
 }
 
-export function parseFieldTimes(raw: string | null): Record<string, number> {
-  if (raw === null) {
-    return {};
-  }
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return {};
-    }
-    const times: Record<string, number> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === 'number') {
-        times[key] = value;
-      }
-    }
-    return times;
-  } catch {
-    return {};
-  }
-}
-
-export function stampFieldTimes(raw: string | null, fields: string[], time: number): string {
-  const times = parseFieldTimes(raw);
-  for (const field of fields) {
-    times[field] = time;
-  }
-  return JSON.stringify(times);
-}
+export { parseFieldTimes, stampFieldTimes } from './field-times.js';
 
 function optionalString(value: unknown, maxLength: number): string | null | undefined {
   if (value === undefined) {
@@ -431,6 +407,31 @@ async function applyPortionDelete(
   return { id: '', status: 'applied', entryId: entry.id, portionId };
 }
 
+/**
+ * Moves an entry to another list, stats-clean (#116): membership is checked
+ * on both lists, the shopping history is never touched, and merging on the
+ * target follows the add-merge rule (L4).
+ */
+async function applyMove(ctx: Context, data: Record<string, unknown>): Promise<SyncResult> {
+  const entry = await requireEntry(ctx, data);
+  const targetListId = requireString(data.targetListId, 64);
+  if (targetListId === entry.listId) {
+    throw new OperationError('invalid_payload');
+  }
+  if ((await getListForMember(ctx.database, targetListId, ctx.userId)) === undefined) {
+    throw new OperationError('not_found');
+  }
+  const sourceListId = entry.listId;
+  const sourceEntryId = entry.id;
+  const { entry: moved, merged } = await moveEntryToList(ctx.database, entry, targetListId);
+  ctx.hub.publish(listTopic(sourceListId), {
+    type: 'entry.deleted',
+    data: { id: sourceEntryId, listId: sourceListId },
+  });
+  await publishEntry(ctx, merged ? 'entry.updated' : 'entry.created', moved);
+  return { id: '', status: 'applied', entryId: moved.id };
+}
+
 async function applyDelete(ctx: Context, data: Record<string, unknown>): Promise<SyncResult> {
   const listId = await requireListAccess(ctx, data);
   const entryId = requireString(data.entryId, 64);
@@ -456,6 +457,8 @@ async function applyOne(ctx: Context, operation: SyncOperation): Promise<SyncRes
       return applyUncheck(ctx, operation.data);
     case 'entry.delete':
       return applyDelete(ctx, operation.data);
+    case 'entry.move':
+      return applyMove(ctx, operation.data);
     case 'portion.set':
       return applyPortionSet(ctx, operation.data);
     case 'portion.delete':

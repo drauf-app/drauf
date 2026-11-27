@@ -4,6 +4,7 @@ import type { Database } from '../db/index.js';
 import {
   createEntryPortion,
   createListEntry,
+  deleteListEntry,
   deletePortionsForEntry,
   findMergeableEntry,
   getCatalogIcons,
@@ -12,10 +13,13 @@ import {
   listCategories,
   listEntriesForList,
   listPortionsForEntries,
+  movePortionsToEntry,
   recordCatalogUsage,
+  setEntryList,
   updateListEntry,
 } from '../db/repositories.js';
 import type { EntryPortion, ListEntry, PortionOrigin } from '../db/schema/types.js';
+import { parseFieldTimes } from '../sync/field-times.js';
 
 export { normalizeItemName } from '@drauf/shared';
 
@@ -235,6 +239,64 @@ export async function getEntryView(
 ): Promise<EntryView> {
   const icons = await iconsForList(database, entry.listId);
   return buildEntryView(entry, await listPortionsForEntries(database, [entry.id]), catalog, icons);
+}
+
+export interface MoveEntryResult {
+  /** The surviving entry on the target list. */
+  entry: ListEntry;
+  /** True when it merged into an existing entry there. */
+  merged: boolean;
+}
+
+/**
+ * Moves an entry to another list (#116). A move is neither an add nor an
+ * abandonment, so it never touches the shopping history. An unchecked entry
+ * merges into the target's unchecked entry with the same name and variant
+ * (L4): portions transfer with their origins intact, the scalar fields
+ * resolve per-field last-write-wins by fieldTimes, and the source row
+ * disappears. Checked entries always transfer whole — they are history.
+ */
+export async function moveEntryToList(
+  database: Database,
+  entry: ListEntry,
+  targetListId: string,
+): Promise<MoveEntryResult> {
+  const target =
+    entry.checkedAt === null
+      ? await findMergeableEntry(database, targetListId, entry.nameNormalized, entry.variant)
+      : undefined;
+  if (target === undefined) {
+    await setEntryList(database, entry.id, targetListId);
+    return { entry: { ...entry, listId: targetListId }, merged: false };
+  }
+
+  await movePortionsToEntry(database, entry.id, target.id);
+  const sourceTimes = parseFieldTimes(entry.fieldTimes);
+  const targetTimes = parseFieldTimes(target.fieldTimes);
+  const patch: Partial<Pick<ListEntry, 'flags' | 'note' | 'categoryId' | 'fieldTimes'>> = {};
+  const times = { ...targetTimes };
+  for (const field of ['flags', 'note', 'categoryId'] as const) {
+    const value = entry[field];
+    if (value === null || value === target[field]) {
+      continue;
+    }
+    // The target keeps its value unless the moved entry's is strictly newer;
+    // an unset target field adopts the moved value like an add-merge would.
+    const newer = (sourceTimes[field] ?? 0) > (targetTimes[field] ?? 0);
+    if (target[field] === null || newer) {
+      patch[field] = value;
+      const stamp = sourceTimes[field];
+      if (stamp !== undefined) {
+        times[field] = stamp;
+      }
+    }
+  }
+  if (Object.keys(patch).length > 0) {
+    patch.fieldTimes = JSON.stringify(times);
+    await updateListEntry(database, target.id, patch);
+  }
+  await deleteListEntry(database, entry.id);
+  return { entry: { ...target, ...patch }, merged: true };
 }
 
 /** An explicit amount edit replaces all portions with one manual portion. */
