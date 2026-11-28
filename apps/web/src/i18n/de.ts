@@ -90,6 +90,7 @@ export const de = {
     create: 'Anlegen',
     noIcon: 'Kein Icon',
     pickIcon: 'Icon wählen',
+    colorLabel: 'Farbe',
     colorNone: 'Keine Farbe',
     colorNames: ['Grün', 'Blau', 'Türkis', 'Orange', 'Rot', 'Pink', 'Violett'],
     oneItem: '1 Artikel',

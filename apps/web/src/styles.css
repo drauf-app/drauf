@@ -555,10 +555,18 @@ button:disabled {
 .color-swatches {
   flex-basis: 100%;
   display: flex;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.color-swatches-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-right: 0.2rem;
 }
 
 .color-swatch {
+  --swatch-color: var(--text-muted);
   width: 1.4rem;
   height: 1.4rem;
   padding: 0;
@@ -566,21 +574,30 @@ button:disabled {
   border-radius: 50%;
 }
 
+/* Empty circle with a clean 45° stroke; the rotated bar anti-aliases
+   cleanly where the old hard gradient left rough edges. */
 .color-swatch.none {
-  background: linear-gradient(
-      to top left,
-      transparent 44%,
-      var(--text-muted) 46%,
-      var(--text-muted) 54%,
-      transparent 56%
-    )
-    var(--surface);
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
 }
 
+.color-swatch.none::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 0.75px);
+  top: -15%;
+  width: 1.5px;
+  height: 130%;
+  background: var(--text-muted);
+  transform: rotate(45deg);
+}
+
+/* One ring in the swatch's own colour, separated by a background gap. */
 .color-swatch.active {
   box-shadow:
-    0 0 0 2px var(--surface),
-    0 0 0 4px var(--accent);
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px var(--swatch-color);
 }
 
 .category-group h2 {
