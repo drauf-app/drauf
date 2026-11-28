@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useT } from '../i18n';
+import { ICON_KEYWORDS } from '../lib/icon-keywords';
 import { useIconRegistry } from '../lib/icon-registry';
-import { BUNDLED_EMOJIS } from '../lib/openmoji';
+import { BUNDLED_EMOJIS, emojiToHex } from '../lib/openmoji';
 import { ItemIcon } from './ItemIcon';
 
 interface IconPickerProps {
@@ -21,6 +22,7 @@ interface IconPickerProps {
  */
 export function IconPicker({ value, clearLabel, pickLabel, onChange }: IconPickerProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const t = useT();
   const registry = useIconRegistry();
 
@@ -29,6 +31,20 @@ export function IconPicker({ value, clearLabel, pickLabel, onChange }: IconPicke
     setOpen(false);
   }
 
+  // Bundled icons match their German catalogue keywords (#85); instance
+  // icons match on their id/key.
+  const needle = query.trim().toLowerCase();
+  const bundled =
+    needle === ''
+      ? BUNDLED_EMOJIS
+      : BUNDLED_EMOJIS.filter((emoji) =>
+          (ICON_KEYWORDS.get(emojiToHex(emoji)) ?? '').includes(needle),
+        );
+  const custom =
+    needle === ''
+      ? registry.icons
+      : registry.icons.filter((entry) => entry.id.toLowerCase().includes(needle));
+
   return (
     <>
       <button
@@ -36,12 +52,23 @@ export function IconPicker({ value, clearLabel, pickLabel, onChange }: IconPicke
         className="icon-picker-toggle"
         aria-label={pickLabel}
         aria-expanded={open}
-        onClick={() => setOpen((previous) => !previous)}
+        onClick={() => {
+          setQuery('');
+          setOpen((previous) => !previous);
+        }}
       >
         {value === '' ? clearLabel : <ItemIcon icon={value} />}
       </button>
       {open && (
         <div className="icon-picker">
+          <input
+            type="search"
+            className="icon-picker-search"
+            value={query}
+            placeholder={t.common.searchIcons}
+            aria-label={t.common.searchIcons}
+            onChange={(event) => setQuery(event.target.value)}
+          />
           <button
             type="button"
             className={value === '' ? 'icon-option active' : 'icon-option'}
@@ -49,7 +76,7 @@ export function IconPicker({ value, clearLabel, pickLabel, onChange }: IconPicke
           >
             {clearLabel}
           </button>
-          {BUNDLED_EMOJIS.map((emoji) => (
+          {bundled.map((emoji) => (
             <button
               key={emoji}
               type="button"
@@ -60,10 +87,13 @@ export function IconPicker({ value, clearLabel, pickLabel, onChange }: IconPicke
               <ItemIcon icon={emoji} />
             </button>
           ))}
-          {registry.icons.length > 0 && (
+          {bundled.length === 0 && custom.length === 0 && (
+            <span className="icon-picker-empty">{t.common.noIconsFound}</span>
+          )}
+          {custom.length > 0 && (
             <>
               <span className="icon-picker-section">{t.common.customIcons}</span>
-              {registry.icons.map((entry) => (
+              {custom.map((entry) => (
                 <button
                   key={entry.id}
                   type="button"
