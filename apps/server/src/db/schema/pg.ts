@@ -209,6 +209,24 @@ export const storeCategories = pgTable(
   (t) => [primaryKey({ columns: [t.storeId, t.categoryId] })],
 );
 
+/**
+ * Categories a store does NOT carry (#115). An exclusion list on purpose:
+ * a newly created category defaults to "carried everywhere" instead of
+ * silently vanishing from every store.
+ */
+export const storeExcludedCategories = pgTable(
+  'store_excluded_categories',
+  {
+    storeId: text('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.storeId, t.categoryId] })],
+);
+
 /** Meal slots of a household's weekly plan (W2), e.g. lunch and dinner. */
 export const mealSlots = pgTable('meal_slots', {
   id: text('id').primaryKey(),

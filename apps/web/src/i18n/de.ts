@@ -134,6 +134,7 @@ export const de = {
     backToLists: 'Zurück zu den Listen',
     storePicker: 'Laden',
     householdOrder: 'Standard-Reihenfolge',
+    notInStore: 'Evtl. nicht in diesem Laden',
     print: {
       action: 'Drucken',
       back: 'Zurück zur Liste',
@@ -156,6 +157,7 @@ export const de = {
     customOrder: 'eigene Reihenfolge',
     name: 'Name',
     orderTitle: 'Kategorien sortieren',
+    carries: 'Führt dieser Laden',
     done: 'Fertig',
     moveUp: 'Nach oben',
     moveDown: 'Nach unten',

@@ -867,6 +867,34 @@ export async function getStoreCategoryOrder(
   return rows.map((row) => row.categoryId);
 }
 
+/** Replaces the set of categories a store does not carry (#115). */
+export async function replaceStoreExcludedCategories(
+  database: Database,
+  storeId: string,
+  categoryIds: string[],
+): Promise<void> {
+  const { db, t } = unwrap(database);
+  await db.delete(t.storeExcludedCategories).where(eq(t.storeExcludedCategories.storeId, storeId));
+  if (categoryIds.length > 0) {
+    await db
+      .insert(t.storeExcludedCategories)
+      .values(categoryIds.map((categoryId) => ({ storeId, categoryId })));
+  }
+}
+
+export async function getStoreExcludedCategories(
+  database: Database,
+  storeId: string,
+): Promise<string[]> {
+  const { db, t } = unwrap(database);
+  const rows = await db
+    .select({ categoryId: t.storeExcludedCategories.categoryId })
+    .from(t.storeExcludedCategories)
+    .where(eq(t.storeExcludedCategories.storeId, storeId))
+    .orderBy(asc(t.storeExcludedCategories.categoryId));
+  return rows.map((row) => row.categoryId);
+}
+
 export async function createMealSlot(
   database: Database,
   input: { householdId: string; name: string; sortOrder: number },

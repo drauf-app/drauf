@@ -117,6 +117,8 @@ export interface StoreWithOrder {
   createdAt: string;
   /** Category ids in this store's aisle order; empty = household order. */
   categoryOrder: string[];
+  /** Categories this store does not carry (#115); default: carries all. */
+  excludedCategoryIds: string[];
 }
 
 export interface MealSlot {

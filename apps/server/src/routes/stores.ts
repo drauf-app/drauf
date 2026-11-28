@@ -6,9 +6,11 @@ import {
   deleteStore,
   getStore,
   getStoreCategoryOrder,
+  getStoreExcludedCategories,
   listCategories,
   listStores,
   replaceStoreCategoryOrder,
+  replaceStoreExcludedCategories,
   updateStore,
 } from '../db/repositories.js';
 import { getHouseholdForMember } from '../households/service.js';
@@ -76,6 +78,7 @@ export function storeRoutes(database: Database, guards: AuthGuards): FastifyPlug
         stores.map(async (store) => ({
           ...store,
           categoryOrder: await getStoreCategoryOrder(database, store.id),
+          excludedCategoryIds: await getStoreExcludedCategories(database, store.id),
         })),
       );
     });
@@ -90,7 +93,7 @@ export function storeRoutes(database: Database, guards: AuthGuards): FastifyPlug
         householdId: household.id,
         name: request.body.name.trim(),
       });
-      return reply.code(201).send({ ...store, categoryOrder: [] });
+      return reply.code(201).send({ ...store, categoryOrder: [], excludedCategoryIds: [] });
     });
 
     app.patch<{ Params: StoreParamsInput; Body: NameInput }>(
@@ -108,7 +111,12 @@ export function storeRoutes(database: Database, guards: AuthGuards): FastifyPlug
         }
         const name = request.body.name.trim();
         await updateStore(database, store.id, { name });
-        return { ...store, name, categoryOrder: await getStoreCategoryOrder(database, store.id) };
+        return {
+          ...store,
+          name,
+          categoryOrder: await getStoreCategoryOrder(database, store.id),
+          excludedCategoryIds: await getStoreExcludedCategories(database, store.id),
+        };
       },
     );
 
@@ -155,7 +163,44 @@ export function storeRoutes(database: Database, guards: AuthGuards): FastifyPlug
           seen.add(categoryId);
         }
         await replaceStoreCategoryOrder(database, store.id, request.body.categoryIds);
-        return { ...store, categoryOrder: request.body.categoryIds };
+        return {
+          ...store,
+          categoryOrder: request.body.categoryIds,
+          excludedCategoryIds: await getStoreExcludedCategories(database, store.id),
+        };
+      },
+    );
+
+    /** The categories this store does NOT carry (#115); same body shape as the order. */
+    app.put<{ Params: StoreParamsInput; Body: OrderInput }>(
+      '/:storeId/excluded-categories',
+      { schema: { params: storeParams, body: orderBody } },
+      async (request, reply) => {
+        const auth = requireAuthUser(reply, request.authUser);
+        const household = await getHouseholdForMember(database, auth.id);
+        const store =
+          household === undefined
+            ? undefined
+            : await getStore(database, household.id, request.params.storeId);
+        if (household === undefined || store === undefined) {
+          return reply.code(404).send({ error: 'not_found' });
+        }
+        const valid = new Set(
+          (await listCategories(database, household.id)).map((category) => category.id),
+        );
+        const seen = new Set<string>();
+        for (const categoryId of request.body.categoryIds) {
+          if (!valid.has(categoryId) || seen.has(categoryId)) {
+            return reply.code(400).send({ error: 'invalid_categories' });
+          }
+          seen.add(categoryId);
+        }
+        await replaceStoreExcludedCategories(database, store.id, request.body.categoryIds);
+        return {
+          ...store,
+          categoryOrder: await getStoreCategoryOrder(database, store.id),
+          excludedCategoryIds: request.body.categoryIds,
+        };
       },
     );
   };
