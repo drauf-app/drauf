@@ -84,6 +84,31 @@ describe('groupEntries', () => {
     const groups = groupEntries(entries, categories, ['c2', 'c1']);
     expect(groups.map((group) => group.category?.id)).toEqual(['c2', 'c1', 'c3']);
   });
+
+  it('trails categories the store does not carry, flagged but intact (#115)', () => {
+    const categories = [
+      category('c1', 'Obst & Gemüse', 0),
+      category('c2', 'Tiefkühl', 5),
+      category('c3', 'Getränke', 9),
+    ];
+    const entries = [
+      entry('apfel', { categoryId: 'c1' }),
+      entry('fischstäbchen', { categoryId: 'c2' }),
+      entry('wasser', { categoryId: 'c3' }),
+      entry('geschenk'),
+    ];
+    const groups = groupEntries(entries, categories, ['c3', 'c1'], ['c2']);
+    // Excluded group last, after uncategorized; items untouched.
+    expect(groups.map((group) => group.category?.id)).toEqual(['c3', 'c1', undefined, 'c2']);
+    expect(groups.map((group) => group.excluded === true)).toEqual([false, false, false, true]);
+    expect(groups[3]?.entries.map((item) => item.id)).toEqual(['fischstäbchen']);
+    // Without a store selection nothing is excluded.
+    expect(
+      groupEntries(entries, categories, undefined, undefined).every(
+        (group) => group.excluded !== true,
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('recentEntries', () => {

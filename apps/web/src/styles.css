@@ -1630,6 +1630,47 @@ button:disabled {
   }
 }
 
+/* Categories the selected store may not carry (#115): the grouping carries
+   the doubt — muted headings over a dashed rule — while the entries stay at
+   full contrast and fully usable. */
+.excluded-block {
+  margin-top: 1.4rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.6rem;
+}
+
+.excluded-heading {
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.category-group.excluded h2 {
+  opacity: 0.75;
+}
+
+/* A not-carried category in the store dialog: visibly parked, still
+   clickable to re-enable. */
+.category-order li.excluded {
+  opacity: 0.55;
+}
+
+.print-excluded {
+  margin-top: 1.2rem;
+}
+
+.print-excluded-heading {
+  font-size: 0.85rem;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 1px dashed var(--border);
+  margin: 0 0 0.4rem;
+  padding-bottom: 0.15rem;
+}
+
 /* Admin editor for learned/custom catalog items (#111) */
 
 .catalog-admin-controls {

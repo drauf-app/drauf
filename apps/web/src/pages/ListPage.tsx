@@ -477,7 +477,14 @@ export function ListPage() {
   }
 
   const selectedStore = stores.find((store) => store.id === list.defaultStoreId);
-  const groups = groupEntries(entries, categories, selectedStore?.categoryOrder);
+  const groups = groupEntries(
+    entries,
+    categories,
+    selectedStore?.categoryOrder,
+    selectedStore?.excludedCategoryIds,
+  );
+  const carriedGroups = groups.filter((group) => group.excluded !== true);
+  const excludedGroups = groups.filter((group) => group.excluded === true);
   const recent = recentEntries(entries);
 
   function renderEntry(entry: EntryView) {
@@ -608,7 +615,7 @@ export function ListPage() {
       {actionFailed && <p className="error">{t.common.error}</p>}
 
       {groups.length === 0 && <p className="placeholder">{t.list.empty}</p>}
-      {groups.map((group) => (
+      {carriedGroups.map((group) => (
         <div key={group.category?.id ?? 'uncategorized'} className="category-group">
           <h2>
             {group.category?.icon != null && (
@@ -621,6 +628,26 @@ export function ListPage() {
           <ul className={entriesClass}>{group.entries.map(renderEntry)}</ul>
         </div>
       ))}
+
+      {excludedGroups.length > 0 && (
+        <section className="excluded-block">
+          {/* The grouping carries the doubt; the entries stay fully usable. */}
+          <h2 className="excluded-heading">{t.list.notInStore}</h2>
+          {excludedGroups.map((group) => (
+            <div key={group.category?.id ?? 'uncategorized'} className="category-group excluded">
+              <h2>
+                {group.category?.icon != null && (
+                  <>
+                    <ItemIcon icon={group.category.icon} />{' '}
+                  </>
+                )}
+                {group.category?.name ?? t.list.uncategorized}
+              </h2>
+              <ul className={entriesClass}>{group.entries.map(renderEntry)}</ul>
+            </div>
+          ))}
+        </section>
+      )}
 
       {recent.length > 0 && (
         <details className="recent">

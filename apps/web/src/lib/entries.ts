@@ -4,6 +4,8 @@ export interface CategoryGroup {
   /** undefined = entries without a category; rendered last. */
   category: Category | undefined;
   entries: EntryView[];
+  /** True when the selected store does not carry this category (#115). */
+  excluded?: boolean;
 }
 
 /** Household order, or the selected store's aisle order with the rest after. */
@@ -21,13 +23,17 @@ function orderedCategories(categories: Category[], storeOrder: string[] | undefi
 /**
  * Groups unchecked entries by category — in the household's category order,
  * or re-sorted for the selected store (L7); entries without a category come
- * last. Within a group insertion order (createdAt) is kept.
+ * last. Within a group insertion order (createdAt) is kept. Categories the
+ * selected store does not carry trail the list flagged `excluded` (#115) —
+ * the items never disappear, they are just probably bought elsewhere.
  */
 export function groupEntries(
   entries: EntryView[],
   categories: Category[],
   storeOrder?: string[],
+  excludedCategoryIds?: string[],
 ): CategoryGroup[] {
+  const excluded = new Set(excludedCategoryIds ?? []);
   const open = entries.filter((entry) => entry.checkedAt === null);
   const byCategory = new Map<string | null, EntryView[]>();
   for (const entry of open) {
@@ -39,9 +45,15 @@ export function groupEntries(
     }
   }
   const groups: CategoryGroup[] = [];
+  const trailing: CategoryGroup[] = [];
   for (const category of orderedCategories(categories, storeOrder)) {
     const grouped = byCategory.get(category.id);
-    if (grouped !== undefined) {
+    if (grouped === undefined) {
+      continue;
+    }
+    if (excluded.has(category.id)) {
+      trailing.push({ category, entries: grouped, excluded: true });
+    } else {
       groups.push({ category, entries: grouped });
     }
   }
@@ -49,7 +61,7 @@ export function groupEntries(
   if (uncategorized !== undefined) {
     groups.push({ category: undefined, entries: uncategorized });
   }
-  return groups;
+  return [...groups, ...trailing];
 }
 
 /** Checked entries, most recently checked first ("Zuletzt gekauft"). */

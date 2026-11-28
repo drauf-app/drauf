@@ -25,6 +25,7 @@ import {
   fetchStores,
   renameStore,
   setStoreCategoryOrder,
+  setStoreExcludedCategories,
 } from '../api/stores';
 import type { Category, StoreWithOrder } from '../api/types';
 import { IconPicker } from '../components/IconPicker';
@@ -204,7 +205,12 @@ function StoreEditDialog({ store, categories, onChanged, onError, onClose }: Sto
             (category, index) => (
               <li
                 key={category.id}
-                className={drag !== undefined && index === drag.to ? 'dragging' : undefined}
+                className={[
+                  drag !== undefined && index === drag.to ? 'dragging' : '',
+                  store.excludedCategoryIds.includes(category.id) ? 'excluded' : '',
+                ]
+                  .filter((name) => name !== '')
+                  .join(' ')}
               >
                 <button
                   type="button"
@@ -215,6 +221,19 @@ function StoreEditDialog({ store, categories, onChanged, onError, onClose }: Sto
                 >
                   ⠿
                 </button>
+                <input
+                  type="checkbox"
+                  checked={!store.excludedCategoryIds.includes(category.id)}
+                  aria-label={`${t.stores.carries}: ${category.name}`}
+                  onChange={(event) => {
+                    const next = event.target.checked
+                      ? store.excludedCategoryIds.filter((id) => id !== category.id)
+                      : [...store.excludedCategoryIds, category.id];
+                    run(async () => {
+                      onChanged(await setStoreExcludedCategories(store.id, next));
+                    });
+                  }}
+                />
                 <span className="category-order-name">
                   {category.icon !== null && (
                     <>

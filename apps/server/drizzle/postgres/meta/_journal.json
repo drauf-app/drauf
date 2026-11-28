@@ -162,6 +162,13 @@
       "when": 1795691512079,
       "tag": "0022_huge_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795867597475,
+      "tag": "0023_flowery_paibok",
+      "breakpoints": true
     }
   ]
 }

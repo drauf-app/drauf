@@ -292,6 +292,97 @@ describe('categories and stores', () => {
       );
     });
 
+    it('stores the categories a store does not carry (#115)', async () => {
+      const store = await createStore('Drogeriemarkt');
+      const categories = await getCategories();
+      const frozen = categories.find((category) => category.key === 'frozen')?.id as string;
+      const drinks = categories.find((category) => category.key === 'drinks')?.id as string;
+
+      // Default: carries everything.
+      const index = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/stores',
+        headers: as(christian),
+      });
+      expect(
+        (index.json() as Array<{ excludedCategoryIds: string[] }>)[0]?.excludedCategoryIds,
+      ).toEqual([]);
+
+      const set = await ctx.app.inject({
+        method: 'PUT',
+        url: `/api/stores/${store.id}/excluded-categories`,
+        headers: as(christian),
+        payload: { categoryIds: [frozen, drinks] },
+      });
+      expect(set.statusCode).toBe(200);
+      expect((set.json() as { excludedCategoryIds: string[] }).excludedCategoryIds).toEqual([
+        frozen,
+        drinks,
+      ]);
+
+      const after = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/stores',
+        headers: as(christian),
+      });
+      expect(
+        (after.json() as Array<{ excludedCategoryIds: string[] }>)[0]?.excludedCategoryIds.sort(),
+      ).toEqual([frozen, drinks].sort());
+
+      // Clearing works, and unknown/duplicate ids are rejected like the order.
+      const cleared = await ctx.app.inject({
+        method: 'PUT',
+        url: `/api/stores/${store.id}/excluded-categories`,
+        headers: as(christian),
+        payload: { categoryIds: [] },
+      });
+      expect((cleared.json() as { excludedCategoryIds: string[] }).excludedCategoryIds).toEqual([]);
+      for (const categoryIds of [['00000000-0000-7000-8000-00000000dead'], [frozen, frozen]]) {
+        const bad = await ctx.app.inject({
+          method: 'PUT',
+          url: `/api/stores/${store.id}/excluded-categories`,
+          headers: as(christian),
+          payload: { categoryIds },
+        });
+        expect(bad.statusCode).toBe(400);
+        expect(bad.json()).toEqual({ error: 'invalid_categories' });
+      }
+    });
+
+    it('drops exclusions with a deleted category (cascade, #115)', async () => {
+      const store = await createStore('Biomarkt');
+      const created = (await (
+        await ctx.app.inject({
+          method: 'POST',
+          url: '/api/categories',
+          headers: as(christian),
+          payload: { name: 'Tierbedarf' },
+        })
+      ).json()) as { id: string };
+
+      await ctx.app.inject({
+        method: 'PUT',
+        url: `/api/stores/${store.id}/excluded-categories`,
+        headers: as(christian),
+        payload: { categoryIds: [created.id] },
+      });
+      const removed = await ctx.app.inject({
+        method: 'DELETE',
+        url: `/api/categories/${created.id}`,
+        headers: as(christian),
+      });
+      expect(removed.statusCode).toBe(204);
+
+      const after = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/stores',
+        headers: as(christian),
+      });
+      expect(
+        (after.json() as Array<{ excludedCategoryIds: string[] }>)[0]?.excludedCategoryIds,
+      ).toEqual([]);
+    });
+
     it('rejects unknown and duplicate category ids in the order', async () => {
       const store = await createStore('Rewe');
       const categories = await getCategories();

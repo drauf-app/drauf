@@ -34,6 +34,7 @@ function store(overrides: Partial<StoreWithOrder> = {}): StoreWithOrder {
     name: 'Supermarkt Ost',
     createdAt: '',
     categoryOrder: [],
+    excludedCategoryIds: [],
     ...overrides,
   };
 }

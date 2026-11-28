@@ -20,6 +20,17 @@ export async function deleteStore(storeId: string): Promise<void> {
   await apiFetch(`/api/stores/${encodeURIComponent(storeId)}`, { method: 'DELETE' });
 }
 
+/** Replaces the categories this store does not carry (#115). */
+export function setStoreExcludedCategories(
+  storeId: string,
+  categoryIds: string[],
+): Promise<StoreWithOrder> {
+  return apiJson<StoreWithOrder>(`/api/stores/${encodeURIComponent(storeId)}/excluded-categories`, {
+    method: 'PUT',
+    body: JSON.stringify({ categoryIds }),
+  });
+}
+
 export function setStoreCategoryOrder(
   storeId: string,
   categoryIds: string[],

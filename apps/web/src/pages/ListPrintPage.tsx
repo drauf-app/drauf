@@ -162,7 +162,14 @@ export function ListPrintPage() {
 
   const storeId = storeChoice === undefined ? list.defaultStoreId : storeChoice;
   const selectedStore = stores.find((store) => store.id === storeId);
-  const groups = groupEntries(entries, categories, selectedStore?.categoryOrder);
+  const groups = groupEntries(
+    entries,
+    categories,
+    selectedStore?.categoryOrder,
+    selectedStore?.excludedCategoryIds,
+  );
+  const carriedGroups = groups.filter((group) => group.excluded !== true);
+  const excludedGroups = groups.filter((group) => group.excluded === true);
   const recent = recentEntries(entries);
   const openCount = groups.reduce((sum, group) => sum + group.entries.length, 0);
   const columnCount =
@@ -245,7 +252,7 @@ export function ListPrintPage() {
       {openCount === 0 && <p className="placeholder">{t.list.empty}</p>}
       {columnCount === 2 ? (
         <div className="print-list two-columns">
-          {splitGroups(groups).map((column, index) => (
+          {splitGroups(carriedGroups).map((column, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: exactly two stable columns.
             <div key={index} className="print-column">
               {column.map(renderGroup)}
@@ -253,7 +260,14 @@ export function ListPrintPage() {
           ))}
         </div>
       ) : (
-        <div className="print-list">{groups.map(renderGroup)}</div>
+        <div className="print-list">{carriedGroups.map(renderGroup)}</div>
+      )}
+
+      {excludedGroups.length > 0 && (
+        <section className="print-excluded">
+          <h2 className="print-excluded-heading">{t.list.notInStore}</h2>
+          {excludedGroups.map(renderGroup)}
+        </section>
       )}
 
       {settings.showRecent && recent.length > 0 && (

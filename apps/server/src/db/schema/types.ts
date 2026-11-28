@@ -108,6 +108,12 @@ export interface StoreCategory {
   position: number;
 }
 
+/** A category a store does not carry (#115). */
+export interface StoreExcludedCategory {
+  storeId: string;
+  categoryId: string;
+}
+
 export interface MealSlot {
   id: string;
   householdId: string;
@@ -232,9 +238,15 @@ type _PgLoginCode = Assert<Eq<typeof pg.loginCodes.$inferSelect, LoginCode>>;
 type _PgCategory = Assert<Eq<typeof pg.categories.$inferSelect, Category>>;
 type _PgStore = Assert<Eq<typeof pg.stores.$inferSelect, Store>>;
 type _PgStoreCategory = Assert<Eq<typeof pg.storeCategories.$inferSelect, StoreCategory>>;
+type _PgStoreExcludedCategory = Assert<
+  Eq<typeof pg.storeExcludedCategories.$inferSelect, StoreExcludedCategory>
+>;
 type _SqliteCategory = Assert<Eq<typeof sqlite.categories.$inferSelect, Category>>;
 type _SqliteStore = Assert<Eq<typeof sqlite.stores.$inferSelect, Store>>;
 type _SqliteStoreCategory = Assert<Eq<typeof sqlite.storeCategories.$inferSelect, StoreCategory>>;
+type _SqliteStoreExcludedCategory = Assert<
+  Eq<typeof sqlite.storeExcludedCategories.$inferSelect, StoreExcludedCategory>
+>;
 type _PgAppliedOperation = Assert<Eq<typeof pg.appliedOperations.$inferSelect, AppliedOperation>>;
 type _SqliteAppliedOperation = Assert<
   Eq<typeof sqlite.appliedOperations.$inferSelect, AppliedOperation>

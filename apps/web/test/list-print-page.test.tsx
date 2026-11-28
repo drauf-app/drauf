@@ -42,7 +42,14 @@ const CATEGORIES: Category[] = [
 
 /** The store walks the aisles in the opposite of the household order. */
 const STORES: StoreWithOrder[] = [
-  { id: 'st1', householdId: 'h1', name: 'Kaufland', createdAt: '', categoryOrder: ['c2', 'c1'] },
+  {
+    id: 'st1',
+    householdId: 'h1',
+    name: 'Kaufland',
+    createdAt: '',
+    categoryOrder: ['c2', 'c1'],
+    excludedCategoryIds: [],
+  },
 ];
 
 function entry(overrides: Partial<EntryView> & { id: string; name: string }): EntryView {
@@ -162,6 +169,28 @@ describe('ListPrintPage', () => {
     // Weights 6+5 | 4+3: the halves stay in order and are nearly balanced.
     expect(left.map((item) => item.category?.id)).toEqual(['a', 'b']);
     expect(right.map((item) => item.category?.id)).toEqual(['c', 'd']);
+  });
+
+  it('prints not-carried categories last under the doubt heading (#115)', async () => {
+    stubFetch((url) => {
+      if (url === '/api/lists/l1') return fakeResponse(200, LIST);
+      if (url === '/api/lists/l1/entries') return fakeResponse(200, ENTRIES);
+      if (url === '/api/categories') return fakeResponse(200, CATEGORIES);
+      if (url === '/api/stores')
+        return fakeResponse(200, [{ ...STORES[0], excludedCategoryIds: ['c2'] }]);
+      return undefined;
+    });
+    const { container } = renderPrint();
+
+    await screen.findByText('Zwiebeln');
+    expect(screen.getByText('Evtl. nicht in diesem Laden')).toBeTruthy();
+    // Getränke (excluded) leaves the main list and renders in the block.
+    expect(
+      [...container.querySelectorAll('.print-list .print-group h2')].map(
+        (heading) => heading.textContent,
+      ),
+    ).toEqual(['Obst']);
+    expect(container.querySelector('.print-excluded')?.textContent).toContain('Apfelsaft');
   });
 
   it('prints merged quantities side by side', async () => {
