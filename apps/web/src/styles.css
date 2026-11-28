@@ -1928,6 +1928,26 @@ button:disabled {
   gap: 0.5rem;
 }
 
+.category-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.category-rename {
+  /* The global form rule stacks fields; this one is an inline row. */
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  display: flex;
+}
+
+.category-rename input {
+  flex: 1;
+  min-width: 8rem;
+}
+
 .entry-edit-actions {
   grid-column: 1 / -1;
   display: flex;

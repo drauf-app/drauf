@@ -158,6 +158,12 @@ export const de = {
     moveUp: 'Nach oben',
     moveDown: 'Nach unten',
     categoriesTitle: 'Kategorien',
+    newCategoryName: 'Name der neuen Kategorie',
+    createCategory: 'Kategorie anlegen',
+    moveCategoryUp: 'Kategorie nach oben',
+    moveCategoryDown: 'Kategorie nach unten',
+    deleteCategoryConfirm:
+      'Diese Kategorie löschen? Einträge behalten ihre Artikel, landen aber unter „Ohne Kategorie".',
     pickIcon: 'Icon wählen',
     iconAuto: 'Automatisch',
   },

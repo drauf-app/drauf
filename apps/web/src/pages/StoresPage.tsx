@@ -12,7 +12,13 @@ import {
   resetStaples,
   saveStaples,
 } from '../api/households';
-import { fetchCategories, patchCategoryIcon } from '../api/lists';
+import {
+  createCategory,
+  deleteCategory,
+  fetchCategories,
+  patchCategory,
+  patchCategoryIcon,
+} from '../api/lists';
 import {
   createStore,
   deleteStore,
@@ -377,21 +383,87 @@ function ExportSection() {
 interface CategoriesSectionProps {
   categories: Category[];
   onChanged: (category: Category) => void;
+  onCreated: (category: Category) => void;
+  onDeleted: (categoryId: string) => void;
   onError: () => void;
 }
 
-/** Household categories with their icons; picking stores an override (#71). */
-function CategoriesSection({ categories, onChanged, onError }: CategoriesSectionProps) {
+/**
+ * Household categories: icons (#71) plus create, rename, reorder and delete
+ * (#114). The base set is renameable but not deletable (L5); the order set
+ * here is the household default that new stores inherit.
+ */
+function CategoriesSection({
+  categories,
+  onChanged,
+  onCreated,
+  onDeleted,
+  onError,
+}: CategoriesSectionProps) {
   const t = useT();
-  if (categories.length === 0) {
-    return null;
-  }
+  const [newName, setNewName] = useState('');
+  const [editing, setEditing] = useState<{ id: string; name: string }>();
   const ordered = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  function handleMove(index: number, delta: -1 | 1): void {
+    const row = ordered[index];
+    const neighbor = ordered[index + delta];
+    if (row === undefined || neighbor === undefined) {
+      return;
+    }
+    Promise.all([
+      patchCategory(row.id, { sortOrder: neighbor.sortOrder }),
+      patchCategory(neighbor.id, { sortOrder: row.sortOrder }),
+    ])
+      .then((changed) => {
+        for (const category of changed) {
+          onChanged(category);
+        }
+      })
+      .catch(onError);
+  }
+
+  function handleRenameSave(event: FormEvent): void {
+    event.preventDefault();
+    if (editing === undefined) {
+      return;
+    }
+    const trimmed = editing.name.trim();
+    setEditing(undefined);
+    if (trimmed === '') {
+      return;
+    }
+    patchCategory(editing.id, { name: trimmed }).then(onChanged).catch(onError);
+  }
+
+  function handleDeleteCategory(category: Category): void {
+    if (!window.confirm(t.stores.deleteCategoryConfirm)) {
+      return;
+    }
+    deleteCategory(category.id)
+      .then(() => onDeleted(category.id))
+      .catch(onError);
+  }
+
+  function handleCreate(event: FormEvent): void {
+    event.preventDefault();
+    const trimmed = newName.trim();
+    if (trimmed === '') {
+      return;
+    }
+    createCategory(trimmed)
+      .then((category) => {
+        onCreated(category);
+        setNewName('');
+      })
+      .catch(onError);
+  }
+
   return (
     <section>
       <h2>{t.stores.categoriesTitle}</h2>
       <ul className="category-icons">
-        {ordered.map((category) => (
+        {ordered.map((category, index) => (
           <li key={category.id}>
             <IconPicker
               value={category.icon ?? ''}
@@ -401,10 +473,81 @@ function CategoriesSection({ categories, onChanged, onError }: CategoriesSection
                 patchCategoryIcon(category.id, icon).then(onChanged).catch(onError);
               }}
             />
-            <span className="category-icons-name">{category.name}</span>
+            {editing?.id === category.id ? (
+              <form className="category-rename" onSubmit={handleRenameSave}>
+                <input
+                  type="text"
+                  value={editing.name}
+                  maxLength={100}
+                  aria-label={t.stores.name}
+                  // biome-ignore lint/a11y/noAutofocus: the form only appears on an explicit edit action.
+                  autoFocus
+                  onChange={(event) => setEditing({ id: category.id, name: event.target.value })}
+                />
+                <button type="submit">{t.common.save}</button>
+                <button type="button" onClick={() => setEditing(undefined)}>
+                  {t.common.cancel}
+                </button>
+              </form>
+            ) : (
+              <>
+                <span className="category-icons-name">{category.name}</span>
+                <span className="category-actions">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`${t.stores.moveCategoryUp}: ${category.name}`}
+                    disabled={index === 0}
+                    onClick={() => handleMove(index, -1)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`${t.stores.moveCategoryDown}: ${category.name}`}
+                    disabled={index === ordered.length - 1}
+                    onClick={() => handleMove(index, 1)}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`${t.stores.edit}: ${category.name}`}
+                    onClick={() => setEditing({ id: category.id, name: category.name })}
+                  >
+                    ✎
+                  </button>
+                  {category.key === null && (
+                    <button
+                      type="button"
+                      className="icon-button danger"
+                      aria-label={`${t.stores.delete}: ${category.name}`}
+                      onClick={() => handleDeleteCategory(category)}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              </>
+            )}
           </li>
         ))}
       </ul>
+      <form className="create-list" onSubmit={handleCreate}>
+        <input
+          type="text"
+          value={newName}
+          maxLength={100}
+          placeholder={t.stores.newCategoryName}
+          aria-label={t.stores.newCategoryName}
+          onChange={(event) => setNewName(event.target.value)}
+        />
+        <button type="submit" className="primary" aria-label={t.stores.createCategory}>
+          {t.stores.create}
+        </button>
+      </form>
     </section>
   );
 }
@@ -543,6 +686,10 @@ export function StoresPage() {
           setCategories((previous) =>
             previous.map((item) => (item.id === changed.id ? changed : item)),
           )
+        }
+        onCreated={(created) => setCategories((previous) => [...previous, created])}
+        onDeleted={(categoryId) =>
+          setCategories((previous) => previous.filter((item) => item.id !== categoryId))
         }
         onError={() => setError(true)}
       />

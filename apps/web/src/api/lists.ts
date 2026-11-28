@@ -99,6 +99,26 @@ export function fetchCategories(): Promise<Category[]> {
   return apiJson<Category[]>('/api/categories');
 }
 
+/** Creates a household category; the base set stays seeded (#114). */
+export function createCategory(name: string): Promise<Category> {
+  return apiJson<Category>('/api/categories', { method: 'POST', body: JSON.stringify({ name }) });
+}
+
+export function patchCategory(
+  categoryId: string,
+  patch: { name?: string; sortOrder?: number },
+): Promise<Category> {
+  return apiJson<Category>(`/api/categories/${encodeURIComponent(categoryId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+}
+
+/** Deletes a custom category; its entries fall back to "Ohne Kategorie". */
+export async function deleteCategory(categoryId: string): Promise<void> {
+  await apiFetch(`/api/categories/${encodeURIComponent(categoryId)}`, { method: 'DELETE' });
+}
+
 /** Sets a category's icon override; '' clears back to the base default (#71). */
 export function patchCategoryIcon(categoryId: string, icon: string): Promise<Category> {
   return apiJson<Category>(`/api/categories/${encodeURIComponent(categoryId)}`, {
