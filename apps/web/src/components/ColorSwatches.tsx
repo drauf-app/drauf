@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useT } from '../i18n';
 
 /** The fixed list colours, in the order of i18n lists.colorNames. */
@@ -17,11 +18,16 @@ interface ColorSwatchesProps {
   onChange: (color: string) => void;
 }
 
-/** One row of colour dots for a list; the first option clears the colour. */
+/**
+ * One labeled row of colour dots for a list; the first option clears the
+ * colour. The active dot carries a ring in its own colour (via the
+ * --swatch-color custom property), not a generic accent ring (#104).
+ */
 export function ColorSwatches({ value, onChange }: ColorSwatchesProps) {
   const t = useT();
   return (
     <div className="color-swatches">
+      <span className="color-swatches-label">{t.lists.colorLabel}</span>
       <button
         type="button"
         className={value === '' ? 'color-swatch none active' : 'color-swatch none'}
@@ -34,7 +40,7 @@ export function ColorSwatches({ value, onChange }: ColorSwatchesProps) {
           key={color}
           type="button"
           className={value === color ? 'color-swatch active' : 'color-swatch'}
-          style={{ background: color }}
+          style={{ background: color, '--swatch-color': color } as CSSProperties}
           aria-label={t.lists.colorNames[index] ?? color}
           aria-pressed={value === color}
           onClick={() => onChange(color)}
