@@ -8,6 +8,8 @@ export const de = {
     save: 'Speichern',
     error: 'Das hat nicht geklappt. Bitte erneut versuchen.',
     customIcons: 'Eigene Icons',
+    searchIcons: 'Icon suchen …',
+    noIconsFound: 'Nichts gefunden.',
   },
   nav: {
     lists: 'Listen',
