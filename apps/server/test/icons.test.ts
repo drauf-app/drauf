@@ -64,9 +64,24 @@ describe('instance icons (#71)', () => {
     expect(manifest.defaultPack).toBe('openmoji');
     expect(manifest.packs.map((pack) => pack.id)).toEqual(['openmoji', 'fluent', 'custom']);
     expect(manifest.icons).toEqual([
-      { id: 'custom:herbs', kind: 'color', url: '/icons/custom/herbs.png' },
-      { id: 'custom:spices', kind: 'mono', url: '/icons/custom/spices.svg' },
-      { id: 'custom:tomato', kind: 'color', url: '/icons/custom/tomato.svg' },
+      {
+        id: 'custom:herbs',
+        kind: 'color',
+        url: '/icons/custom/herbs.png',
+        rasterUrl: '/icons/custom/herbs.png?format=png&size=64',
+      },
+      {
+        id: 'custom:spices',
+        kind: 'mono',
+        url: '/icons/custom/spices.svg',
+        rasterUrl: '/icons/custom/spices.svg?format=png&size=64',
+      },
+      {
+        id: 'custom:tomato',
+        kind: 'color',
+        url: '/icons/custom/tomato.svg',
+        rasterUrl: '/icons/custom/tomato.svg?format=png&size=64',
+      },
     ]);
 
     // The files themselves are public (Bearer auth cannot ride on <img>).
@@ -148,6 +163,67 @@ describe('instance icons (#71)', () => {
     const after = await getManifest({ 'if-none-match': etag });
     expect(after.statusCode).toBe(200); // The old ETag no longer matches.
     expect((after.json() as Manifest).defaultPack).toBe('fluent');
+  });
+  it('serves PNG rasters of SVG icons for native clients (#103)', async () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72"><path fill="none" stroke="currentColor" stroke-width="2" d="M10 10h52v52z"/></svg>';
+    await writeFile(join(dir, 'jar.svg'), svg);
+
+    const raster = await ctx.app.inject({
+      method: 'GET',
+      url: '/icons/custom/jar.svg?format=png&size=64',
+    });
+    expect(raster.statusCode).toBe(200);
+    expect(raster.headers['content-type']).toBe('image/png');
+    // PNG magic bytes, IHDR width = requested size.
+    expect([...raster.rawPayload.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+    expect(raster.rawPayload.readUInt32BE(16)).toBe(64);
+
+    const big = await ctx.app.inject({
+      method: 'GET',
+      url: '/icons/custom/jar.svg?format=png&size=128',
+    });
+    expect(big.rawPayload.readUInt32BE(16)).toBe(128);
+
+    // The raster carries its own ETag, distinct from the SVG's, and honors
+    // conditional requests.
+    const original = await ctx.app.inject({ method: 'GET', url: '/icons/custom/jar.svg' });
+    expect(raster.headers.etag).not.toBe(original.headers.etag);
+    const conditional = await ctx.app.inject({
+      method: 'GET',
+      url: '/icons/custom/jar.svg?format=png&size=64',
+      headers: { 'if-none-match': String(raster.headers.etag) },
+    });
+    expect(conditional.statusCode).toBe(304);
+
+    // Cached on disk under icons/.cache, which the scanner ignores.
+    const { readdir } = await import('node:fs/promises');
+    const cached = await readdir(join(dir, '.cache'));
+    expect(cached.some((name) => name.startsWith('jar.svg.') && name.endsWith('.64.png'))).toBe(
+      true,
+    );
+    const manifest = (await getManifest()).json() as Manifest;
+    expect(manifest.icons.map((icon) => icon.id)).toEqual(['custom:jar']);
+  });
+
+  it('rejects raster sizes off the whitelist', async () => {
+    await writeFile(join(dir, 'spices.svg'), MONO_SVG);
+    const response = await ctx.app.inject({
+      method: 'GET',
+      url: '/icons/custom/spices.svg?format=png&size=48',
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('answers format=png for stored png icons with the file unchanged', async () => {
+    await writeFile(join(dir, 'herbs.png'), PNG);
+    const response = await ctx.app.inject({
+      method: 'GET',
+      url: '/icons/custom/herbs.png?format=png&size=64',
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('image/png');
+    expect([...response.rawPayload]).toEqual([...PNG]);
   });
 });
 

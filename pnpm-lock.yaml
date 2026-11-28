@@ -196,6 +196,9 @@ importers:
       '@fastify/websocket':
         specifier: 11.3.7
         version: 11.3.7
+      '@resvg/resvg-wasm':
+        specifier: 2.6.2
+        version: 2.6.2
       argon2:
         specifier: 0.45.2
         version: 0.45.2
@@ -1074,6 +1077,10 @@ packages:
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
+
+  '@resvg/resvg-wasm@2.6.2':
+    resolution: {integrity: sha512-FqALmHI8D4o6lk/LRWDnhw95z5eO+eAa6ORjVg09YRR7BkcM6oPHU9uyC0gtQG5vpFLvgpeU4+zEAz2H8APHNw==}
+    engines: {node: '>= 10'}
 
   '@rolldown/pluginutils@1.0.0-rc.3':
     resolution: {integrity: sha512-eybk3TjzzzV97Dlj5c+XrBFW57eTNhzod66y9HrBlzJ6NsCrWCp/2kaPS3K9wJmurBC0Tdw4yPjXKZqlznim3Q==}
@@ -2834,6 +2841,8 @@ snapshots:
   '@phc/format@1.0.0': {}
 
   '@pinojs/redact@0.4.0': {}
+
+  '@resvg/resvg-wasm@2.6.2': {}
 
   '@rolldown/pluginutils@1.0.0-rc.3': {}
 

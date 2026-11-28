@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AuthGuards } from '../auth/guard.js';
+import { createRasterizer, DEFAULT_RASTER_SIZE, RASTER_SIZES } from '../icons/raster.js';
 import type { IconsService } from '../icons/service.js';
 import type { SettingsService } from '../settings/service.js';
 
@@ -45,11 +46,16 @@ export function iconRoutes(
           id: icon.id,
           kind: icon.kind,
           url: `/icons/custom/${icon.file}`,
+          // For clients without an SVG decoder (#103); png/webp sources
+          // answer it with the stored file unchanged.
+          rasterUrl: `/icons/custom/${icon.file}?format=png&size=${DEFAULT_RASTER_SIZE}`,
         })),
       };
     });
 
-    app.get<{ Params: { filename: string } }>(
+    const rasterizer = createRasterizer(icons.dir, app.log);
+
+    app.get<{ Params: { filename: string }; Querystring: { format?: 'png'; size?: number } }>(
       '/icons/custom/:filename',
       {
         schema: {
@@ -57,6 +63,14 @@ export function iconRoutes(
             type: 'object',
             required: ['filename'],
             properties: { filename: { type: 'string', maxLength: 64 } },
+            additionalProperties: false,
+          },
+          querystring: {
+            type: 'object',
+            properties: {
+              format: { type: 'string', enum: ['png'] },
+              size: { type: 'integer', enum: [...RASTER_SIZES] },
+            },
             additionalProperties: false,
           },
         },
@@ -69,16 +83,34 @@ export function iconRoutes(
         if (icon === undefined) {
           return reply.code(404).send({ error: 'not_found' });
         }
-        let content: Buffer;
-        try {
-          content = await readFile(join(icons.dir, icon.file));
-        } catch {
+
+        // Raster variant (#103): only SVG needs it — stored png/webp answer
+        // a format=png request unchanged, native clients decode those.
+        const wantsRaster = request.query.format === 'png' && icon.contentType === 'image/svg+xml';
+        const size = request.query.size ?? DEFAULT_RASTER_SIZE;
+
+        let content: Buffer | undefined;
+        let contentType = icon.contentType;
+        let variant = '';
+        if (wantsRaster) {
+          content = await rasterizer.render(icon.file, size);
+          contentType = 'image/png';
+          variant = `-png${size}`;
+        } else {
+          try {
+            content = await readFile(join(icons.dir, icon.file));
+          } catch {
+            content = undefined;
+          }
+        }
+        if (content === undefined) {
           return reply.code(404).send({ error: 'not_found' });
         }
-        const etag = `"${registry.etag}-${icon.file}"`;
+
+        const etag = `"${registry.etag}-${icon.file}${variant}"`;
         reply.header('cache-control', 'no-cache');
         reply.header('etag', etag);
-        reply.header('content-type', icon.contentType);
+        reply.header('content-type', contentType);
         reply.header('content-security-policy', ICON_FILE_CSP);
         reply.header('content-disposition', 'attachment');
         reply.header('x-content-type-options', 'nosniff');
